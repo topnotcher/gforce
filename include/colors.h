@@ -1,0 +1,32 @@
+#ifndef COLORS_H
+#define COLORS_H
+
+#define COLOR_CONCAT(a,b) a ## b
+#define COLOR(a) COLOR_CONCAT(COLOR_, a)
+
+#define COLOR_OFF 0
+#define COLOR_RED 1
+#define COLOR_GREEN 2
+#define COLOR_BLUE 3
+#define COLOR_PINK 4
+#define COLOR_ORANGE 5
+#define COLOR_YELLOW 6
+#define COLOR_CYAN 7
+#define COLOR_PURPLE 8
+
+#define COLOR_WHITE 15
+
+#define COLOR_RGB_VALUES \
+	[COLOR_OFF] 	= {0x0000, 0x0000, 0x0000},\
+	[COLOR_RED] 	= {0xFFFF, 0x0000, 0x0000},\
+	[COLOR_GREEN]	= {0x0000, 0xFFFF, 0x0000},\
+	[COLOR_BLUE]	= {0x0000, 0x0000, 0xFFFF},\
+	[COLOR_PINK]	= {0xFFFF, 0x0000, 0xFFFF},\
+	[COLOR_ORANGE]	= {0xFFFF, 0x2828, 0x0000},\
+	[COLOR_YELLOW]	= {0xFFFF, 0xDEDE, 0x0000},\
+	[COLOR_CYAN]	= {0x0202, 0x8484, 0xFFFF},\
+	[COLOR_PURPLE]	= {0x4444, 0x0000, 0xcccc},\
+	[COLOR_WHITE]	= {0xFFFF, 0xFFFF, 0XFFFF}
+
+
+#endif
