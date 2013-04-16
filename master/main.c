@@ -42,7 +42,6 @@ int main(void) {
 	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
 	CLK_CTRL = 0x04;
 
-
 	scheduler_init();
 	lights_init();
 //	ir_sensor_init();
@@ -55,20 +54,6 @@ int main(void) {
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 	sei();
 
-//	while(1) {
-	//	xbee_put('A');
-//		USARTF0.DATA ='A';
-//		sound_play_effect(SOUND_POWER_UP);
-//		_delay_ms(10);
-//	}
-
-/*
-	lcd_bl_on();
-	lcd_putstring("  Good Morning  ");
-	_delay_ms(500);
-	lcd_clear();
-	lcd_bl_off();
-*/
 	#if DEBUG == 0
 	/** 
 	 * Setting all three bits is extended standby.
@@ -78,19 +63,53 @@ int main(void) {
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
 
+/*CTRLA Interrupt enable bits:	TWI_MASTER_WIEN_bm*/
 
+TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
+/*CTRLB SMEN: look into, but only in master read*/
+/*CTRLC ACKACT ... master read*/
+/*CTRLC: CMD bits are here. HRRERM*/
+/* BAUD: 32000000/(2*100000) - 5 = 155*/
+	TWIC.MASTER.BAUD = F_CPU/(2*MPU_TWI_BAUD) - 5;
 
+	//per AVR1308
+	TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+
+	//set slave address = 1 and write, W = 0 (R=1)
+	TWIC.MASTER.ADDR = 1 | 0;
+
+//	TWIC.MASTER.DATA= 'A';
+	PORTC.DIRSET |= 0xff;
 	while (1) {
 
+		TWIC.MASTER.DATA= 'A';
+//		PORTC.OUTSET = 0xff;
+
+		
 		//avoid sleeping for 5 seconds because
 		//it's likely that shit will happen
 		//this doesn't matter...
-		_delay_ms(5000);
+		_delay_ms(500);
 
+//		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();
 		#endif
 	}
 
 	return 0;
+}
+
+ISR(TWIC_TWIM_vect) {
+	if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+		//if bytes to send: send bytes
+		//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
+		TWIC.MASTER.DATA = 'A';
+
+
+	} else {
+
+		//fail
+		return;
+	}
 }
