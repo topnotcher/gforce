@@ -92,11 +92,12 @@ ISR(TWIC_TWIS_vect) {
 
 		//slave read(master write)
 		} else {
-			set_lights(1);
 			uint8_t data = TWIC.SLAVE.DATA;
 
 			if ( data == 'A' )
 				set_lights(0);
+			if ( data == 'B' );
+				set_lights(1);
 		}
 	}
 	// If unexpected state. 

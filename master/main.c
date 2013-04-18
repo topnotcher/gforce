@@ -101,6 +101,8 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 }
 
 ISR(TWIC_TWIM_vect) {
+	static uint8_t i = 0;
+
 	if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 		//when it is read as 0, most recent ack bit was NAK. 
 		if (TWIC.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
@@ -109,13 +111,14 @@ ISR(TWIC_TWIM_vect) {
 		else {
 			//if bytes to send: send bytes
 			//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
-			TWIC.MASTER.DATA = 'A';
+			TWIC.MASTER.DATA = i ? 'B' : 'A';
+			i ^= 1;
 
 			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 		}
-		
-		while ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc );
-
+		_delay_ms(1000);
+///		while ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc );
+	
 		TWIC.MASTER.ADDR = 1<<1 | 0;
 
 	//IDFK??
