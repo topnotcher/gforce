@@ -70,19 +70,19 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 /*CTRLC ACKACT ... master read*/
 /*CTRLC: CMD bits are here. HRRERM*/
 /* BAUD: 32000000/(2*100000) - 5 = 155*/
-	TWIC.MASTER.BAUD = F_CPU/(2*MPU_TWI_BAUD) - 5;
+	TWIC.MASTER.BAUD = 155/*F_CPU/(2*MPU_TWI_BAUD) - 5*/;
 
 	//per AVR1308
 	TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
 	//set slave address = 1 and write, W = 0 (R=1)
-	TWIC.MASTER.ADDR = 1 | 0;
+	TWIC.MASTER.ADDR = 1<<1 | 0;
 
 //	TWIC.MASTER.DATA= 'A';
-	PORTC.DIRSET |= 0xff;
+//	PORTC.DIRSET |= 0xff;
 	while (1) {
 
-		TWIC.MASTER.DATA= 'A';
+//		TWIC.MASTER.DATA= 'A';
 //		PORTC.OUTSET = 0xff;
 
 		
@@ -102,12 +102,25 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 
 ISR(TWIC_TWIM_vect) {
 	if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
-		//if bytes to send: send bytes
-		//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
-		TWIC.MASTER.DATA = 'A';
+		//when it is read as 0, most recent ack bit was NAK. 
+		if (TWIC.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
+			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
+		else {
+			//if bytes to send: send bytes
+			//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
+			TWIC.MASTER.DATA = 'A';
 
+			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+		}
+		
+		while ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc );
+
+		TWIC.MASTER.ADDR = 1<<1 | 0;
+
+	//IDFK??
 	} else {
+		TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
 		//fail
 		return;
