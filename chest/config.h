@@ -8,7 +8,7 @@
 #define LED_SCLK PIN7_bm
 #define LED_SOUT PIN5_bm
 
-#define MPC_TWI_ADDR 1
+#define MPC_TWI_ADDR 0b0001
 
 
 #endif
