@@ -93,7 +93,7 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 		//avoid sleeping for 5 seconds because
 		//it's likely that shit will happen
 		//this doesn't matter...
-		_delay_ms(500);
+		_delay_ms(5000);
 
 		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc ) 
 				TWIC.MASTER.ADDR = 1<<1 | 0;
@@ -129,8 +129,12 @@ ISR(TWIC_TWIM_vect) {
 				i = 1;
 			}
 			else if ( i == 1 ) {
-				TWIC.MASTER.DATA = 'B';
+				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 				i = 2;
+			} else if ( i == 2 ) {
+				TWIC.MASTER.DATA = 'B';
+				i = 3;
 			} else {
 				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;	

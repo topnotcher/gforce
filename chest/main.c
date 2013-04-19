@@ -54,7 +54,7 @@ int main(void) {
 
 	PORTA.DIRSET |= 0xFF;
 /**xmegaA p219**/
-	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm |  TWI_SLAVE_DIEN_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
+	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm |  TWI_SLAVE_DIEN_bm | TWI_SLAVE_APIEN_bm | TWI_SLAVE_PMEN_bm;
 	TWIC.SLAVE.ADDR = 1<<1 /*| 1*/;
 //
 //	PORTC.DIRSET = 0xff;
@@ -71,7 +71,6 @@ int main(void) {
 }
 
 ISR(TWIC_TWIS_vect) {
-	static uint8_t i = 0;
 
     // If address match. 
 	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
@@ -91,13 +90,10 @@ ISR(TWIC_TWIS_vect) {
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 			uint8_t data = TWIC.SLAVE.DATA;
 
-			if ( data == 'A' && i == 0 ) {
+			if ( data == 'A'  ) {
 				set_lights(1);
-				TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_ENABLE_bm;
-				i++;
-			}
-//			if ( data == 'B' );
-//				set_lights(0);
+			} else if ( data == 'B' )
+				set_lights(0);
 		}
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 	    /* Disable stop interrupt. */
