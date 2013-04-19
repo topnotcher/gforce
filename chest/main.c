@@ -15,6 +15,7 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+#include "config.h"
 
 int main(void) {
 
@@ -54,8 +55,10 @@ int main(void) {
 
 	PORTA.DIRSET |= 0xFF;
 /**xmegaA p219**/
-	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm |  TWI_SLAVE_DIEN_bm | TWI_SLAVE_APIEN_bm | TWI_SLAVE_PMEN_bm;
-	TWIC.SLAVE.ADDR = 1<<1 /*| 1*/;
+	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm |  TWI_SLAVE_DIEN_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
+	TWIC.SLAVE.ADDR = MPC_TWI_ADDR<<1 /*| 1*/;
+
+	TWIC.SLAVE.ADDRMASK = 0b0000111 << 1 | 0;
 //
 //	PORTC.DIRSET = 0xff;
 //	PORTC.OUTSET = 0xff;
@@ -75,7 +78,11 @@ ISR(TWIC_TWIS_vect) {
     // If address match. 
 	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 		TWIC.MASTER.CTRLA &= ~TWI_SLAVE_PIEN_bm;
-		TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+
+		uint8_t addr = TWIC.SLAVE.DATA;
+
+		if ( addr & (MPC_TWI_ADDR<<1) )
+			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
 	}
 
