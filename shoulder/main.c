@@ -15,6 +15,7 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+#include "config.h"
 
 int main(void) {
 
@@ -40,72 +41,14 @@ int main(void) {
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm;
 	sei();
 
-/*	led_config.port = &PORTD;
-	led_config.sout = PIN5_bm;
-	led_config.sclk = PIN7_bm;*/
-
 	//safe to pass PTR because we never leave main()
 	led_init();
-
-//	PORTC.DIRSET |= 0xff;
-
-//	sei();
-	//set_lights(1);
-
-	PORTA.DIRSET |= 0xFF;
-/**xmegaA p219**/
-	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm |  TWI_SLAVE_DIEN_bm | TWI_SLAVE_APIEN_bm | TWI_SLAVE_PMEN_bm;
-	TWIC.SLAVE.ADDR = 1<<1 /*| 1*/;
-//
-//	PORTC.DIRSET = 0xff;
-//	PORTC.OUTSET = 0xff;
-//	PORTC.PIN0CTRL = PORT_OPC_PULLUP_gc;
-	//PORTC.PIN1CTRL = PORT_OPC_PULLUP_gc;
-
-	//set_lights(1);
+	mpc_init();
+//set_lights(1);
 	while(1) {
 		leds_run();
 	}
 
 	return 0;
 }
-
-ISR(TWIC_TWIS_vect) {
-
-    // If address match. 
-	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
-		TWIC.MASTER.CTRLA &= ~TWI_SLAVE_PIEN_bm;
-		TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-
-	}
-
-	// If data interrupt. 
-	else if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
-		// slave write 
-		if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
-
-		//slave read(master write)
-		} else {
-			TWIC.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
-			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-			uint8_t data = TWIC.SLAVE.DATA;
-
-			if ( data == 'A'  ) {
-				set_lights(1);
-			} else if ( data == 'B' )
-				set_lights(0);
-		}
-	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-	    /* Disable stop interrupt. */
-    	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
-
-    	TWIC.SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
-	}
-
-	// If unexpected state. 
-	else {
-		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
-	}
-}
-
 

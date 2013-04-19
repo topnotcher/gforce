@@ -5,7 +5,7 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
-#include "leds.h"
+#include <leds.h>
 #include "colors.h"
 
 #include "config.h"
