@@ -46,6 +46,7 @@ int main(void) {
 
 	//safe to pass PTR because we never leave main()
 	led_init();
+
 //	PORTC.DIRSET |= 0xff;
 
 //	sei();
@@ -61,15 +62,8 @@ int main(void) {
 //	PORTC.PIN0CTRL = PORT_OPC_PULLUP_gc;
 	//PORTC.PIN1CTRL = PORT_OPC_PULLUP_gc;
 
+	//set_lights(1);
 	while(1) {
-		//if ((TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) ||  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm)) {
-			//TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-	//		set_lights(1);	
-	//	}
-
-//		if ( !(PORTC.IN & PIN0_bm) ) 
-//			set_lights(1);
-//		_delay_ms(10);
 		leds_run();
 	}
 
@@ -77,29 +71,41 @@ int main(void) {
 }
 
 ISR(TWIC_TWIS_vect) {
-	
+	static uint8_t i = 0;
+
     // If address match. 
-	if ((TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm)) {
+	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
+		TWIC.MASTER.CTRLA &= ~TWI_SLAVE_PIEN_bm;
 		TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
 	}
 
 	// If data interrupt. 
 	else if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
-
 		// slave write 
 		if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 
 		//slave read(master write)
 		} else {
+			TWIC.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
+			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 			uint8_t data = TWIC.SLAVE.DATA;
 
-			if ( data == 'A' )
-				set_lights(0);
-			if ( data == 'B' );
+			if ( data == 'A' && i == 0 ) {
 				set_lights(1);
+				TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_ENABLE_bm;
+				i++;
+			}
+//			if ( data == 'B' );
+//				set_lights(0);
 		}
+	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
+	    /* Disable stop interrupt. */
+    	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
+
+    	TWIC.SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
 	}
+
 	// If unexpected state. 
 	else {
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);

@@ -76,7 +76,11 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 	TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
 	//set slave address = 1 and write, W = 0 (R=1)
-	TWIC.MASTER.ADDR = 1<<1 | 0;
+//	TWIC.MASTER.ADDR = 1<<1 | 0;
+
+	PORTC.DIRSET = PIN0_bm | PIN1_bm;
+	PORTC.PIN0CTRL = PORT_OPC_PULLUP_gc;
+	PORTC.PIN1CTRL = PORT_OPC_PULLUP_gc;
 
 //	TWIC.MASTER.DATA= 'A';
 //	PORTC.DIRSET |= 0xff;
@@ -91,6 +95,9 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 		//this doesn't matter...
 		_delay_ms(500);
 
+		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc ) 
+				TWIC.MASTER.ADDR = 1<<1 | 0;
+
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();
@@ -103,7 +110,12 @@ TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTE
 ISR(TWIC_TWIM_vect) {
 	static uint8_t i = 0;
 
-	if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+
+    if ( (TWIC.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (TWIC.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
+		TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+    }
+
+	else if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 		//when it is read as 0, most recent ack bit was NAK. 
 		if (TWIC.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
 			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
@@ -111,15 +123,21 @@ ISR(TWIC_TWIM_vect) {
 		else {
 			//if bytes to send: send bytes
 			//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
-			TWIC.MASTER.DATA = i ? 'B' : 'A';
-			i ^= 1;
 
-			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+			if ( i == 0 ) {
+				TWIC.MASTER.DATA = 'A';
+				i = 1;
+			}
+			else if ( i == 1 ) {
+				TWIC.MASTER.DATA = 'B';
+				i = 2;
+			} else {
+				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;	
+				i = 0;
+			}
+
 		}
-		_delay_ms(1000);
-///		while ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) != TWI_MASTER_BUSSTATE_IDLE_gc );
-	
-		TWIC.MASTER.ADDR = 1<<1 | 0;
 
 	//IDFK??
 	} else {
