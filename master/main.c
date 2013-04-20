@@ -68,11 +68,13 @@ int main(void) {
 	while (1) {
 		
 
-		_delay_ms(1000);
+	//	_delay_ms(1000);
 
-		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
-			TWIC.MASTER.ADDR = 0b1111<<1 | 0;
+	//	if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
+	//		TWIC.MASTER.ADDR = 0b1111<<1 | 0;
 
+
+		mpc_run();
 
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
