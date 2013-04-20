@@ -1,0 +1,7 @@
+#!/bin/sh
+
+BOARDS="chest back shoulder"
+
+for brd in $BOARDS ; do
+	ln -s ../include/$1 $brd/
+done
