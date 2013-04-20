@@ -88,7 +88,7 @@ static inline void mpc_recv_byte(uint8_t data) {
 
 static inline void recv_pkt(pkt_hdr pkt) {
 	if ( pkt.cmd == 'A' ) {
-		led_set_seq(&pkt.data);
+		led_set_seq(pkt.data);
 		set_lights(1);
 	}
 	else if ( pkt.cmd == 'B' ) 
