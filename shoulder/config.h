@@ -13,4 +13,7 @@
 
 #define MPC_TWI_ADDR_EEPROM_ADDR 0
 
+#define MPC_TWI TWIC
+#define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
+
 #endif
