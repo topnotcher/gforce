@@ -16,9 +16,19 @@ static void init_recv(void);
 static void recv_pkt(pkt_hdr pkt);
 
 
+
 ringbuf_t * recvq;
 
 pkt_proc recv;
+
+
+/**
+ * The shoulders need to differentiate left/right.
+ */
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+#include <avr/eeprom.h>
+uint8_t mpc_twi_addr ;
+#endif
 
 /**
  * Initialize the MPC interface.
@@ -29,7 +39,14 @@ void mpc_init() {
 	init_recv();
 
 	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
+
+#ifdef MPC_TWI_ADDR 
 	TWIC.SLAVE.ADDR = MPC_TWI_ADDR<<1;
+#endif 
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
+	TWIC.SLAVE.ADDR = mpc_twi_addr;
+#endif 
 	TWIC.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
 }
 
@@ -105,8 +122,11 @@ ISR(TWIC_TWIS_vect) {
 
 		uint8_t addr = TWIC.SLAVE.DATA;
 
+#ifdef MPC_TWI_ADDR
 		if ( addr & (MPC_TWI_ADDR<<1) ) {
-
+#else
+		if ( addr & mpc_twi_addr ) {
+#endif
 			//set data interrupt because we actually give a shit
 			TWIC.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
 

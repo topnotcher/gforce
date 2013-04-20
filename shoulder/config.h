@@ -11,6 +11,6 @@
 
 #define LED_RB_SWAP 1 
 
-#define MPC_TWI_ADDR 0b0010
+#define MPC_TWI_ADDR_EEPROM_ADDR 0
 
 #endif
