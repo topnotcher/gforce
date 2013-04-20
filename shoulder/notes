@@ -1,0 +1,3 @@
+Program TWI address into byte 0 of eeprom:
+ - avrdude -p atxmega32a4 -c avrispmkii -P usb -U eeprom:w:0x08:m
+ - note: possible to do programming from a .eep file (see makefile)

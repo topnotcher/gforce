@@ -193,7 +193,8 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
 # Default target.
-all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
+# $(TARGET).eep was here - removed
+all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex \
 	$(TARGET).lss $(TARGET).sym sizeafter finished end
 
 
@@ -254,8 +255,11 @@ reset:
 	$(AVRDUDE) $(AVRDUDE_FLAGS)
 
 # Program the device.  
-program: $(TARGET).hex $(TARGET).eep
-	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+# $(TARGET).eep was here...
+#program: $(TARGET).hex $(TARGET).eep
+#	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+program: $(TARGET.hex)
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
 full: $(TARGET).hex
 	make burn-fuse

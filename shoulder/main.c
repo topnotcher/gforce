@@ -45,7 +45,8 @@ int main(void) {
 	//safe to pass PTR because we never leave main()
 	led_init();
 	mpc_init();
-//set_lights(1);
+	buzz_init();
+
 	while(1) {
 		mpc_recv();
 		leds_run();
