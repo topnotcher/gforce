@@ -6,6 +6,7 @@
 #include "sounds.h"
 #include "xbee.h"
 #include "game.h"
+#include <colors.h>
 
 volatile xbee_queue_t xbee_sendq;
 
@@ -71,10 +72,10 @@ XBEE_RXC_ISR {
 	
 	//MUST read the data to clear the interrupt bit or something
 	meh = XBEE_UDR;
-//xbee_put(meh);
 	//if ( meh == '!' )
 	//	lcd_clear();
-	if ( meh == 'S')
+	//
+	if ( meh == 'S') 
 		do_stun();
 	else if ( meh == 'D')
 		do_deac();
@@ -82,6 +83,14 @@ XBEE_RXC_ISR {
 		sound_play_effect(SOUND_LASER);
 	else if ( meh == 'P' ) 
 		sound_play_effect(SOUND_POWER_UP);
+	else if ( meh == 'A' ) {
+
+		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
+		 mpc_send(0b1111,'A', data, 9);
+
+	} else if ( meh == 'B' ) {
+		mpc_send(0b1111, 'B',0);
+	}
 /*	else if ( meh != 10 )
 		lcd_write(meh);*/
 }
