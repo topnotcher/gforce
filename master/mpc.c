@@ -53,15 +53,15 @@ mpc_tx_state_t tx_state;
 
 void mpc_init() {
 
-	TWIC.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
+	MPC_TWI.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	/*CTRLB SMEN: look into, but only in master read*/
 	/*CTRLC ACKACT ... master read*/
 	/*CTRLC: CMD bits are here. HRRERM*/
 	/* BAUD: 32000000/(2*100000) - 5 = 155*/
-	TWIC.MASTER.BAUD = 35/*155*//*F_CPU/(2*MPU_TWI_BAUD) - 5*/;
+	MPC_TWI.MASTER.BAUD = 35/*155*//*F_CPU/(2*MPU_TWI_BAUD) - 5*/;
 
 	//per AVR1308
-	TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+	MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
 	memset(&queue ,0,sizeof queue);
 	memset(&tx_state,0 , sizeof tx_state);
@@ -117,7 +117,7 @@ void mpc_run() {
 	tx_state.len = queue.items[queue.read].len;
 	tx_state.byte = 0;
 
-	TWIC.MASTER.ADDR = queue.items[queue.read].addr<<1 | 0;
+	MPC_TWI.MASTER.ADDR = queue.items[queue.read].addr<<1 | 0;
 	
 	queue.read = (queue.read == MPC_QUEUE_SIZE-1) ? 0 : queue.read+1;	
 
@@ -128,25 +128,25 @@ void mpc_end_txn(void) {
 	tx_state.state = MPC_TX_STATE_IDLE;
 }
 
-ISR(TWIC_TWIM_vect) {
+MPC_TWI_MASTER_ISR  {
 
-    if ( (TWIC.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (TWIC.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
+    if ( (MPC_TWI.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (MPC_TWI.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
 		mpc_end_txn();
-		TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+		MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
-	} else if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+	} else if ( MPC_TWI.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 
 		//when it is read as 0, most recent ack bit was NAK. 
-		if (TWIC.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
+		if (MPC_TWI.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
 			//WHY IS THIS HERE???
-			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+			MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
 		else {
 			if ( tx_state.byte < tx_state.len ) {
-				TWIC.MASTER.DATA  = tx_state.data[tx_state.byte++];
+				MPC_TWI.MASTER.DATA  = tx_state.data[tx_state.byte++];
 			} else {
-				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+				MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+				MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 				mpc_end_txn();
 			}
 
@@ -154,7 +154,7 @@ ISR(TWIC_TWIM_vect) {
 
 	//IDFK??
 	} else {
-		TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+		MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 		mpc_end_txn();
 		//fail
 		return;

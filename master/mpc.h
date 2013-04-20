@@ -1,7 +1,12 @@
+#include <avr/interrupt.h>
 #include <mpc_common.h>
+
 
 #ifndef MPC_H
 #define MPC_H
+
+#define MPC_TWI TWIC
+#define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
 void mpc_init(void);
 
