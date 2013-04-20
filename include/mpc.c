@@ -127,10 +127,8 @@ ISR(TWIC_TWIS_vect) {
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
 
-	}
-
-	// If data interrupt. 
-	else if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
+	// data interrupt 
+	} else if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
 		// slave write 
 		if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 
@@ -142,7 +140,6 @@ ISR(TWIC_TWIS_vect) {
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 
 		recv_pkt(recv.pkt);
-
 
 	    /* Disable stop interrupt. */
     	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
@@ -158,5 +155,3 @@ ISR(TWIC_TWIS_vect) {
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
 }
-
-
