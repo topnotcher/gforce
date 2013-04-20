@@ -139,8 +139,11 @@ ISR(TWIC_TWIS_vect) {
 //			ringbuf_put(recvq, TWIC.SLAVE.DATA);
 		}
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-
-		recv_pkt(recv.pkt);
+		
+//		if ( recv.crc == recv.pkt.chksum )
+			recv_pkt(recv.pkt);
+//		else if ( recv.pkt.data != NULL )
+//			free(recv.pkt.data);
 
 	    /* Disable stop interrupt. */
     	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
