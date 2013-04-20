@@ -100,7 +100,6 @@ static inline void recv_pkt(pkt_hdr pkt) {
 
 
 ISR(TWIC_TWIS_vect) {
-
     // If address match. 
 	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
@@ -118,7 +117,8 @@ ISR(TWIC_TWIS_vect) {
 			recv.size = 0;
 			if ( recv.pkt.data != NULL )
 				free(recv.pkt.data);
-			ringbuf_flush(recvq);
+
+//			ringbuf_flush(recvq);
 
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
@@ -134,8 +134,9 @@ ISR(TWIC_TWIS_vect) {
 
 		//slave read(master write)
 		} else {
+			mpc_recv_byte(TWIC.SLAVE.DATA);
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-			ringbuf_put(recvq, TWIC.SLAVE.DATA);
+//			ringbuf_put(recvq, TWIC.SLAVE.DATA);
 		}
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 
