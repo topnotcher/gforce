@@ -71,7 +71,7 @@ int main(void) {
 		_delay_ms(1000);
 
 		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
-			TWIC.MASTER.ADDR = 1<<1 | 0;
+			TWIC.MASTER.ADDR = 0b1111<<1 | 0;
 
 
 //		PORTC.OUTCLR = 0xff;
