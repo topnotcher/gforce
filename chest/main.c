@@ -10,6 +10,7 @@
  * G4 common includes.
  */
 #include <leds.h>
+#include <mpc.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -46,6 +47,7 @@ int main(void) {
 	mpc_init();
 //set_lights(1);
 	while(1) {
+		mpc_recv();
 		leds_run();
 	}
 

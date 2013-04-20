@@ -1,20 +1,103 @@
+#include <stdlib.h>
 #include <stdint.h>
 #include <avr/interrupt.h>
 
 #include "config.h"
 
+#include <util.h>
+#include <pkt.h>
 #include <ringbuf.h>
 #include <mpc.h>
 #include <leds.h>
 
+
+static void mpc_recv_byte(uint8_t);
+static void init_recv(void);
+static void recv_pkt(pkt_hdr pkt);
+
+
+ringbuf_t * recvq;
+
+pkt_proc recv;
+
+/**
+ * Initialize the MPC interface.
+ */
 void mpc_init() {
+
+	recvq = ringbuf_init(MPC_RECVQ_MAX);
+	init_recv();
 
 	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
 	TWIC.SLAVE.ADDR = MPC_TWI_ADDR<<1;
 	TWIC.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
-
-	return 0;
 }
+
+static inline void init_recv() {
+	recv.size = 0;
+	recv.pkt.data = NULL;
+	recv.crc = MPC_CRC_SHIFT;
+}
+
+/**
+ * Process queued bytes into packtes.
+ */
+void mpc_recv() {
+	while ( !ringbuf_empty(recvq) )
+		mpc_recv_byte(ringbuf_get(recvq));
+}
+
+static inline void mpc_recv_byte(uint8_t data) {
+
+	if ( recv.size == 0 ) {
+		recv.crc = MPC_CRC_SHIFT;
+		recv.pkt.cmd = data;
+		crc(&recv.crc, data, MPC_CRC_POLY);
+		recv.size = 1;
+
+	} else if ( recv.size == 1 ) {
+		recv.pkt.len = data;
+		crc(&recv.crc, data, MPC_CRC_POLY);
+		recv.size = 2;
+
+		if ( recv.pkt.len > 0 )
+			recv.pkt.data = (uint8_t *)malloc(recv.pkt.len);
+
+	//case 1: there is no payload, so byte 2 is the CRC
+	//case 2: there is a payload, but we're past it, so this is the CRC.
+	} else if ( (recv.size == 2 && recv.pkt.len == 0) || (recv.pkt.len > 0 && recv.size >= recv.pkt.len+2) ) {
+		recv.pkt.chksum = data;
+	
+		if ( recv.pkt.chksum == recv.crc )
+			recv_pkt(recv.pkt);
+
+		//note: the receiving end is required to free() the data otherwise!
+		else if ( recv.pkt.len > 0 ) 
+			free(recv.pkt.data);
+
+		recv.size = 0;
+
+	//receive the payload.
+	} else if ( recv.size >= 2 && recv.size < recv.pkt.len+2 ) {
+		recv.pkt.data[recv.size-2] = data;
+		crc(&recv.crc, data, MPC_CRC_POLY);
+		recv.size++;
+	} else {
+		recv.size = 0;
+	}
+}
+
+static inline void recv_pkt(pkt_hdr pkt) {
+	if ( pkt.data[0] == 'A' ) 
+		set_lights(1);
+	else if ( pkt.data[0] == 'B' ) 
+		set_lights(0);
+
+	free(pkt.data);
+}
+
+
+
 
 ISR(TWIC_TWIS_vect) {
 
@@ -45,14 +128,8 @@ ISR(TWIC_TWIS_vect) {
 
 		//slave read(master write)
 		} else {
-			TWIC.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
+			ringbuf_put(recvq, TWIC.SLAVE.DATA);
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-			uint8_t data = TWIC.SLAVE.DATA;
-
-			if ( data == 'A'  ) {
-				set_lights(1);
-			} else if ( data == 'B' )
-				set_lights(0);
 		}
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 	    /* Disable stop interrupt. */
