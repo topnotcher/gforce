@@ -75,11 +75,7 @@ XBEE_RXC_ISR {
 	//if ( meh == '!' )
 	//	lcd_clear();
 	//
-	if ( meh == 'S') 
-		do_stun();
-	else if ( meh == 'D')
-		do_deac();
-	else if ( meh == 'F' ) 
+	 if ( meh == 'F' ) 
 		sound_play_effect(SOUND_LASER);
 	else if ( meh == 'P' ) 
 		sound_play_effect(SOUND_POWER_UP);
@@ -90,6 +86,11 @@ XBEE_RXC_ISR {
 
 	} else if ( meh == 'B' ) {
 		mpc_send(0b1111, 'B',0);
+	} else if ( meh == 'C' ) {
+		uint8_t data[] = {0};
+		mpc_send(0b1111, 'C',data, 1);
+	} else if ( meh == 'D' ) {
+		mpc_send_cmd(0b1111, 'D');
 	}
 /*	else if ( meh != 10 )
 		lcd_write(meh);*/

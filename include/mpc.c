@@ -10,7 +10,7 @@
 #include <ringbuf.h>
 #include <mpc.h>
 #include <leds.h>
-
+#include <buzz.h>
 
 
 static void mpc_recv_byte(uint8_t);
@@ -112,7 +112,11 @@ static inline void recv_pkt(pkt_hdr pkt) {
 	}
 	else if ( pkt.cmd == 'B' ) 
 		set_lights(0);
-
+	else if ( pkt.cmd == 'C' ) {
+		buzz_on();
+	} else if ( pkt.cmd == 'D') {
+		buzz_off();
+	}
 }
 
 MPC_TWI_SLAVE_ISR {

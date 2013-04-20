@@ -124,7 +124,8 @@ void mpc_run() {
 }
 
 void mpc_end_txn(void) {
-	free(tx_state.data);
+	if ( tx_state.len > 0 )
+		free(tx_state.data);
 	tx_state.state = MPC_TX_STATE_IDLE;
 }
 

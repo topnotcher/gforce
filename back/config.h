@@ -13,4 +13,7 @@
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 
+#define BUZZ_PORT PORTA
+#define BUZZ_PIN PIN3_bm
+
 #endif

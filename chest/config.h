@@ -1,3 +1,4 @@
+
 #ifndef BOARD_CONFIG_H
 
 
@@ -21,5 +22,12 @@
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
+
+
+/********************************************
+ * Configuration for the vibrator
+ */
+#define BUZZ_PORT PORTA
+#define BUZZ_PIN PIN3_bm
 
 #endif
