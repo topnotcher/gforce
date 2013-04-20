@@ -42,7 +42,7 @@ static inline void init_recv() {
 /**
  * Process queued bytes into packtes.
  */
-void mpc_recv() {
+inline void mpc_recv() {
 	while ( !ringbuf_empty(recvq) )
 		mpc_recv_byte(ringbuf_get(recvq));
 }
@@ -68,14 +68,13 @@ static inline void mpc_recv_byte(uint8_t data) {
 	} else if ( (recv.size == 2 && recv.pkt.len == 0) || (recv.pkt.len > 0 && recv.size >= recv.pkt.len+2) ) {
 		recv.pkt.chksum = data;
 	
-		if ( recv.pkt.chksum == recv.crc )
-			recv_pkt(recv.pkt);
-
+//		if ( recv.pkt.chksum == recv.crc )
+//			recv_pkt(recv.pkt);
 		//note: the receiving end is required to free() the data otherwise!
-		else if ( recv.pkt.len > 0 ) 
-			free(recv.pkt.data);
+//		else if ( recv.pkt.len > 0 ) 
+//			free(recv.pkt.data);
 
-		recv.size = 0;
+//		recv.size = 0;
 
 	//receive the payload.
 	} else if ( recv.size >= 2 && recv.size < recv.pkt.len+2 ) {
@@ -108,13 +107,21 @@ ISR(TWIC_TWIS_vect) {
 		uint8_t addr = TWIC.SLAVE.DATA;
 
 		if ( addr & (MPC_TWI_ADDR<<1) ) {
-			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
 			//set data interrupt because we actually give a shit
 			TWIC.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
 
 			//also a stop interrupt.. Wait that's enabled with APIEN?
 			TWIC.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
+
+			//this is SUPER temp.
+			recv.size = 0;
+			if ( recv.pkt.data != NULL )
+				free(recv.pkt.data);
+			ringbuf_flush(recvq);
+
+			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+
 		} else {
 			//is this right?
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
@@ -129,10 +136,14 @@ ISR(TWIC_TWIS_vect) {
 
 		//slave read(master write)
 		} else {
-			ringbuf_put(recvq, TWIC.SLAVE.DATA);
 			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+			ringbuf_put(recvq, TWIC.SLAVE.DATA);
 		}
 	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
+
+		recv_pkt(recv.pkt);
+
+
 	    /* Disable stop interrupt. */
     	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
 

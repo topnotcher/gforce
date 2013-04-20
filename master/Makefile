@@ -23,7 +23,7 @@ TARGET = $(TMP)/main
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 OPT = 2
 
-#EXTRAINCDIRS = /usr/avr/lib/avr5/
+EXTRAINCDIRS = ../include
 # List Assembler source files here.
 # Make them always end in a capital .S.  Files ending in a lowercase .s
 # will not be considered source files but generated files (assembler

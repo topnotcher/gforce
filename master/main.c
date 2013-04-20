@@ -65,31 +65,14 @@ int main(void) {
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
 
-	uint8_t byte = 0;
-	uint8_t addr[7] = {0b0001,0b0010, 0b0100, 0b1000, 0b0101, 0b1010, 0b1111 };
-	uint8_t cur = 0;
-	
 	while (1) {
-
-//		TWIC.MASTER.DATA= 'A';
-//		PORTC.OUTSET = 0xff;
-
 		
-		//avoid sleeping for 5 seconds because
-		//it's likely that shit will happen
-		//this doesn't matter...
+
 		_delay_ms(1000);
 
-		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc ) {
-				TWIC.MASTER.ADDR = (addr[cur])<<1 | 0;
+		if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
+			TWIC.MASTER.ADDR = 1<<1 | 0;
 
-				if ( byte++ == 1 ) {
-					if ( cur++ == 6 )
-						cur = 0;
-					byte = 0;
-				}
-		}
-				
 
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0

@@ -13,6 +13,9 @@ ringbuf_t * ringbuf_init(uint8_t size) {
 
 	return buf;
 }
+inline void ringbuf_flush(ringbuf_t * const buf) {
+	buf->read = buf->write = 0;
+}
 
 void ringbuf_deinit(ringbuf_t * buf) {
 	free(buf->data);
