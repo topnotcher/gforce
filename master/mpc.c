@@ -9,7 +9,8 @@
 #include <pkt.h>
 #include "mpc.h"
 
-static void mpc_send_pkt(const uint8_t addr, const pkt_hdr * const pkt);
+//static void mpc_send_pkt(const uint8_t addr, const pkt_hdr * const pkt);
+static void mpc_end_txn(void);
 
 /**
  * Wrapper structure to hold queued packets.
@@ -27,7 +28,7 @@ typedef struct {
 typedef struct {
 	uint8_t read;
 	uint8_t write;
-	mpc_qitem_t * items[MPC_QUEUE_SIZE];
+	mpc_qitem_t items[MPC_QUEUE_SIZE];
 } mpc_queue_t;
 
 mpc_queue_t queue;
@@ -69,10 +70,10 @@ void mpc_init() {
 void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 	mpc_send(addr, cmd, NULL, 0);
 }
-
+//CALLER MUST FREE() data
 void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
 
-	//len = data, +3 for cmd,len,chksum.
+	//skip the "pkt" we're assuming the sturcture of it (yeah, ugly. Fuck off.)
 	uint8_t * const raw = (uint8_t*)malloc(len+3) ;
 	uint8_t chksum = MPC_CRC_SHIFT;
 
@@ -83,23 +84,22 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	crc(&chksum, len, MPC_CRC_POLY);
 
 
-	for ( uint8_t i = 2; i < len+2; ++i ) {
-		raw[i] = data[i];
+	for ( uint8_t i = 0; i < len; ++i ) {
+		raw[i+2] = data[i];
 		crc(&chksum, data[i], MPC_CRC_POLY);
 	}
 	//0    1   2 3 4 5 6  7
 	//cmd,len, 1,2,3,4,5, chksum
 	raw[len+2] = chksum;
 
-	free(data);
+	//free(data);
 
-	mpc_qitem_t * qpkt = (mpc_qitem_t*)malloc(sizeof(mpc_qitem_t));
-	qpkt->addr = addr; 
-	qpkt->len = len+3; //data+header
-	qpkt->data = raw;
-
+//	mpc_qitem_t * qpkt = (mpc_qitem_t*)malloc(sizeof(mpc_qitem_t));
 	
-	queue.items[queue.write] = qpkt;
+	queue.items[queue.write].addr = addr; 
+	queue.items[queue.write].len = len+3; //data+header
+	queue.items[queue.write].data = raw;
+
 	//w000000....
 	//h00000....
 	queue.write = (queue.write == MPC_QUEUE_SIZE-1) ? 0 : queue.write+1;
@@ -113,48 +113,41 @@ void mpc_run() {
 
 	tx_state.state = MPC_TX_STATE_BUSY;
 		
-	tx_state.data = queue.items[queue.read]->data;
-	tx_state.len = queue.items[queue.read]->len;
+	tx_state.data = queue.items[queue.read].data;
+	tx_state.len = queue.items[queue.read].len;
 	tx_state.byte = 0;
 
-	free(queue.items[queue.read]);
-
-
-	queue.read = (queue.read == MPC_QUEUE_SIZE-1) ? 0 : queue.read+1;
+	TWIC.MASTER.ADDR = queue.items[queue.read].addr<<1 | 0;
+	
+	queue.read = (queue.read == MPC_QUEUE_SIZE-1) ? 0 : queue.read+1;	
 
 }
-ISR(TWIC_TWIM_vect) {
-	static uint8_t i = 0;
-//	static uint8_t on = 0;
-//	static const uint8_t pkt_size = 3;
-//	static uint8_t pkt[2][12] = {
-		static uint8_t pkt[12] = {65,9,1,1,19,87,66,134,10,15,148};
-	/*	{'B',0, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0}*/
-	//};
 
+void mpc_end_txn(void) {
+	free(tx_state.data);
+	tx_state.state = MPC_TX_STATE_IDLE;
+}
+
+ISR(TWIC_TWIM_vect) {
 
     if ( (TWIC.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (TWIC.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
+		mpc_end_txn();
 		TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-    }
 
-	else if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+	} else if ( TWIC.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+
 		//when it is read as 0, most recent ack bit was NAK. 
 		if (TWIC.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
+			//WHY IS THIS HERE???
 			TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
 		else {
-			//if bytes to send: send bytes
-			//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
-
-			if ( i < 12 /*pkt_size+pkt[1]*/ ) {
-				TWIC.MASTER.DATA  = pkt[i++];
+			if ( tx_state.byte < tx_state.len ) {
+				TWIC.MASTER.DATA  = tx_state.data[tx_state.byte++];
 			} else {
 				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;	
-				i = 0;
-				
-//				if ( on++ == 1 )
-//					on = 0;
+				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+				mpc_end_txn();
 			}
 
 		}
@@ -162,7 +155,7 @@ ISR(TWIC_TWIM_vect) {
 	//IDFK??
 	} else {
 		TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-
+		mpc_end_txn();
 		//fail
 		return;
 	}

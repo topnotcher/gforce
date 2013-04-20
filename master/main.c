@@ -13,6 +13,7 @@
 #include "game.h"
 #include "xbee.h"
 #include "mpc.h"
+#include <colors.h>
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -64,11 +65,13 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
+	const uint8_t dlen = 9;
+	uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};
 
 	while (1) {
-		
+		mpc_send(0b1111, 'A', data, dlen);
 
-	//	_delay_ms(1000);
+		_delay_ms(1000);
 
 	//	if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
 	//		TWIC.MASTER.ADDR = 0b1111<<1 | 0;
