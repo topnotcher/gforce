@@ -87,13 +87,13 @@ static inline void mpc_recv_byte(uint8_t data) {
 }
 
 static inline void recv_pkt(pkt_hdr pkt) {
-	if ( pkt.cmd == 'A' )
+	if ( pkt.cmd == 'A' ) {
+		led_set_seq(&pkt.data);
 		set_lights(1);
+	}
 	else if ( pkt.cmd == 'B' ) 
 		set_lights(0);
 
-	if ( pkt.len )
-		free(pkt.data);
 }
 
 
@@ -115,8 +115,8 @@ ISR(TWIC_TWIS_vect) {
 
 			//this is SUPER temp.
 			recv.size = 0;
-			if ( recv.pkt.data != NULL )
-				free(recv.pkt.data);
+//			if ( recv.pkt.data != NULL )
+//				free(recv.pkt.data);
 
 //			ringbuf_flush(recvq);
 

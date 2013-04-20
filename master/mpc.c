@@ -26,12 +26,12 @@ void mpc_init() {
 
 ISR(TWIC_TWIM_vect) {
 	static uint8_t i = 0;
-	static uint8_t on = 0;
-	static const uint8_t pkt_size = 3;
-	static uint8_t pkt[2][3] = {
-		{'A','0', 134},
-		{'B','0', 122}
-	};
+//	static uint8_t on = 0;
+//	static const uint8_t pkt_size = 3;
+//	static uint8_t pkt[2][12] = {
+		static uint8_t pkt[] = {65,9,1,136,136,136,136,10,15,15,0,166};
+	/*	{'B',0, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0}*/
+	//};
 
 
     if ( (TWIC.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (TWIC.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
@@ -47,15 +47,15 @@ ISR(TWIC_TWIM_vect) {
 			//if bytes to send: send bytes
 			//otherweise : twi->interface->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc
 
-			if ( i < pkt_size ) {
-				TWIC.MASTER.DATA  = pkt[on][i++];
+			if ( i < 12 /*pkt_size+pkt[1]*/ ) {
+				TWIC.MASTER.DATA  = pkt[i++];
 			} else {
 				TWIC.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				TWIC.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;	
 				i = 0;
 				
-				if ( on++ == 1 )
-					on = 0;
+//				if ( on++ == 1 )
+//					on = 0;
 			}
 
 		}
