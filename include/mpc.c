@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <avr/io.h>
 #include <avr/interrupt.h>
 
 #include "config.h"
@@ -9,6 +10,7 @@
 #include <ringbuf.h>
 #include <mpc.h>
 #include <leds.h>
+
 
 
 static void mpc_recv_byte(uint8_t);
@@ -113,10 +115,7 @@ static inline void recv_pkt(pkt_hdr pkt) {
 
 }
 
-
-
-
-ISR(TWIC_TWIS_vect) {
+MPC_TWI_SLAVE_ISR {
     // If address match. 
 	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
