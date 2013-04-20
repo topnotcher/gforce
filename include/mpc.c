@@ -3,6 +3,7 @@
 
 #include "config.h"
 
+#include <ringbuf.h>
 #include <mpc.h>
 #include <leds.h>
 
@@ -11,10 +12,6 @@ void mpc_init() {
 	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
 	TWIC.SLAVE.ADDR = MPC_TWI_ADDR<<1;
 	TWIC.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
-
-	while(1) {
-		leds_run();
-	}
 
 	return 0;
 }
@@ -66,8 +63,9 @@ ISR(TWIC_TWIS_vect) {
 		TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_DIEN_bm;
 	}
 
-	// If unexpected state. 
+	// If unexpected state.
 	else {
+		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
 }
