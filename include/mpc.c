@@ -23,10 +23,6 @@ ISR(TWIC_TWIS_vect) {
 
     // If address match. 
 	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
-		//TWIC.MASTER.CTRLA &= ~TWI_SLAVE_PIEN_bm;
-
-		//clear APIF: should stop clock from being held low????
-//		TWIC.SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
 
 		uint8_t addr = TWIC.SLAVE.DATA;
 
