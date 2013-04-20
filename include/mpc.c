@@ -40,16 +40,16 @@ void mpc_init() {
 	recvq = ringbuf_init(MPC_RECVQ_MAX);
 	init_recv();
 
-	TWIC.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
+	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
 
 #ifdef MPC_TWI_ADDR 
-	TWIC.SLAVE.ADDR = MPC_TWI_ADDR<<1;
+	MPC_TWI.SLAVE.ADDR = MPC_TWI_ADDR<<1;
 #endif 
 #ifdef MPC_TWI_ADDR_EEPROM_ADDR
 	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
-	TWIC.SLAVE.ADDR = mpc_twi_addr;
+	MPC_TWI.SLAVE.ADDR = mpc_twi_addr;
 #endif 
-	TWIC.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
+	MPC_TWI.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
 }
 
 static inline void init_recv() {
@@ -117,9 +117,9 @@ static inline void recv_pkt(pkt_hdr pkt) {
 
 MPC_TWI_SLAVE_ISR {
     // If address match. 
-	if ( (TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (TWIC.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
+	if ( (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
-		uint8_t addr = TWIC.SLAVE.DATA;
+		uint8_t addr = MPC_TWI.SLAVE.DATA;
 
 #ifdef MPC_TWI_ADDR
 		if ( addr & (MPC_TWI_ADDR<<1) ) {
@@ -127,10 +127,10 @@ MPC_TWI_SLAVE_ISR {
 		if ( addr & mpc_twi_addr ) {
 #endif
 			//set data interrupt because we actually give a shit
-			TWIC.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
+			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
 
 			//also a stop interrupt.. Wait that's enabled with APIEN?
-			TWIC.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
+			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
 
 			//this is SUPER temp.
 			recv.size = 0;
@@ -139,25 +139,25 @@ MPC_TWI_SLAVE_ISR {
 
 //			ringbuf_flush(recvq);
 
-			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
 		} else {
 			//is this right?
-			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
+			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
 
 	// data interrupt 
-	} else if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
+	} else if (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
 		// slave write 
-		if (TWIC.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
+		if (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 
 		//slave read(master write)
 		} else {
-			mpc_recv_byte(TWIC.SLAVE.DATA);
-			TWIC.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-//			ringbuf_put(recvq, TWIC.SLAVE.DATA);
+			mpc_recv_byte(MPC_TWI.SLAVE.DATA);
+			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+//			ringbuf_put(recvq, MPC_TWI.SLAVE.DATA);
 		}
-	} else if ( TWIC.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
+	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 		
 //		if ( recv.crc == recv.pkt.chksum )
 			recv_pkt(recv.pkt);
@@ -165,11 +165,11 @@ MPC_TWI_SLAVE_ISR {
 //			free(recv.pkt.data);
 
 	    /* Disable stop interrupt. */
-    	TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
+    	MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
 
-    	TWIC.SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
+    	MPC_TWI.SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
 
-		TWIC.SLAVE.CTRLA &= ~TWI_SLAVE_DIEN_bm;
+		MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_DIEN_bm;
 	}
 
 	// If unexpected state.
