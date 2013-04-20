@@ -29,7 +29,7 @@ ISR(TWIC_TWIM_vect) {
 //	static uint8_t on = 0;
 //	static const uint8_t pkt_size = 3;
 //	static uint8_t pkt[2][12] = {
-		static uint8_t pkt[12] = {65,9,1,1,17,17,17,17,10,15,151};
+		static uint8_t pkt[12] = {65,9,1,1,19,87,66,134,10,15,148};
 	/*	{'B',0, 122, 0, 0, 0, 0, 0, 0, 0, 0, 0}*/
 	//};
 
