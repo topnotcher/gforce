@@ -88,12 +88,13 @@ static inline void mpc_recv_byte(uint8_t data) {
 }
 
 static inline void recv_pkt(pkt_hdr pkt) {
-	if ( pkt.data[0] == 'A' ) 
+	if ( pkt.cmd == 'A' )
 		set_lights(1);
-	else if ( pkt.data[0] == 'B' ) 
+	else if ( pkt.cmd == 'B' ) 
 		set_lights(0);
 
-	free(pkt.data);
+	if ( pkt.len )
+		free(pkt.data);
 }
 
 
