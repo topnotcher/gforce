@@ -64,8 +64,11 @@ int main(void) {
 	uint16_t data[] = {(1<<8) | 255,(1<<8) | 56, (1<<8), (1<<8) | 127,138,103,83,0,15,15,68,72,0,44,1,88,113};
 
 	while(1) {
-		if ( trigger_pressed() ) 
-			irtx_send(data,16);
+		USARTC1.DATA = 'A';
+
+		_delay_ms(10);
+//		if ( trigger_pressed() ) 
+//			irtx_send(data,16);
 
 
 		leds_run();
