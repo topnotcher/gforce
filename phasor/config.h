@@ -28,6 +28,10 @@
 #define IRTX_TIMER_CCx CCA
 
 
+/**************************************
+ * IR RX configuration
+ */
+
 
 /**************************************
  * Trigger configuration
