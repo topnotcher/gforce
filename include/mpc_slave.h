@@ -1,8 +1,7 @@
-#include <mpc_common.h>
+#ifndef MPC_SLAVE_H
+#define MPC_SLAVE_H
 
-#ifndef MPC_H
-#define MPC_H
-
+//@TODO HOW IZ WE DO THIS? 
 #define MPC_TWI_ADDRMASK 0b0001111
 
 #define MPC_RECVQ_MAX 8

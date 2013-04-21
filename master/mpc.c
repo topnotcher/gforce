@@ -5,6 +5,7 @@
 #include <string.h> //memset
 #include <stdlib.h> //malloc
 
+#include <g4config.h>
 #include <util.h>
 #include <pkt.h>
 #include "mpc.h"

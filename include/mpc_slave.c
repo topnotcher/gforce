@@ -3,6 +3,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include "g4config.h"
 #include "config.h"
 
 #include <util.h>
