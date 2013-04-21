@@ -13,7 +13,7 @@
 #define IRTX_USART_BSCALE 4
 
 #define IRTX_USART_PORT PORTD
-#define IRTX_USART_TXPIN PIN3_bm
+#define IRTX_USART_TXPIN 3
 
 
 #endif
