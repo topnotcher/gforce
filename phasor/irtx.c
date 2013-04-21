@@ -59,6 +59,7 @@ inline void irtx_init() {
 	IRTX_TIMER.CTRLB = TC_WGMODE_FRQ_gc;
 	// 32000000/(2*2(210+1)) (XMEGAA, PAGE 160).
 	IRTX_TIMER_PORT.DIRSET = _TIMERPIN;
+	IRTX_TIMER_PORT.OUTCLR = _TIMERPIN;
 	TCD0.IRTX_TIMER_CCx = 210;
 
 	sendq.read = sendq.write = 0;
