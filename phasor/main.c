@@ -61,14 +61,17 @@ int main(void) {
 //	PORTA.DIRSET |= 0xFF;
 //
 
-	uint16_t data[] = {(1<<8) | 255,(1<<8) | 56, (1<<8), (1<<8) | 127,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	for ( uint8_t i = 0; i < 16; ++i )
+		if ( i > 3 )
+			data[i] |= 0x100;
 
 	while(1) {
-		USARTC1.DATA = 'A';
-		_delay_ms(10);
+//i/		USARTC1.DATA = 'A';
+	//	_delay_ms(500);
 		
-//		if ( trigger_pressed() ) 
-//			irtx_send(data,16);
+		if ( trigger_pressed() ) 
+			irtx_send(data,16);
 
 
 		leds_run();
