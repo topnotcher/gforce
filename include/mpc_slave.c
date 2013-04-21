@@ -8,7 +8,7 @@
 #include <util.h>
 #include <pkt.h>
 #include <ringbuf.h>
-#include <mpc.h>
+#include <mpc_slave.h>
 #include <leds.h>
 #include <buzz.h>
 

@@ -137,6 +137,7 @@ MPC_TWI_MASTER_ISR  {
 
 	} else if ( MPC_TWI.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 
+		//@TODO: need to handle this better! at the very least, end the txn?	
 		//when it is read as 0, most recent ack bit was NAK. 
 		if (MPC_TWI.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
 			//WHY IS THIS HERE???
