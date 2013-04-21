@@ -5,8 +5,8 @@
  */
 
 #define LED_PORT PORTD
-#define LED_SCLK PIN7_bm
-#define LED_SOUT PIN5_bm
+#define LED_SCLK_PIN 7
+#define LED_SOUT_PIN 5
 
 
 /**************************************
