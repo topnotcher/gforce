@@ -20,8 +20,11 @@
 
 #define LED(k) _BV(k)
 
-
 #define DELAY_TIME 11
+
+#include <colors.h>
+#define LED_PATTERN(A,B,C,D,E,F,G,H) { (COLOR(A)<<4) | COLOR(B), (COLOR(C)<<4) | COLOR(D), (COLOR(E)<<4) | COLOR(F), (COLOR(G)<<4) | COLOR(H) }
+#define SOLID_PATTERN(C) {(COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C))}
 
 
 /*typedef struct { 

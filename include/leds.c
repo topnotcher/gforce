@@ -15,7 +15,7 @@
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
 
 
-led_values_t ALL_OFF = {COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF };
+led_values_t ALL_OFF = LED_PATTERN(OFF,OFF,OFF,OFF,OFF,OFF,OFF,OFF);
 
 led_state state = {
 
@@ -28,145 +28,68 @@ led_state state = {
 	.status = idle,
 };
 
-/*
-const led_sequence seq_active = {
-	.size = 2,
-	.repeat_time = 0,
-	.patterns = {
-		{
-			.pattern = { (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_OFF) , (COLOR_BLUE<<4 | COLOR_OFF) , (COLOR_BLUE<<4 | COLOR_OFF) },
-			.flashes = 50,
-			.on = 25,
-			.off = 15,
-		},
-		{
-			.pattern = { (COLOR_CYAN<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) },
-			.flashes = 50,
-			.on = 25,
-			.off = 15
-		},
-
-	}
-};
-*/
-
-#define SOLID_PATTERN(C) {(COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C))}
-
-const led_sequence seq_active = {
-	.size = 7,
-	.repeat_time = 0,
-	.patterns = {
-		{
-			.pattern = { COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW},
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		}/*,
-		{
-			.pattern = 
-			.flashes = 1,
-			.on = 25,
-			.off = 15,
-		},*/
-
-	}
-};
-
-/*
 const led_sequence seq_active = {
 	.size = 8,
 	.repeat_time = 0,
 	.patterns = {
 		{
-			.pattern = SOLID_PATTERN(RED),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(RED,OFF,RED,OFF,RED,OFF,RED,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 
 		{
-			.pattern = SOLID_PATTERN(BLUE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,GREEN,OFF,GREEN,OFF,GREEN,OFF,GREEN),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(GREEN),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(BLUE,OFF,BLUE,OFF,BLUE,OFF,BLUE,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(YELLOW),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,YELLOW,OFF,YELLOW,OFF,YELLOW,OFF,YELLOW),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(PURPLE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(PURPLE,OFF,PURPLE,OFF,PURPLE,OFF,PURPLE,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(CYAN),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,WHITE,OFF,WHITE,OFF,WHITE,OFF,WHITE),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(PINK),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(CYAN,OFF,CYAN,OFF,CYAN,OFF,CYAN,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(ORANGE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
-		},
+			.pattern = LED_PATTERN(OFF,ORANGE,OFF,ORANGE,OFF,ORANGE,OFF,ORANGE),
+			.flashes = 1,
+			.on=6,
+			.off=0,
+		}/*,
+		{
+			.pattern = 
+			.flashes = 1,
+			.on=65,
+			.off = 15,
+		},*/
 
 	}
 };
-*/
 
 inline void set_lights(uint8_t status) {
 	state.status = status ? start : stop;
@@ -396,7 +319,7 @@ void led_init() {
 
 inline void led_timer_start() {
 	TCC0.CNT = 0;	
-	TCC0.CCA = 40000;
+	TCC0.CCA = 55000;
 	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;
 }
 
