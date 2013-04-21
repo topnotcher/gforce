@@ -20,7 +20,7 @@
 inline void irtx_init() {
 	
 	IRTX_USART_PORT.OUTCLR = _TXPIN_bm;
-	IRTX_USART_PORT.DIRSET = _TXPIN_bm;
+//	IRTX_USART_PORT.DIRSET = _TXPIN_bm;
 	
 	IRTX_USART_PORT._TXPINCTRL |= PORT_INVEN_bm;
 
@@ -35,6 +35,14 @@ inline void irtx_init() {
 	IRTX_USART.CTRLA = 0;
 	IRTX_USART.CTRLB = USART_TXEN_bm;
 	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc;
+
+	//assuming 32MHZ CPU clk per
+	TCD0.CTRLA = TC_CLKSEL_DIV2_gc;
+	TCD0.CTRLB = TC0_CCBEN_bm | TC_WGMODE_FRQ_gc;
+	// 32000000/(2*2(210+1)) (XMEGAA, PAGE 160).
+//	PORTD.DIRSET = PIN1_bm;
+	TCD0.CCB = 210;
+
 }
 
 inline void irtx_byte(uint8_t byte) {
