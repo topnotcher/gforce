@@ -75,12 +75,6 @@ void irtx_put(uint16_t data) {
 	_txc_interrupt_enable();
 }
 
-
-//inline void irtx_byte(uint8_t byte) {
-//	IRTX_USART.CTRLB USART_TXB8_bp
-//	IRTX_USART.DATA = byte;
-//}
-
 //the logic in this is backwarsd from what I would expect???
 ISR(PORTC_INT0_vect) {
 	if ( !(IRTX_USART_PORT.IN & _TXPIN_bm) )
