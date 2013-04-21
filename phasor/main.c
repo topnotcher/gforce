@@ -10,6 +10,7 @@
  * G4 common includes.
  */
 #include <leds.h>
+#include "irtx.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -40,14 +41,16 @@ int main(void) {
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
 
-	led_config_t led_config = { &PORTD, PIN5_bm, PIN7_bm };
+	//led_config_t led_config = { &PORTD, PIN5_bm, PIN7_bm };
 
 /*	led_config.port = &PORTD;
 	led_config.sout = PIN5_bm;
 	led_config.sclk = PIN7_bm;*/
 
 	//safe to pass PTR because we never leave main()
-	led_init(&led_config);
+	led_init();
+	irtx_init();
+
 //	PORTC.DIRSET |= 0xff;
 
 //	sei();
@@ -57,8 +60,8 @@ int main(void) {
 	PORTA.DIRSET |= 0xFF;
 
 	while(1) {
-
-//		_delay_ms(10);
+		irtx_byte('A');
+		_delay_ms(10);
 		leds_run();
 	}
 
