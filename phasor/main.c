@@ -44,6 +44,7 @@ int main(void) {
 	led_init();
 	irtx_init();
 	trigger_init();
+	irrx_init();
 
 	sei();
 

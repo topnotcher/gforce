@@ -31,6 +31,14 @@
 /**************************************
  * IR RX configuration
  */
+#define IRRX_USART USARTD0
+#define IRRX_USART_RXC_vect USARTD0_RXC_vect
+
+#define IRRX_USART_PORT PORTD
+#define IRRX_USART_RXPIN 2
+
+//#define 
+
 
 
 /**************************************
