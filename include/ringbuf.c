@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "ringbuf.h"
 
-ringbuf_t * ringbuf_init(uint8_t size) {
+inline ringbuf_t * ringbuf_init(uint8_t size) {
 	ringbuf_t * buf;
 
 	buf = malloc(sizeof *buf);
@@ -17,7 +17,7 @@ inline void ringbuf_flush(ringbuf_t * const buf) {
 	buf->read = buf->write = 0;
 }
 
-void ringbuf_deinit(ringbuf_t * buf) {
+inline void ringbuf_deinit(ringbuf_t * buf) {
 	free(buf->data);
 	free(buf);
 }
