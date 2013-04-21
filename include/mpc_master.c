@@ -11,7 +11,7 @@
 #include <pkt.h>
 #include "mpc_master.h"
 
-const uint8_t mpc_twi_addr = MPC_TWI_ADDR<<1;
+static const uint8_t mpc_twi_addr = MPC_TWI_ADDR<<1;
 
 static void mpc_end_txn(void);
 
@@ -144,11 +144,13 @@ MPC_TWI_MASTER_ISR  {
 
 		//@TODO: need to handle this better! at the very least, end the txn?	
 		//when it is read as 0, most recent ack bit was NAK. 
-		if (MPC_TWI.MASTER.STATUS & TWI_MASTER_RXACK_bm) 
+		if (MPC_TWI.MASTER.STATUS & TWI_MASTER_RXACK_bm) {
 			//WHY IS THIS HERE???
 			MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+			MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+			mpc_end_txn();
 
-		else {
+		} else {
 			if ( tx_state.byte < tx_state.len ) {
 				MPC_TWI.MASTER.DATA  = tx_state.data[tx_state.byte++];
 			} else {

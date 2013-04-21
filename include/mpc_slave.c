@@ -8,11 +8,8 @@
 
 #include <util.h>
 #include <pkt.h>
-#include <ringbuf.h>
+//#include <ringbuf.h>
 #include <mpc_slave.h>
-#include <leds.h>
-#include <buzz.h>
-
 
 static void mpc_recv_byte(uint8_t);
 static void init_recv(void);
@@ -20,7 +17,7 @@ static void recv_pkt(pkt_hdr pkt);
 
 
 
-ringbuf_t * recvq;
+//ringbuf_t * recvq;
 
 pkt_proc recv;
 
@@ -30,14 +27,14 @@ pkt_proc recv;
  */
 #ifdef MPC_TWI_ADDR_EEPROM_ADDR
 #include <avr/eeprom.h>
-uint8_t mpc_twi_addr ;
+static uint8_t mpc_twi_addr ;
 #endif
 
 /** 
  * Otherwise, make it a constant that should optimize away most of the time.
  */
 #ifdef MPC_TWI_ADDR
-const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
+static const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
 #endif
 
 /**
@@ -45,15 +42,15 @@ const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
  */
 void mpc_slave_init() {
 
-	recvq = ringbuf_init(MPC_RECVQ_MAX);
+//	recvq = ringbuf_init(MPC_RECVQ_MAX);
 	init_recv();
 
-	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
+	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
 
 #ifdef MPC_TWI_ADDR_EEPROM_ADDR
 	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
+#endif
 	MPC_TWI.SLAVE.ADDR = mpc_twi_addr;
-#endif 
 
 #ifdef MPC_TWI_ADDRMASK
 	MPC_TWI.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
@@ -121,7 +118,7 @@ static inline void mpc_recv_byte(uint8_t data) {
 }
 
 static inline void recv_pkt(pkt_hdr pkt) {
-	if ( pkt.cmd == 'A' ) {
+/*	if ( pkt.cmd == 'A' ) {
 		led_set_seq(pkt.data);
 		set_lights(1);
 	}
@@ -131,13 +128,13 @@ static inline void recv_pkt(pkt_hdr pkt) {
 		buzz_on();
 	} else if ( pkt.cmd == 'D') {
 		buzz_off();
-	}
+	}*/
 }
 
 MPC_TWI_SLAVE_ISR {
+
     // If address match. 
 	if ( (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
-
 #ifdef MPC_TWI_ADDRMASK
 		uint8_t addr = MPC_TWI.SLAVE.DATA;
 		if ( addr & mpc_twi_addr ) {
@@ -151,7 +148,6 @@ MPC_TWI_SLAVE_ISR {
 			//this is SUPER temp.
 			recv.size = 0;
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-
 #ifdef MPC_TWI_ADDRMASK
 		} else {
 			//is this right?

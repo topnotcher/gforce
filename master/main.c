@@ -13,6 +13,7 @@
 #include "game.h"
 #include "xbee.h"
 #include <mpc_master.h>
+#include <mpc_slave.h>
 #include <colors.h>
 
 #ifndef DEBUG
@@ -52,11 +53,11 @@ int main(void) {
 	xbee_init();
 	game_init();
 	mpc_master_init();
+	mpc_slave_init();
 
-
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm;
 	sei();
-
+	xbee_put('*');
 	#if DEBUG == 0
 	/** 
 	 * Setting all three bits is extended standby.
