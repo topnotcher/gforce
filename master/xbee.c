@@ -7,6 +7,7 @@
 #include "xbee.h"
 #include "game.h"
 #include <colors.h>
+#include "mpc_master.h"
 
 volatile xbee_queue_t xbee_sendq;
 
@@ -85,10 +86,9 @@ XBEE_RXC_ISR {
 		 mpc_master_send(0b1111,'A', data, 9);
 
 	} else if ( meh == 'B' ) {
-		mpc_master_send(0b1111, 'B',0);
+		mpc_master_send_cmd(0b1111, 'B');
 	} else if ( meh == 'C' ) {
-		uint8_t data[] = {0};
-		mpc_master_send(0b1111, 'C',data, 1);
+		mpc_master_send_cmd(0b1111, 'C');
 	} else if ( meh == 'D' ) {
 		mpc_master_send_cmd(0b1111, 'D');
 	}

@@ -12,7 +12,7 @@
 #include "sounds.h"
 #include "game.h"
 #include "xbee.h"
-#include "mpc_master.h"
+#include <mpc_master.h>
 #include <colors.h>
 
 #ifndef DEBUG
