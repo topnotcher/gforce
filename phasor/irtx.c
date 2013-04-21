@@ -11,10 +11,8 @@
 /**
  * Magic macros to minimize my configuration.
  */
-#define _PIN(id) G4_CONCAT3(PIN,id,_bm)
-#define _PINCTRL(id) G4_CONCAT3(PIN,id,CTRL)
-#define _TXPIN_bm _PIN(IRTX_USART_TXPIN)
-#define _TXPINCTRL _PINCTRL(IRTX_USART_TXPIN)
+#define _TXPIN_bm G4_PIN(IRTX_USART_TXPIN)
+#define _TXPINCTRL G4_PINCTRL(IRTX_USART_TXPIN)
 
 #define _txc_interrupt_enable() IRTX_USART.CTRLA |= USART_DREINTLVL_MED_gc
 #define _txc_interrupt_disable() IRTX_USART.CTRLA &= ~USART_DREINTLVL_MED_gc
@@ -40,7 +38,7 @@ inline void irtx_init() {
 
 	//configure interrupts
 	IRTX_USART_PORT.INT0MASK = _TXPIN_bm;
-IRTX_USART_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
+	IRTX_USART_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
 	//end interrupts
 	
 	IRTX_USART.BAUDCTRLA = (uint8_t)(IRTX_USART_BSEL&0x00FF);
