@@ -61,7 +61,7 @@ int main(void) {
 
 	while(1) {
 		irtx_byte('A');
-		_delay_ms(10);
+		_delay_ms(100);
 		leds_run();
 	}
 

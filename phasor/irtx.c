@@ -34,7 +34,7 @@ inline void irtx_init() {
 
 	IRTX_USART.CTRLA = 0;
 	IRTX_USART.CTRLB = USART_TXEN_bm;
-	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc;
+	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc;
 
 	//assuming 32MHZ CPU clk per
 	TCD0.CTRLA = TC_CLKSEL_DIV2_gc;
@@ -46,6 +46,7 @@ inline void irtx_init() {
 }
 
 inline void irtx_byte(uint8_t byte) {
+//	IRTX_USART.CTRLB USART_TXB8_bp
 	IRTX_USART.DATA = byte;
 }
 
