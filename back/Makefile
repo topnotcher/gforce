@@ -258,7 +258,7 @@ reset:
 # $(TARGET).eep was here...
 #program: $(TARGET).hex $(TARGET).eep
 #	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
-program: $(TARGET.hex)
+program: $(TARGET).hex
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
 full: $(TARGET).hex
