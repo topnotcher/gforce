@@ -9,7 +9,7 @@
 #include "config.h"
 #include <util.h>
 #include <pkt.h>
-#include "mpc.h"
+#include "mpc_master.h"
 
 //static void mpc_send_pkt(const uint8_t addr, const pkt_hdr * const pkt);
 static void mpc_end_txn(void);
@@ -48,12 +48,13 @@ typedef struct {
 	uint8_t state;
 } mpc_tx_state_t;
 
+//@TODO Y U NO ENUM
 #define MPC_TX_STATE_IDLE 0
 #define MPC_TX_STATE_BUSY 1
 
 mpc_tx_state_t tx_state;
 
-void mpc_init() {
+void mpc_master_init() {
 
 	MPC_TWI.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	/*CTRLB SMEN: look into, but only in master read*/
@@ -69,11 +70,11 @@ void mpc_init() {
 	memset(&tx_state,0 , sizeof tx_state);
 }
 
-void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
-	mpc_send(addr, cmd, NULL, 0);
+void mpc_master_send_cmd(const uint8_t addr, const uint8_t cmd) {
+	mpc_master_send(addr, cmd, NULL, 0);
 }
 //CALLER MUST FREE() data
-void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
+void mpc_master_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
 
 	//skip the "pkt" we're assuming the sturcture of it (yeah, ugly. Fuck off.)
 	uint8_t * const raw = (uint8_t*)malloc(len+3) ;
@@ -108,7 +109,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 
 }
 
-void mpc_run() {
+void mpc_master_run() {
 
 	//notthing to do harr.
 	if ( queue.read == queue.write || tx_state.state != MPC_TX_STATE_IDLE ) return; 

@@ -12,7 +12,7 @@
 #include "sounds.h"
 #include "game.h"
 #include "xbee.h"
-#include "mpc.h"
+#include "mpc_master.h"
 #include <colors.h>
 
 #ifndef DEBUG
@@ -51,7 +51,7 @@ int main(void) {
 	sound_init();
 	xbee_init();
 	game_init();
-	mpc_init();
+	mpc_master_init();
 
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
@@ -73,7 +73,7 @@ int main(void) {
 	//		TWIC.MASTER.ADDR = 0b1111<<1 | 0;
 
 
-		mpc_run();
+		mpc_master_run();
 
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0

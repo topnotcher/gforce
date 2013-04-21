@@ -5,7 +5,7 @@ F_CPU = 32000000
 C_DEFS=W_SOUNDS=1 DEBUG=0
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c scheduler.c sounds.c game.c util.c xbee.c commands.c  mpc.c
+SRC = main.c scheduler.c sounds.c game.c util.c xbee.c commands.c  mpc_master.c
 
 #these are not ready for this hardware
 # ir_sensor.c lcd.c
