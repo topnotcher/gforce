@@ -16,4 +16,7 @@
 #define IRTX_USART_TXPIN 7
 
 
+#define TRIGGER_PORT PORTA
+#define TRIGGER_PIN PIN2_bm
+
 #endif

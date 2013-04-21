@@ -11,6 +11,7 @@
  */
 #include <leds.h>
 #include "irtx.h"
+#include "trigger.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -50,18 +51,23 @@ int main(void) {
 	//safe to pass PTR because we never leave main()
 	led_init();
 	irtx_init();
-
+	trigger_init();
 //	PORTC.DIRSET |= 0xff;
 
 //	sei();
 	set_lights(1);
 
 
-	PORTA.DIRSET |= 0xFF;
+//	PORTA.DIRSET |= 0xFF;
+//
+
+	uint16_t data[] = {(1<<8) | 255,(1<<8) | 56, (1<<8), (1<<8) | 127,138,103,83,0,15,15,68,72,0,44,1,88,113};
 
 	while(1) {
-		irtx_byte('A');
-		_delay_ms(100);
+		if ( trigger_pressed() ) 
+			irtx_send(data,16);
+
+
 		leds_run();
 	}
 
