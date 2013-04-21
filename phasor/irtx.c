@@ -21,7 +21,6 @@
 #define _txc_interrupt_enable() IRTX_USART.CTRLA |= USART_DREINTLVL_MED_gc
 #define _txc_interrupt_disable() IRTX_USART.CTRLA &= ~USART_DREINTLVL_MED_gc
 
-
 #define TX_QUEUE_MAX 25
 
 typedef struct {
@@ -91,7 +90,7 @@ ISR(PORTC_INT0_vect) {
 
 }
 
-ISR(USARTC1_DRE_vect) {
+ISR(IRTX_USART_DRE_vect) {
 	uint16_t data = sendq.data[sendq.read];
 	
 	if ( data & 0x100 )
