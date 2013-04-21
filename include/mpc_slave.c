@@ -35,7 +35,7 @@ uint8_t mpc_twi_addr ;
 /**
  * Initialize the MPC interface.
  */
-void mpc_init() {
+void mpc_slave_init() {
 
 	recvq = ringbuf_init(MPC_RECVQ_MAX);
 	init_recv();
@@ -61,9 +61,9 @@ static inline void init_recv() {
 /**
  * Process queued bytes into packtes.
  */
-inline void mpc_recv() {
-	while ( !ringbuf_empty(recvq) )
-		mpc_recv_byte(ringbuf_get(recvq));
+inline void mpc_slave_recv() {
+//	while ( !ringbuf_empty(recvq) )
+//		mpc_recv_byte(ringbuf_get(recvq));
 }
 
 static inline void mpc_recv_byte(uint8_t data) {

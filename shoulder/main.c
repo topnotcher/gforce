@@ -44,13 +44,13 @@ int main(void) {
 
 	//safe to pass PTR because we never leave main()
 	led_init();
-	mpc_init();
+	mpc_slave_init();
 	buzz_init();
 	irrx_init();
 
 //set_lights(1);
 	while(1) {
-		mpc_recv();
+		mpc_slave_recv();
 		leds_run();
 	}
 
