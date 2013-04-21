@@ -4,19 +4,7 @@
 #ifndef LEDS_H
 #define LEDS_H
 
-
-/**
- * Port/pin definitions
- */
-//#define LED_PORT PORTD
-
-//LE
-//#define SCLK PIN7_bm
-//#define SOUT PIN5_bm
 #define N_LEDS 8 
-
-#define LED_PIN_HIGH(pin) LED_PORT.OUTSET |= pin
-#define LED_PIN_LOW(pin) LED_PORT.OUTCLR |= pin
 
 #define LED(k) _BV(k)
 
