@@ -33,6 +33,6 @@
  * Trigger configuration
  */
 #define TRIGGER_PORT PORTA
-#define TRIGGER_PIN PIN2_bm
+#define TRIGGER_PIN 2
 
 #endif
