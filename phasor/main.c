@@ -41,25 +41,11 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
-
-	//led_config_t led_config = { &PORTD, PIN5_bm, PIN7_bm };
-
-/*	led_config.port = &PORTD;
-	led_config.sout = PIN5_bm;
-	led_config.sclk = PIN7_bm;*/
-
-	//safe to pass PTR because we never leave main()
 	led_init();
 	irtx_init();
 	trigger_init();
-//	PORTC.DIRSET |= 0xff;
 
 //	sei();
-	set_lights(1);
-
-
-//	PORTA.DIRSET |= 0xFF;
-//
 
 	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
 	for ( uint8_t i = 0; i < 16; ++i )
@@ -67,8 +53,6 @@ int main(void) {
 			data[i] |= 0x100;
 
 	while(1) {
-//i/		USARTC1.DATA = 'A';
-	//	_delay_ms(500);
 		
 		if ( trigger_pressed() ) 
 			irtx_send(data,16);
