@@ -20,4 +20,14 @@
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm
 
+/**************************************
+ * IR RX configuration
+ */
+#define IRRX_USART USARTE0
+#define IRRX_USART_RXC_vect USARTE0_RXC_vect
+
+#define IRRX_USART_PORT PORTE
+#define IRRX_USART_RXPIN 2
+
+
 #endif

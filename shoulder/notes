@@ -1,3 +1,5 @@
 Program TWI address into byte 0 of eeprom:
  - avrdude -p atxmega32a4 -c avrispmkii -P usb -U eeprom:w:0x08:m
  - note: possible to do programming from a .eep file (see makefile)
+ - ^not sure if that was correct. As it turns out, the .eep was still being erased on write.
+ - had to set EESAVE fuse bit : avrdude -p atxmega32a4 -c avrispmkii -P usb -B 250 -u -U fuse5:w:0xf7:m

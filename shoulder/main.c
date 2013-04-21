@@ -46,7 +46,9 @@ int main(void) {
 	led_init();
 	mpc_init();
 	buzz_init();
+	irrx_init();
 
+//set_lights(1);
 	while(1) {
 		mpc_recv();
 		leds_run();
