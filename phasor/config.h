@@ -21,6 +21,12 @@
 #define IRTX_USART_PORT PORTC
 #define IRTX_USART_TXPIN 7
 
+/** IR TX Timer **/
+#define IRTX_TIMER TCD0
+#define IRTX_TIMER_PORT PORTD
+#define IRTX_TIMER_PIN 0
+#define IRTX_TIMER_CCx CCA
+
 
 
 /**************************************

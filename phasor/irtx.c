@@ -13,6 +13,10 @@
  */
 #define _TXPIN_bm G4_PIN(IRTX_USART_TXPIN)
 #define _TXPINCTRL G4_PINCTRL(IRTX_USART_TXPIN)
+#define _TIMERPIN G4_PIN(IRTX_TIMER_PIN)
+
+#define _CCXEN(cc) G4_CONCAT3(TC0_,cc,EN_bm)
+#define _CCXEN_bm _CCXEN(IRTX_TIMER_CCx)
 
 #define _txc_interrupt_enable() IRTX_USART.CTRLA |= USART_DREINTLVL_MED_gc
 #define _txc_interrupt_disable() IRTX_USART.CTRLA &= ~USART_DREINTLVL_MED_gc
@@ -50,14 +54,13 @@ inline void irtx_init() {
 	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc | (1<<USART_SBMODE_bp) ;
 
 	//assuming 32MHZ CPU clk per
-	TCD0.CTRLA = TC_CLKSEL_DIV2_gc;
-	TCD0.CTRLB = TC_WGMODE_FRQ_gc;
+	IRTX_TIMER.CTRLA = TC_CLKSEL_DIV2_gc;
+	IRTX_TIMER.CTRLB = TC_WGMODE_FRQ_gc;
 	// 32000000/(2*2(210+1)) (XMEGAA, PAGE 160).
-	PORTD.DIRSET = PIN0_bm;
-	TCD0.CCA = 210;
+	IRTX_TIMER_PORT.DIRSET = _TIMERPIN;
+	TCD0.IRTX_TIMER_CCx = 210;
 
 	sendq.read = sendq.write = 0;
-
 }
 
 void irtx_send(uint16_t data[], uint8_t size) {
@@ -82,9 +85,9 @@ void irtx_put(uint16_t data) {
 //the logic in this is backwarsd from what I would expect???
 ISR(PORTC_INT0_vect) {
 	if ( !(IRTX_USART_PORT.IN & _TXPIN_bm) )
-		TCD0.CTRLB |= TC0_CCAEN_bm;
+		IRTX_TIMER.CTRLB |= _CCXEN_bm;
 	else 
-		TCD0.CTRLB &= ~TC0_CCAEN_bm;
+		IRTX_TIMER.CTRLB &= ~_CCXEN_bm;
 
 }
 
