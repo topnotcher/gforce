@@ -5,17 +5,21 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 
+#include "config.h"
+#include <util.h>
+
 #include <leds.h>
 #include "colors.h"
 
-#include "config.h"
+#define _SCLK_bm G4_PIN(LED_SCLK_PIN)
+#define _SOUT_bm G4_PIN(LED_SOUT_PIN)
 
 // {command}0000{repeat}0000|{8xled}0000 0000 0000 0000 0000 0000 0000 0000 |{on time}0000 {off time}
 //
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
 
 
-led_values_t ALL_OFF = {COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF, COLOR_OFF<<4|COLOR_OFF };
+led_values_t ALL_OFF = LED_PATTERN(OFF,OFF,OFF,OFF,OFF,OFF,OFF,OFF);
 
 led_state state = {
 
@@ -28,145 +32,68 @@ led_state state = {
 	.status = idle,
 };
 
-/*
-const led_sequence seq_active = {
-	.size = 2,
-	.repeat_time = 0,
-	.patterns = {
-		{
-			.pattern = { (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_OFF) , (COLOR_BLUE<<4 | COLOR_OFF) , (COLOR_BLUE<<4 | COLOR_OFF) },
-			.flashes = 50,
-			.on = 25,
-			.off = 15,
-		},
-		{
-			.pattern = { (COLOR_CYAN<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) , (COLOR_BLUE<<4 | COLOR_BLUE) },
-			.flashes = 50,
-			.on = 25,
-			.off = 15
-		},
-
-	}
-};
-*/
-
-#define SOLID_PATTERN(C) {(COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C))}
-
-const led_sequence seq_active = {
-	.size = 7,
-	.repeat_time = 0,
-	.patterns = {
-		{
-			.pattern = { COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF, COLOR_RED << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN, COLOR_OFF << 4 | COLOR_GREEN },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF, COLOR_BLUE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW, COLOR_OFF << 4 | COLOR_YELLOW},
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF, COLOR_PURPLE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE, COLOR_OFF << 4 | COLOR_WHITE },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		},
-		{
-			.pattern = { COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF, COLOR_ORANGE << 4 | COLOR_OFF },
-			.flashes = 1,
-			.on = 2,
-			.off = 1,
-		}/*,
-		{
-			.pattern = 
-			.flashes = 1,
-			.on = 25,
-			.off = 15,
-		},*/
-
-	}
-};
-
-/*
 const led_sequence seq_active = {
 	.size = 8,
 	.repeat_time = 0,
 	.patterns = {
 		{
-			.pattern = SOLID_PATTERN(RED),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(RED,OFF,RED,OFF,RED,OFF,RED,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 
 		{
-			.pattern = SOLID_PATTERN(BLUE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,GREEN,OFF,GREEN,OFF,GREEN,OFF,GREEN),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(GREEN),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(BLUE,OFF,BLUE,OFF,BLUE,OFF,BLUE,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(YELLOW),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,YELLOW,OFF,YELLOW,OFF,YELLOW,OFF,YELLOW),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(PURPLE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(PURPLE,OFF,PURPLE,OFF,PURPLE,OFF,PURPLE,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(CYAN),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(OFF,WHITE,OFF,WHITE,OFF,WHITE,OFF,WHITE),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(PINK),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
+			.pattern = LED_PATTERN(CYAN,OFF,CYAN,OFF,CYAN,OFF,CYAN,OFF),
+			.flashes = 1,
+			.on=6,
+			.off=0,
 		},
 		{
-			.pattern = SOLID_PATTERN(ORANGE),
-			.flashes = 5,
-			.on = 15,
-			.off = 0,
-		},
+			.pattern = LED_PATTERN(OFF,ORANGE,OFF,ORANGE,OFF,ORANGE,OFF,ORANGE),
+			.flashes = 1,
+			.on=6,
+			.off=0,
+		}/*,
+		{
+			.pattern = 
+			.flashes = 1,
+			.on=65,
+			.off = 15,
+		},*/
 
 	}
 };
-*/
 
 inline void set_lights(uint8_t status) {
 	state.status = status ? start : stop;
@@ -272,8 +199,8 @@ inline void leds_run(void) {
 }
 
 inline void sclk_trigger() {
-	LED_PORT.OUTSET = LED_SCLK;
-	LED_PORT.OUTCLR = LED_SCLK;
+	LED_PORT.OUTSET = _SCLK_bm;
+	LED_PORT.OUTCLR = _SCLK_bm;
 }
 
 inline void led_write_header(void) {
@@ -282,9 +209,9 @@ inline void led_write_header(void) {
 	for ( uint8_t i = 0; i < 6; ++i ) {	
 		//MSB->LSB: 5,4,3,2,1,0
 		if ( (byte>>(5-i))&0x01 ) 
-			LED_PORT.OUTSET = LED_SOUT;
+			LED_PORT.OUTSET = _SOUT_bm;
 		else
-			LED_PORT.OUTCLR = LED_SOUT;
+			LED_PORT.OUTCLR = _SOUT_bm;
 
 		sclk_trigger();
 	}
@@ -295,9 +222,9 @@ inline void led_write_header(void) {
 
 	for ( uint8_t i = 0; i < 5; ++i )  {
 		if ( (byte>>(4-i))&0x01 )
-			LED_PORT.OUTSET = LED_SOUT;
+			LED_PORT.OUTSET = _SOUT_bm;
 		else
-			LED_PORT.OUTCLR = LED_SOUT;
+			LED_PORT.OUTCLR = _SOUT_bm;
 
 		sclk_trigger();
 	}
@@ -305,7 +232,7 @@ inline void led_write_header(void) {
 
 	//brightness control bits - 7 per color.
 	//@TODO why does sclk_trigger set the pin low???
-	LED_PORT.OUTSET = LED_SOUT;
+	LED_PORT.OUTSET = _SOUT_bm;
 	for ( uint8_t i = 0; i < 21; ++i ){
 		sclk_trigger();
 	}
@@ -341,9 +268,9 @@ void led_write() {
 			//NOTE: this relies on the AVR endianness!!!
 			for ( int8_t bit = 15; bit >= 0; --bit ) {
 				if ( (color[c_real]>>bit)&0x01 )
-					LED_PORT.OUTSET = LED_SOUT;
+					LED_PORT.OUTSET = _SOUT_bm;
 				else
-					LED_PORT.OUTCLR = LED_SOUT;
+					LED_PORT.OUTCLR = _SOUT_bm;
 
 				sclk_trigger();
 			}
@@ -376,10 +303,10 @@ void led_set_seq(led_sequence * seq) {
 void led_init() {
 
 
-	LED_PORT.DIRSET = LED_SCLK | LED_SOUT;
+	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm;
 	
 
-	LED_PORT.OUTCLR = LED_SCLK | LED_SOUT;
+	LED_PORT.OUTCLR = _SCLK_bm | _SOUT_bm;
 
 	state.seq = /*NULL;*/ &seq_active;
 
@@ -396,7 +323,7 @@ void led_init() {
 
 inline void led_timer_start() {
 	TCC0.CNT = 0;	
-	TCC0.CCA = 40000;
+	TCC0.CCA = 55000;
 	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;
 }
 

@@ -10,6 +10,8 @@
  * G4 common includes.
  */
 #include <leds.h>
+#include "irtx.h"
+#include "trigger.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -39,26 +41,24 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm;
 
+	led_init();
+	irtx_init();
+	trigger_init();
+	irrx_init();
 
-	led_config_t led_config = { &PORTD, PIN5_bm, PIN7_bm };
+	sei();
 
-/*	led_config.port = &PORTD;
-	led_config.sout = PIN5_bm;
-	led_config.sclk = PIN7_bm;*/
-
-	//safe to pass PTR because we never leave main()
-	led_init(&led_config);
-//	PORTC.DIRSET |= 0xff;
-
-//	sei();
-	set_lights(1);
-
-
-	PORTA.DIRSET |= 0xFF;
+	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	for ( uint8_t i = 0; i < 16; ++i )
+		if ( i > 3 )
+			data[i] |= 0x100;
 
 	while(1) {
+		
+		if ( trigger_pressed() ) 
+			irtx_send(data,16);
 
-//		_delay_ms(10);
+
 		leds_run();
 	}
 

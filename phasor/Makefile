@@ -3,7 +3,7 @@ MCU = atxmega32a4
 F_CPU = 32000000
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c  leds.c
+SRC = main.c leds.c irtx.c trigger.c irrx.c
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
