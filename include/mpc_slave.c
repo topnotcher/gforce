@@ -33,6 +33,13 @@ pkt_proc recv;
 uint8_t mpc_twi_addr ;
 #endif
 
+/** 
+ * Otherwise, make it a constant that should optimize away most of the time.
+ */
+#ifdef MPC_TWI_ADDR
+const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
+#endif
+
 /**
  * Initialize the MPC interface.
  */
@@ -43,14 +50,14 @@ void mpc_slave_init() {
 
 	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm;
 
-#ifdef MPC_TWI_ADDR 
-	MPC_TWI.SLAVE.ADDR = MPC_TWI_ADDR<<1;
-#endif 
 #ifdef MPC_TWI_ADDR_EEPROM_ADDR
 	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
 	MPC_TWI.SLAVE.ADDR = mpc_twi_addr;
 #endif 
+
+#ifdef MPC_TWI_ADDRMASK
 	MPC_TWI.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
+#endif
 }
 
 static inline void init_recv() {
@@ -124,11 +131,8 @@ MPC_TWI_SLAVE_ISR {
     // If address match. 
 	if ( (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
+#ifdef MPC_TWI_ADDRMASK
 		uint8_t addr = MPC_TWI.SLAVE.DATA;
-
-#ifdef MPC_TWI_ADDR
-		if ( addr & (MPC_TWI_ADDR<<1) ) {
-#else
 		if ( addr & mpc_twi_addr ) {
 #endif
 			//set data interrupt because we actually give a shit
@@ -139,17 +143,14 @@ MPC_TWI_SLAVE_ISR {
 
 			//this is SUPER temp.
 			recv.size = 0;
-//			if ( recv.pkt.data != NULL )
-//				free(recv.pkt.data);
-
-//			ringbuf_flush(recvq);
-
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
+#ifdef MPC_TWI_ADDRMASK
 		} else {
 			//is this right?
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
+#endif
 
 	// data interrupt 
 	} else if (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_DIF_bm) {

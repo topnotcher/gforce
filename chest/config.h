@@ -19,6 +19,7 @@
  */
 
 #define MPC_TWI_ADDR 0b0001
+#define MPC_TWI_ADDRMASK 0b0001111
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
