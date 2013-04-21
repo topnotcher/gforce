@@ -11,7 +11,8 @@
 #include <pkt.h>
 #include "mpc_master.h"
 
-//static void mpc_send_pkt(const uint8_t addr, const pkt_hdr * const pkt);
+const uint8_t mpc_twi_addr = MPC_TWI_ADDR<<1;
+
 static void mpc_end_txn(void);
 
 /**
@@ -73,34 +74,35 @@ void mpc_master_init() {
 void mpc_master_send_cmd(const uint8_t addr, const uint8_t cmd) {
 	mpc_master_send(addr, cmd, NULL, 0);
 }
-//CALLER MUST FREE() data
-void mpc_master_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
 
-	//skip the "pkt" we're assuming the sturcture of it (yeah, ugly. Fuck off.)
-	uint8_t * const raw = (uint8_t*)malloc(len+3) ;
+//CALLER MUST FREE() data*
+void mpc_master_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
+	/**
+	 * Rather than actually use the "pkt_hdr" struct, just use the same structure 
+	 * (Allows me to just malloc a contiguous chunk of data to send to the transmitter)
+	 */
+	const uint8_t pkt_hdr_size = 3; 
+	const uint8_t pkt_tail_size = 1; //i.e. CRC 
+	uint8_t * const raw = (uint8_t*)malloc(len+pkt_hdr_size+pkt_tail_size) ;
 	uint8_t chksum = MPC_CRC_SHIFT;
 
 	raw[0] = cmd;
 	raw[1] = len;
+	raw[2] = mpc_twi_addr;
 
 	crc(&chksum, cmd, MPC_CRC_POLY);
 	crc(&chksum, len, MPC_CRC_POLY);
-
+	crc(&chksum, mpc_twi_addr, MPC_CRC_POLY);
 
 	for ( uint8_t i = 0; i < len; ++i ) {
-		raw[i+2] = data[i];
+		raw[i+pkt_hdr_size] = data[i];
 		crc(&chksum, data[i], MPC_CRC_POLY);
 	}
-	//0    1   2 3 4 5 6  7
-	//cmd,len, 1,2,3,4,5, chksum
-	raw[len+2] = chksum;
 
-	//free(data);
+	raw[len+pkt_hdr_size] = chksum;
 
-//	mpc_qitem_t * qpkt = (mpc_qitem_t*)malloc(sizeof(mpc_qitem_t));
-	
 	queue.items[queue.write].addr = addr; 
-	queue.items[queue.write].len = len+3; //data+header
+	queue.items[queue.write].len = len+pkt_hdr_size+pkt_tail_size; //data+header
 	queue.items[queue.write].data = raw;
 
 	//w000000....
@@ -156,7 +158,6 @@ MPC_TWI_MASTER_ISR  {
 			}
 
 		}
-
 	//IDFK??
 	} else {
 		MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;

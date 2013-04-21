@@ -76,6 +76,8 @@ inline void mpc_slave_recv() {
 
 static inline void mpc_recv_byte(uint8_t data) {
 
+	//@TODO: these hardcoded byte offsets are a mess 
+	//(I write this as I'm changing them to modify packet structure...)
 	if ( recv.size == 0 ) {
 		recv.crc = MPC_CRC_SHIFT;
 		recv.pkt.cmd = data;
@@ -87,12 +89,17 @@ static inline void mpc_recv_byte(uint8_t data) {
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size = 2;
 
+	} else if ( recv.size == 2 ) {
+		recv.pkt.saddr = data;
+		crc(&recv.crc, data, MPC_CRC_POLY);
+		recv.size = 3;
+
 		if ( recv.pkt.len > 0 )
 			recv.pkt.data = (uint8_t *)malloc(recv.pkt.len);
 
-	//case 1: there is no payload, so byte 2 is the CRC
+	//case 1: there is no payload, so byte 3 is the CRC
 	//case 2: there is a payload, but we're past it, so this is the CRC.
-	} else if ( (recv.size == 2 && recv.pkt.len == 0) || (recv.pkt.len > 0 && recv.size >= recv.pkt.len+2) ) {
+	} else if ( (recv.size == 3 && recv.pkt.len == 0) || (recv.pkt.len > 0 && recv.size >= recv.pkt.len+3) ) {
 		recv.pkt.chksum = data;
 	
 //		if ( recv.pkt.chksum == recv.crc )
@@ -104,8 +111,8 @@ static inline void mpc_recv_byte(uint8_t data) {
 //		recv.size = 0;
 
 	//receive the payload.
-	} else if ( recv.size >= 2 && recv.size < recv.pkt.len+2 ) {
-		recv.pkt.data[recv.size-2] = data;
+	} else if ( recv.size >= 3 && recv.size < recv.pkt.len+3 ) {
+		recv.pkt.data[recv.size-3] = data;
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size++;
 	} else {
