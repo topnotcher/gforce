@@ -45,7 +45,7 @@ int main(void) {
 	irtx_init();
 	trigger_init();
 
-//	sei();
+	sei();
 
 	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
 	for ( uint8_t i = 0; i < 16; ++i )
