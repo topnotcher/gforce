@@ -83,14 +83,14 @@ XBEE_RXC_ISR {
 	else if ( meh == 'A' ) {
 
 		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
-		 mpc_master_send(0b1111,'A', data, 9);
+		 mpc_send(0b1111,'A', data, 9);
 
 	} else if ( meh == 'B' ) {
-		mpc_master_send_cmd(0b1111, 'B');
+		mpc_send_cmd(0b1111, 'B');
 	} else if ( meh == 'C' ) {
-		mpc_master_send_cmd(0b1111, 'C');
+		mpc_send_cmd(0b1111, 'C');
 	} else if ( meh == 'D' ) {
-		mpc_master_send_cmd(0b1111, 'D');
+		mpc_send_cmd(0b1111, 'D');
 	}
 /*	else if ( meh != 10 )
 		lcd_write(meh);*/

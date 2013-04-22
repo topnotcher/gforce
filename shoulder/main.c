@@ -46,15 +46,14 @@ int main(void) {
 
 	//safe to pass PTR because we never leave main()
 	led_init();
-	mpc_slave_init();
-	mpc_master_init();
+	mpc_init();
 	buzz_init();
 	irrx_init();
 
 //set_lights(1);
 	while(1) {
 
-		pkt_hdr * pkt = mpc_slave_recv();
+		pkt_hdr * pkt = mpc_recv();
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
@@ -72,7 +71,6 @@ int main(void) {
 			free(pkt);
 		}
 
-		mpc_master_run();
 		leds_run();
 	}
 
