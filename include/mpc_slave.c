@@ -17,8 +17,14 @@ static void mpc_recv_byte(uint8_t);
 static void init_recv(void);
 static void recv_pkt(pkt_hdr * pkt);
 
+typedef struct {
+	uint8_t size;
+	uint8_t crc;
+	pkt_hdr * pkt;
+} recv_state;
 
-pkt_proc recv;
+
+recv_state recv;
 
 
 /**
@@ -74,7 +80,7 @@ inline void mpc_slave_init() {
 
 static inline void init_recv() {
 	recv.size = 0;
-	recv.pkt.data = NULL;
+	recv.pkt = NULL;
 	recv.crc = MPC_CRC_SHIFT;
 }
 
@@ -96,28 +102,29 @@ static inline void mpc_recv_byte(uint8_t data) {
 	//@TODO: these hardcoded byte offsets are a mess 
 	//(I write this as I'm changing them to modify packet structure...)
 	if ( recv.size == 0 ) {
+		recv.pkt = (pkt_hdr*)malloc(sizeof(pkt_hdr));
 		recv.crc = MPC_CRC_SHIFT;
-		recv.pkt.cmd = data;
+		recv.pkt->cmd = data;
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size = 1;
 
 	} else if ( recv.size == 1 ) {
-		recv.pkt.len = data;
+		recv.pkt->len = data;
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size = 2;
 
 	} else if ( recv.size == 2 ) {
-		recv.pkt.saddr = data;
+		recv.pkt->saddr = data;
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size = 3;
 
-		if ( recv.pkt.len > 0 )
-			recv.pkt.data = (uint8_t *)malloc(recv.pkt.len);
+		if ( recv.pkt->len > 0 )
+			recv.pkt->data = (uint8_t *)malloc(recv.pkt->len);
 
 	//case 1: there is no payload, so byte 3 is the CRC
 	//case 2: there is a payload, but we're past it, so this is the CRC.
-	} else if ( (recv.size == 3 && recv.pkt.len == 0) || (recv.pkt.len > 0 && recv.size >= recv.pkt.len+3) ) {
-		recv.pkt.chksum = data;
+	} else if ( (recv.size == 3 && recv.pkt->len == 0) || (recv.pkt->len > 0 && recv.size >= recv.pkt->len+3) ) {
+		recv.pkt->chksum = data;
 	
 //		if ( recv.pkt.chksum == recv.crc )
 //			recv_pkt(recv.pkt);
@@ -128,8 +135,8 @@ static inline void mpc_recv_byte(uint8_t data) {
 //		recv.size = 0;
 
 	//receive the payload.
-	} else if ( recv.size >= 3 && recv.size < recv.pkt.len+3 ) {
-		recv.pkt.data[recv.size-3] = data;
+	} else if ( recv.size >= 3 && recv.size < recv.pkt->len+3 ) {
+		recv.pkt->data[recv.size-3] = data;
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size++;
 	} else {
@@ -152,8 +159,11 @@ MPC_TWI_SLAVE_ISR {
 		if ( addr & mpc_twi_addr ) {
 #endif
 
-			if ( recv.pkt.data != NULL ) 
-				free(recv.pkt.data);
+			if ( recv.pkt != NULL ) {
+				if ( recv.pkt->data != NULL )
+					free(recv.pkt->data);
+				free(recv.pkt);
+			}
 
 			//set data interrupt because we actually give a shit
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
@@ -183,15 +193,15 @@ MPC_TWI_SLAVE_ISR {
 //			ringbuf_put(recvq, MPC_TWI.SLAVE.DATA);
 		}
 	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-		//for now, we'll just change tihs to copy the data to a new packet
+		//for now, we'll just change this to copy the data to a new packet
 		//but later, we should just keep everything in the queue, separate the recv state
 		//@TODO ^^
 
 //		if ( recv.crc == recv.pkt.chksum )
 //
-			pkt_hdr * pkt_cpy = (pkt_hdr*)malloc(sizeof(pkt_hdr));
-			memcpy((void*)pkt_cpy, &recv.pkt, sizeof(pkt_hdr));
-			recv_pkt(pkt_cpy);
+			recv_pkt(recv.pkt);
+			recv.pkt = NULL;
+
 //		else if ( recv.pkt.data != NULL )
 //			free(recv.pkt.data);
 
@@ -205,8 +215,11 @@ MPC_TWI_SLAVE_ISR {
 
 	// If unexpected state.
 	else {
-		if ( recv.pkt.data != NULL )
-			free(recv.pkt.data);
+		if ( recv.pkt != NULL ) {
+			if ( recv.pkt->data != NULL )
+				free(recv.pkt->data);
+			free(recv.pkt);
+		}
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
