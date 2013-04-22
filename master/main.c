@@ -72,15 +72,15 @@ _delay_ms(100);
 	#endif
 	while (1) {
 		
-		pkt_hdr * pkt = mpc_recv();
+		mpc_pkt * pkt = mpc_recv();
 
 		if ( pkt != NULL ) {
 
 			xbee_put(':');
-			xbee_put(pkt->cmd);
+			xbee_put(pkt->hdr.cmd);
 			xbee_put(',');
 			char src;
-			switch(pkt->saddr>>1) {
+			switch(pkt->hdr.saddr>>1) {
 			case 0b0001:
 					src = 'F';
 					break;

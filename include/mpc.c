@@ -31,11 +31,11 @@ static struct {
 	uint8_t size;
 	uint8_t crc;
 	ringbuf_t * buf;
-	pkt_hdr * pkt;
+	mpc_pkt * pkt;
 
 	struct {
 		qhdr_t hdr;
-		pkt_hdr * items[MPC_QUEUE_SIZE];
+		mpc_pkt * items[MPC_QUEUE_SIZE];
 	} queue;
 
 } rx_state ;
@@ -76,7 +76,7 @@ static void queue_rd_idx(qhdr_t q);
 static void queue_wr_idx(qhdr_t q);
 
 static void mpc_slave_recv_byte(uint8_t);
-static void mpc_slave_recv_pkt(pkt_hdr * pkt);
+static void mpc_slave_recv_pkt(mpc_pkt * pkt);
 
 static void mpc_master_end_txn(void);
 static void mpc_master_run(void);
@@ -157,7 +157,7 @@ static inline void queue_wr_idx(qhdr_t q) {
  * Process queued bytes into packtes.
  */
 
-inline pkt_hdr* mpc_recv() {
+inline mpc_pkt* mpc_recv() {
 
 	mpc_master_run();
 
@@ -166,7 +166,7 @@ inline pkt_hdr* mpc_recv() {
 
 	if ( queue_empty(rx_state.queue.hdr) ) return NULL;
 
-	pkt_hdr * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
+	mpc_pkt * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
 	queue_rd_idx(rx_state.queue.hdr);
 
 	return pkt;
@@ -179,32 +179,32 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 	//@TODO: these hardcoded byte offsets are a mess 
 	//(I write this as I'm changing them to modify packet structure...)
 	if ( rx_state.size == 0 ) {
-		rx_state.pkt = (pkt_hdr*)malloc(sizeof(pkt_hdr));
+		rx_state.pkt = (mpc_pkt*)malloc(sizeof(mpc_pkt));
 		rx_state.crc = MPC_CRC_SHIFT;
-		rx_state.pkt->cmd = data;
+		rx_state.pkt->hdr.cmd = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
 		rx_state.size = 1;
 
 	} else if ( rx_state.size == 1 ) {
-		rx_state.pkt->len = data;
+		rx_state.pkt->hdr.len = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
 		rx_state.size = 2;
 
 	} else if ( rx_state.size == 2 ) {
-		rx_state.pkt->saddr = data;
+		rx_state.pkt->hdr.saddr = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
 		rx_state.size = 3;
 
-		if ( rx_state.pkt->len > 0 )
-			rx_state.pkt->data = (uint8_t *)malloc(rx_state.pkt->len);
+		if ( rx_state.pkt->hdr.len > 0 )
+			rx_state.pkt->data = (uint8_t *)malloc(rx_state.pkt->hdr.len);
 
 	//case 1: there is no payload, so byte 3 is the CRC
 	//case 2: there is a payload, but we're past it, so this is the CRC.
-	} else if ( (rx_state.size == 3 && rx_state.pkt->len == 0) || (rx_state.pkt->len > 0 && rx_state.size >= rx_state.pkt->len+3) ) {
+	} else if ( (rx_state.size == 3 && rx_state.pkt->hdr.len == 0) || (rx_state.pkt->hdr.len > 0 && rx_state.size >= rx_state.pkt->hdr.len+3) ) {
 		rx_state.pkt->chksum = data;
 	
 	//receive the payload.
-	} else if ( rx_state.size >= 3 && rx_state.size < rx_state.pkt->len+3 ) {
+	} else if ( rx_state.size >= 3 && rx_state.size < rx_state.pkt->hdr.len+3 ) {
 		rx_state.pkt->data[rx_state.size-3] = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
 		rx_state.size++;
@@ -216,7 +216,7 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 
 
 
-static inline void mpc_slave_recv_pkt(pkt_hdr * pkt) {
+static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
 
 	//before returning the packet, flush the bufffarrrr
 	while ( !ringbuf_empty(rx_state.buf) )
@@ -277,7 +277,7 @@ MPC_TWI_SLAVE_ISR {
 		if ( rx_state.crc == rx_state.pkt->chksum )
 			mpc_slave_recv_pkt(rx_state.pkt);
 		else {
-			if ( rx_state.pkt->len > 0 )
+			if ( rx_state.pkt->hdr.len > 0 )
 				free(rx_state.pkt->data);
 			free(rx_state.pkt);
 		}
