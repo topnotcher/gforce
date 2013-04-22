@@ -12,8 +12,7 @@
 #include "sounds.h"
 #include "game.h"
 #include "xbee.h"
-#include <mpc_master.h>
-#include <mpc_slave.h>
+#include <mpc.h>
 #include <colors.h>
 
 #ifndef DEBUG
@@ -52,12 +51,13 @@ int main(void) {
 	sound_init();
 	xbee_init();
 	game_init();
-	mpc_master_init();
-	mpc_slave_init();
+	mpc_init();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm;
 	sei();
 	xbee_put('*');
+
+
 	#if DEBUG == 0
 	/** 
 	 * Setting all three bits is extended standby.
@@ -68,7 +68,7 @@ int main(void) {
 	#endif
 	while (1) {
 		
-		pkt_hdr * pkt = mpc_slave_recv();
+		mpc_pkt * pkt = mpc_recv();
 
 		if ( pkt != NULL ) {
 
@@ -76,6 +76,7 @@ int main(void) {
 			xbee_put(pkt->cmd);
 			xbee_put(',');
 			char src;
+
 			switch(pkt->saddr>>1) {
 			case 0b0001:
 					src = 'F';
@@ -96,15 +97,9 @@ int main(void) {
 			xbee_put(src);
 			xbee_put('\n');
 
-			if ( pkt->data != NULL ) {
-				free(pkt->data);		
-				pkt->data = NULL;
-			}
 			free(pkt);
 		}
 	
-		mpc_master_run();
-
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();
