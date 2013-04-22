@@ -71,14 +71,14 @@ static void mpc_slave_init(void);
 static void mpc_master_init(void);
 
 static bool queue_empty(qhdr_t);
-static void queue_rd_idx(qhdr_t q);
-static void queue_wr_idx(qhdr_t q);
+static inline void queue_rd_idx(qhdr_t *q);
+static inline void queue_wr_idx(qhdr_t *q);
 
 static void mpc_slave_recv_byte(uint8_t);
 static void mpc_slave_recv_pkt(mpc_pkt * pkt);
 
 static void mpc_master_end_txn(void);
-static void mpc_master_run(void);
+static inline void mpc_master_run(void);
 
 /** 
  * @TODo smart mode?
@@ -120,6 +120,10 @@ static inline void mpc_master_init() {
 	MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 	
 	memset(&tx_state,0 , sizeof tx_state);
+
+	tx_state.status = TX_STATUS_IDLE;
+
+
 	/** @TODO set queue read/write and status separately here*/
 }
 
@@ -144,12 +148,12 @@ static inline bool queue_empty(qhdr_t q) {
 	return q.read == q.write;
 }
 
-static inline void queue_rd_idx(qhdr_t q) {
-	q.read = (q.read == MPC_QUEUE_SIZE-1) ? 0 : q.read+1;
+static inline void queue_rd_idx(qhdr_t * q) {
+	q->read = (q->read == MPC_QUEUE_SIZE-1) ? 0 : q->read+1;
 }
 
-static inline void queue_wr_idx(qhdr_t q) {
-	q.write = (q.read == MPC_QUEUE_SIZE-1) ? 0 : q.write+1;
+static inline void queue_wr_idx(qhdr_t * q) {
+	q->write = (q->write == MPC_QUEUE_SIZE-1) ? 0 : q->write+1;
 }
 
 /**
@@ -166,7 +170,7 @@ inline mpc_pkt* mpc_recv() {
 	if ( queue_empty(rx_state.queue.hdr) ) return NULL;
 
 	mpc_pkt * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
-	queue_rd_idx(rx_state.queue.hdr);
+	queue_rd_idx(&rx_state.queue.hdr);
 
 	return pkt;
 }
@@ -198,7 +202,7 @@ static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
 		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
 
 	rx_state.queue.items[ rx_state.queue.hdr.write ] = pkt;
-	queue_wr_idx(rx_state.queue.hdr);
+	queue_wr_idx(&rx_state.queue.hdr);
 }
 
 MPC_TWI_SLAVE_ISR {
@@ -299,10 +303,10 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
 	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
-	queue_wr_idx(tx_state.queue.hdr);
+	queue_wr_idx(&tx_state.queue.hdr);
 }
 
-static void mpc_master_run() {
+static inline void mpc_master_run() {
 
 	//notthing to do harr.
 	if ( queue_empty(tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
@@ -313,7 +317,7 @@ static void mpc_master_run() {
 	tx_state.byte = 0;
 
 	MPC_TWI.MASTER.ADDR = tx_state.queue.items[ tx_state.queue.hdr.read ].addr<<1 | 0;
-	queue_rd_idx(tx_state.queue.hdr);
+	queue_rd_idx(&tx_state.queue.hdr);
 }
 
 static inline void mpc_master_end_txn(void) {
