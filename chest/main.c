@@ -65,9 +65,10 @@ int main(void) {
 				set_lights(0);
 			} 
 
-			if ( pkt->data != NULL ) 
-				free(pkt->data);
-
+			if ( pkt->data != NULL ) {
+				free(pkt->data);		
+				pkt->data = NULL;
+			}
 			free(pkt);
 		}
 

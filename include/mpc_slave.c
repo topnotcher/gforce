@@ -166,6 +166,7 @@ MPC_TWI_SLAVE_ISR {
 				if ( recv.pkt->data != NULL )
 					free(recv.pkt->data);
 				free(recv.pkt);
+				recv.pkt = NULL;
 			}
 
 			//set data interrupt because we actually give a shit
@@ -174,7 +175,7 @@ MPC_TWI_SLAVE_ISR {
 			//also a stop interrupt.. Wait that's enabled with APIEN?
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
 
-			//this is SUPER temp.
+			//this is SUPER temp //OR IS IT??? HMMM HMM YEAH ID IDDDDDDD MHHHM
 			recv.size = 0;
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 #ifdef MPC_TWI_ADDRMASK
@@ -218,6 +219,7 @@ MPC_TWI_SLAVE_ISR {
 			if ( recv.pkt->data != NULL )
 				free(recv.pkt->data);
 			free(recv.pkt);
+			recv.pkt = NULL;
 		}
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
