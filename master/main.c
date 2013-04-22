@@ -68,12 +68,41 @@ int main(void) {
 	#endif
 	while (1) {
 		
+		pkt_hdr * pkt = mpc_slave_recv();
 
+		if ( pkt != NULL ) {
+
+			xbee_put(':');
+			xbee_put(pkt->cmd);
+			xbee_put(',');
+			char src;
+			switch(pkt->saddr>>1) {
+			case 0b0001:
+					src = 'F';
+					break;
+			case 0b0010:
+					src = 'L';
+					break;
+			case 0b0100:
+					src = 'B';
+					break;
+			case 0b1000:
+					src = 'R';
+					break;
+			default:
+					src = '?';
+			}
+
+			xbee_put(src);
+			xbee_put('\n');
+
+			if ( pkt->data != NULL ) {
+				free(pkt->data);		
+				pkt->data = NULL;
+			}
+			free(pkt);
+		}
 	
-	//	if ( (TWIC.MASTER.STATUS & TWI_MASTER_BUSSTATE_gm) == TWI_MASTER_BUSSTATE_IDLE_gc )
-	//		TWIC.MASTER.ADDR = 0b1111<<1 | 0;
-
-
 		mpc_master_run();
 
 //		PORTC.OUTCLR = 0xff;
