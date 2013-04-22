@@ -11,6 +11,8 @@
  */
 #include <leds.h>
 #include <mpc_slave.h>
+#include <mpc_master.h>
+#include <pkt.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -45,12 +47,32 @@ int main(void) {
 	//safe to pass PTR because we never leave main()
 	led_init();
 	mpc_slave_init();
+	mpc_master_init();
 	buzz_init();
 	irrx_init();
 
 //set_lights(1);
 	while(1) {
-		mpc_slave_recv();
+
+		pkt_hdr * pkt = mpc_slave_recv();
+
+		if ( pkt != NULL ) {
+			if ( pkt->cmd == 'A' ) {
+				led_set_seq(pkt->data);
+				set_lights(1);
+				pkt->data = NULL;
+			} else if ( pkt->cmd == 'B' ) {
+				set_lights(0);
+			} 
+
+			if ( pkt->data != NULL ) {
+				free(pkt->data);		
+				pkt->data = NULL;
+			}
+			free(pkt);
+		}
+
+		mpc_master_run();
 		leds_run();
 	}
 
