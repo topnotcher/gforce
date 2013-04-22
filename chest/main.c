@@ -55,13 +55,19 @@ int main(void) {
 	while(1) {
 
 		pkt_hdr * pkt = mpc_slave_recv();
-		if ( pkt != NULL ) {
-			if ( pkt->cmd == 'A' )
-				set_lights(1);
-			else if ( pkt->cmd == 'B' )
-				set_lights(0);
 
-			free(pkt->data);
+		if ( pkt != NULL ) {
+			if ( pkt->cmd == 'A' ) {
+				led_set_seq(pkt->data);
+				set_lights(1);
+				pkt->data = NULL;
+			} else if ( pkt->cmd == 'B' ) {
+				set_lights(0);
+			} 
+
+			if ( pkt->data != NULL ) 
+				free(pkt->data);
+
 			free(pkt);
 		}
 
