@@ -117,7 +117,6 @@ inline void leds_run(void) {
 		//idle->start transition
 		case start:
 			//@TODO remove this because it gets set elseeeewhere.
-			//state.seq = &seq_active;
 			state.pattern = 0;
 			state.flashes = 0; 
 
@@ -291,7 +290,7 @@ void led_write() {
 
 void led_set_seq(led_sequence * seq) {
 	//NOTE: BAD shit could happen here if lights are enabled when we do this.
-	if ( state.seq != NULL ) free(state.seq);
+	if ( state.seq != NULL && state.seq != &seq_active ) free(state.seq);
 
 	//fix setting seq while it's already on.
 	if ( state.status != idle && state.status != stop ) 
@@ -308,7 +307,7 @@ void led_init() {
 
 	LED_PORT.OUTCLR = _SCLK_bm | _SOUT_bm;
 
-	state.seq = /*NULL;*/ &seq_active;
+	state.seq = &seq_active;
 
 	//the state is set in its own initializer way up there^
 	led_write();
