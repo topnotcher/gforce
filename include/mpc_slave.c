@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -13,13 +15,23 @@
 
 static void mpc_recv_byte(uint8_t);
 static void init_recv(void);
-static void recv_pkt(pkt_hdr pkt);
+static void recv_pkt(pkt_hdr * pkt);
 
-
-
-//ringbuf_t * recvq;
 
 pkt_proc recv;
+
+
+/**
+ * Queue of received packets to be processed
+ */
+#define MPC_QUEUE_SIZE 8
+typedef struct {
+	uint8_t read;
+	uint8_t write;
+	pkt_hdr * items[MPC_QUEUE_SIZE];
+} mpc_queue_t;
+
+mpc_queue_t recvq;
 
 
 /**
@@ -40,7 +52,7 @@ static const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
 /**
  * Initialize the MPC interface.
  */
-void mpc_slave_init() {
+inline void mpc_slave_init() {
 
 //	recvq = ringbuf_init(MPC_RECVQ_MAX);
 	init_recv();
@@ -55,6 +67,9 @@ void mpc_slave_init() {
 #ifdef MPC_TWI_ADDRMASK
 	MPC_TWI.SLAVE.ADDRMASK = MPC_TWI_ADDRMASK << 1;
 #endif
+
+	recvq.read = 0;
+	recvq.write = 0;
 }
 
 static inline void init_recv() {
@@ -66,9 +81,14 @@ static inline void init_recv() {
 /**
  * Process queued bytes into packtes.
  */
-inline void mpc_slave_recv() {
-//	while ( !ringbuf_empty(recvq) )
-//		mpc_recv_byte(ringbuf_get(recvq));
+
+inline pkt_hdr* mpc_slave_recv() {
+
+	if ( recvq.read == recvq.write) return NULL; 
+
+	return recvq.items[recvq.read];
+
+	recvq.read = (recvq.read == MPC_QUEUE_SIZE-1) ? 0 : recvq.read+1;	
 }
 
 static inline void mpc_recv_byte(uint8_t data) {
@@ -117,28 +137,24 @@ static inline void mpc_recv_byte(uint8_t data) {
 	}
 }
 
-static inline void recv_pkt(pkt_hdr pkt) {
-/*	if ( pkt.cmd == 'A' ) {
-		led_set_seq(pkt.data);
-		set_lights(1);
-	}
-	else if ( pkt.cmd == 'B' ) 
-		set_lights(0);
-	else if ( pkt.cmd == 'C' ) {
-		buzz_on();
-	} else if ( pkt.cmd == 'D') {
-		buzz_off();
-	}*/
+static inline void recv_pkt(pkt_hdr * pkt) {
+	recvq.items[recvq.write] = pkt;
+	recvq.write = (recvq.write == MPC_QUEUE_SIZE-1) ? 0 : recvq.write+1;
 }
 
 MPC_TWI_SLAVE_ISR {
 
     // If address match. 
 	if ( (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (MPC_TWI.SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
+
 #ifdef MPC_TWI_ADDRMASK
 		uint8_t addr = MPC_TWI.SLAVE.DATA;
 		if ( addr & mpc_twi_addr ) {
 #endif
+
+			if ( recv.pkt.data != NULL ) 
+				free(recv.pkt.data);
+
 			//set data interrupt because we actually give a shit
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
 
@@ -167,9 +183,15 @@ MPC_TWI_SLAVE_ISR {
 //			ringbuf_put(recvq, MPC_TWI.SLAVE.DATA);
 		}
 	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-		
+		//for now, we'll just change tihs to copy the data to a new packet
+		//but later, we should just keep everything in the queue, separate the recv state
+		//@TODO ^^
+
 //		if ( recv.crc == recv.pkt.chksum )
-			recv_pkt(recv.pkt);
+//
+			pkt_hdr * pkt_cpy = (pkt_hdr*)malloc(sizeof(pkt_hdr));
+			memcpy((void*)pkt_cpy, &recv.pkt, sizeof(pkt_hdr));
+			recv_pkt(pkt_cpy);
 //		else if ( recv.pkt.data != NULL )
 //			free(recv.pkt.data);
 
@@ -183,6 +205,8 @@ MPC_TWI_SLAVE_ISR {
 
 	// If unexpected state.
 	else {
+		if ( recv.pkt.data != NULL )
+			free(recv.pkt.data);
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
