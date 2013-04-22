@@ -4,6 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 /**
@@ -55,7 +56,10 @@ int main(void) {
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
-			/*	led_set_seq(pkt->hdr.data);*/
+
+				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
+				memcpy((void*)seq, &pkt->data,pkt->len);
+				led_set_seq(seq);
 				set_lights(1);
 			} else if ( pkt->cmd == 'B' ) {
 				set_lights(0);
