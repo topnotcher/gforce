@@ -211,9 +211,15 @@ MPC_TWI_SLAVE_ISR {
 		//but later, we should just keep everything in the queue, separate the recv state
 		//@TODO ^^
 
-//		if ( recv.crc == recv.pkt.chksum )
+		if ( recv.crc == recv.pkt->chksum )
 			recv_pkt(recv.pkt);
-			recv.pkt = NULL;
+		else {
+			if ( recv.pkt->len > 0 )
+				free(recv.pkt->data);
+			free(recv.pkt);
+		}
+
+		recv.pkt = NULL;
 
 	    /* Disable stop interrupt. */
     	MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
