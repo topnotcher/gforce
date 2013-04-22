@@ -57,10 +57,6 @@ int main(void) {
 	sei();
 	xbee_put('*');
 
-_delay_ms(100);
-		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
-		 mpc_send(0b1111,'A', data, 9);
-
 
 	#if DEBUG == 0
 	/** 
@@ -104,6 +100,11 @@ _delay_ms(100);
 			free(pkt);
 		}
 	
+		_delay_ms(200);
+		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
+		 mpc_send(0b1111,'A', data, 9);
+
+
 
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
