@@ -30,7 +30,7 @@ ISR(IRRX_USART_RXC_vect) {
 	static uint8_t i = 0;
 
 	if ( data == 0x38 ) {
-		mpc_master_send_cmd(0b1000000, 'A');
+		mpc_send_cmd(0b1000000, 'A');
 		set_lights(i^=1);
 	}
 }
