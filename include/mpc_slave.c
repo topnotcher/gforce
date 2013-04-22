@@ -8,6 +8,7 @@
 #include "g4config.h"
 #include "config.h"
 
+#include <ringbuf.h>
 #include <util.h>
 #include <pkt.h>
 //#include <ringbuf.h>
@@ -25,7 +26,7 @@ typedef struct {
 
 
 recv_state recv;
-
+ringbuf_t * recvbuf; 
 
 /**
  * Queue of received packets to be processed
@@ -60,7 +61,7 @@ static const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
  */
 inline void mpc_slave_init() {
 
-//	recvq = ringbuf_init(MPC_RECVQ_MAX);
+	recvbuf = ringbuf_init(MPC_QUEUE_SIZE);
 	init_recv();
 
 	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
@@ -89,6 +90,9 @@ static inline void init_recv() {
  */
 
 inline pkt_hdr* mpc_slave_recv() {
+
+	while ( !ringbuf_empty(recvbuf) )
+		mpc_recv_byte(ringbuf_get(recvbuf));
 
 	if ( recvq.read == recvq.write) return NULL; 
 
@@ -148,6 +152,11 @@ static inline void mpc_recv_byte(uint8_t data) {
 }
 
 static inline void recv_pkt(pkt_hdr * pkt) {
+
+	//before returning the packet, flush the bufffarrrr
+	while ( !ringbuf_empty(recvbuf) )
+		mpc_recv_byte(ringbuf_get(recvbuf));
+
 	recvq.items[recvq.write] = pkt;
 	recvq.write = (recvq.write == MPC_QUEUE_SIZE-1) ? 0 : recvq.write+1;
 }
@@ -192,7 +201,8 @@ MPC_TWI_SLAVE_ISR {
 
 		//slave read(master write)
 		} else {
-			mpc_recv_byte(MPC_TWI.SLAVE.DATA);
+			ringbuf_put(recvbuf, MPC_TWI.SLAVE.DATA);
+			//mpc_recv_byte(MPC_TWI.SLAVE.DATA);
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 //			ringbuf_put(recvq, MPC_TWI.SLAVE.DATA);
 		}
