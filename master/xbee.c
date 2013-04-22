@@ -7,7 +7,7 @@
 #include "xbee.h"
 #include "game.h"
 #include <colors.h>
-#include "mpc_master.h"
+#include <mpc.h>
 
 volatile xbee_queue_t xbee_sendq;
 

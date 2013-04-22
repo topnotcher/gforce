@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -47,8 +48,7 @@ static struct {
 static struct {
 
 	uint8_t byte; 
-	uint8_t len;
-	uint8_t * data;
+	mpc_pkt * pkt ;
 
 	enum {
 		TX_STATUS_IDLE = 0,
@@ -58,10 +58,9 @@ static struct {
 	struct {
 		qhdr_t hdr;
 
-		struct { 
+		struct {
 			uint8_t addr;
-			uint8_t len;
-			uint8_t * data;
+			mpc_pkt * pkt;
 		} items[MPC_QUEUE_SIZE];
 
 	} queue;
@@ -175,46 +174,22 @@ inline mpc_pkt* mpc_recv() {
 
 
 static inline void mpc_slave_recv_byte(uint8_t data) {
-
-	//@TODO: these hardcoded byte offsets are a mess 
-	//(I write this as I'm changing them to modify packet structure...)
 	if ( rx_state.size == 0 ) {
-		rx_state.pkt = (mpc_pkt*)malloc(sizeof(mpc_pkt));
+		//fist byte = mpc_pkt.len
+		rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
 		rx_state.crc = MPC_CRC_SHIFT;
-		rx_state.pkt->hdr.cmd = data;
+		rx_state.pkt->len = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
 		rx_state.size = 1;
 
-	} else if ( rx_state.size == 1 ) {
-		rx_state.pkt->hdr.len = data;
-		crc(&rx_state.crc, data, MPC_CRC_POLY);
-		rx_state.size = 2;
-
-	} else if ( rx_state.size == 2 ) {
-		rx_state.pkt->hdr.saddr = data;
-		crc(&rx_state.crc, data, MPC_CRC_POLY);
-		rx_state.size = 3;
-
-		if ( rx_state.pkt->hdr.len > 0 )
-			rx_state.pkt->data = (uint8_t *)malloc(rx_state.pkt->hdr.len);
-
-	//case 1: there is no payload, so byte 3 is the CRC
-	//case 2: there is a payload, but we're past it, so this is the CRC.
-	} else if ( (rx_state.size == 3 && rx_state.pkt->hdr.len == 0) || (rx_state.pkt->hdr.len > 0 && rx_state.size >= rx_state.pkt->hdr.len+3) ) {
-		rx_state.pkt->chksum = data;
-	
-	//receive the payload.
-	} else if ( rx_state.size >= 3 && rx_state.size < rx_state.pkt->hdr.len+3 ) {
-		rx_state.pkt->data[rx_state.size-3] = data;
-		crc(&rx_state.crc, data, MPC_CRC_POLY);
-		rx_state.size++;
 	} else {
-	//uH???	
-	//	recv.size = 0;
+		((uint8_t*)rx_state.pkt)[rx_state.size] = data;
+		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
+			crc(&rx_state.crc, data, MPC_CRC_POLY);
+	
+		rx_state.size++;
 	}
 }
-
-
 
 static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
 
@@ -236,12 +211,8 @@ MPC_TWI_SLAVE_ISR {
 		if ( addr & mpc_twi_addr ) {
 #endif
 
-			if ( rx_state.pkt != NULL ) {
-				if ( rx_state.pkt->data != NULL )
-					free(rx_state.pkt->data);
+			if ( rx_state.pkt != NULL ) 
 				free(rx_state.pkt);
-				rx_state.pkt = NULL;
-			}
 
 			//set data interrupt because we actually give a shit
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
@@ -270,16 +241,11 @@ MPC_TWI_SLAVE_ISR {
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 		}
 	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-		//for now, we'll just change this to copy the data to a new packet
-		//but later, we should just keep everything in the queue, separate the recv state
-		//@TODO ^^
 
 		if ( rx_state.crc == rx_state.pkt->chksum )
 			mpc_slave_recv_pkt(rx_state.pkt);
 		else {
-			if ( rx_state.pkt->hdr.len > 0 )
-				free(rx_state.pkt->data);
-			free(rx_state.pkt);
+			free( rx_state.pkt );
 		}
 
 		rx_state.pkt = NULL;
@@ -295,8 +261,6 @@ MPC_TWI_SLAVE_ISR {
 	// If unexpected state.
 	else {
 		if ( rx_state.pkt != NULL ) {
-			if ( rx_state.pkt->data != NULL )
-				free(rx_state.pkt->data);
 			free(rx_state.pkt);
 			rx_state.pkt = NULL;
 		}
@@ -317,33 +281,24 @@ inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 
 //CALLER MUST FREE() data*
 void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
-	/**
-	 * Rather than actually use the "pkt_hdr" struct, just use the same structure 
-	 * (Allows me to just malloc a contiguous chunk of data to send to the transmitter)
-	 */
-	const uint8_t pkt_hdr_size = 3; 
-	const uint8_t pkt_tail_size = 1; //i.e. CRC 
-	uint8_t * const raw = (uint8_t*)malloc(len+pkt_hdr_size+pkt_tail_size) ;
-	uint8_t chksum = MPC_CRC_SHIFT;
 
-	raw[0] = cmd;
-	raw[1] = len;
-	raw[2] = mpc_twi_addr;
+	mpc_pkt * pkt = (mpc_pkt*)malloc(sizeof(*pkt) + len);
 
-	crc(&chksum, cmd, MPC_CRC_POLY);
-	crc(&chksum, len, MPC_CRC_POLY);
-	crc(&chksum, mpc_twi_addr, MPC_CRC_POLY);
+	pkt->len = len;
+	pkt->cmd = cmd;
+	pkt->saddr = mpc_twi_addr;
+	pkt->chksum = MPC_CRC_SHIFT;
+
+	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
+		crc(&pkt->chksum, ((uint8_t*)pkt)[i], MPC_CRC_POLY);
 
 	for ( uint8_t i = 0; i < len; ++i ) {
-		raw[i+pkt_hdr_size] = data[i];
-		crc(&chksum, data[i], MPC_CRC_POLY);
+			pkt->data[i] = data[i];
+			crc(&pkt->chksum, data[i], MPC_CRC_POLY);
 	}
-
-	raw[len+pkt_hdr_size] = chksum;
 	
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
-	tx_state.queue.items[ tx_state.queue.hdr.write ].len = len+pkt_hdr_size+pkt_tail_size; //data+header
-	tx_state.queue.items[ tx_state.queue.hdr.write ].data = raw;
+	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
 	queue_wr_idx(tx_state.queue.hdr);
 }
 
@@ -354,8 +309,7 @@ static void mpc_master_run() {
 
 	tx_state.status = TX_STATUS_BUSY;
 		
-	tx_state.data = tx_state.queue.items[ tx_state.queue.hdr.read ].data;
-	tx_state.len = tx_state.queue.items[ tx_state.queue.hdr.read ].len;
+	tx_state.pkt = tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
 	tx_state.byte = 0;
 
 	MPC_TWI.MASTER.ADDR = tx_state.queue.items[ tx_state.queue.hdr.read ].addr<<1 | 0;
@@ -363,8 +317,7 @@ static void mpc_master_run() {
 }
 
 static inline void mpc_master_end_txn(void) {
-	if ( tx_state.len > 0 )
-		free(tx_state.data);
+	free(tx_state.pkt);
 	tx_state.status = TX_STATUS_IDLE;
 }
 
@@ -391,8 +344,8 @@ MPC_TWI_MASTER_ISR  {
 			tx_state.status = TX_STATUS_IDLE;
 
 		} else {
-			if ( tx_state.byte < tx_state.len ) {
-				MPC_TWI.MASTER.DATA  = tx_state.data[tx_state.byte++];
+			if ( tx_state.byte < tx_state.pkt->len ) {
+				MPC_TWI.MASTER.DATA  = ((uint8_t*)tx_state.pkt)[tx_state.byte++];
 			} else {
 				MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;

@@ -2,18 +2,11 @@
 #define MPC_H
 
 typedef struct {
-
-	struct { 
-		uint8_t cmd;
-		uint8_t len;
-		uint8_t saddr;
-
-	} hdr;
-
+	uint8_t len;
+	uint8_t cmd;
+	uint8_t saddr;
 	uint8_t chksum;
-
-	uint8_t * data ;
-
+	uint8_t data [] ;
 } mpc_pkt;
 
 

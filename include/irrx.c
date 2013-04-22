@@ -4,7 +4,7 @@
 #include <util.h>
 #include "config.h"
 #include "g4config.h"
-#include <mpc_master.h>
+#include <mpc.h>
 #include <irrx.h>
 #include <leds.h>
 

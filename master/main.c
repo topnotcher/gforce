@@ -77,10 +77,11 @@ _delay_ms(100);
 		if ( pkt != NULL ) {
 
 			xbee_put(':');
-			xbee_put(pkt->hdr.cmd);
+			xbee_put(pkt->cmd);
 			xbee_put(',');
 			char src;
-			switch(pkt->hdr.saddr>>1) {
+
+			switch(pkt->saddr>>1) {
 			case 0b0001:
 					src = 'F';
 					break;
@@ -100,10 +101,6 @@ _delay_ms(100);
 			xbee_put(src);
 			xbee_put('\n');
 
-			if ( pkt->data != NULL ) {
-				free(pkt->data);		
-				pkt->data = NULL;
-			}
 			free(pkt);
 		}
 	

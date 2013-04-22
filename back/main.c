@@ -10,9 +10,7 @@
  * G4 common includes.
  */
 #include <leds.h>
-#include <mpc_slave.h>
-#include <mpc_master.h>
-#include <pkt.h>
+#include <mpc.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -53,21 +51,16 @@ int main(void) {
 //set_lights(1);
 	while(1) {
 
-		pkt_hdr * pkt = mpc_recv();
+		mpc_pkt * pkt = mpc_recv();
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
-				led_set_seq(pkt->data);
+			/*	led_set_seq(pkt->hdr.data);*/
 				set_lights(1);
-				pkt->data = NULL;
 			} else if ( pkt->cmd == 'B' ) {
 				set_lights(0);
-			} 
-
-			if ( pkt->data != NULL ) {
-				free(pkt->data);		
-				pkt->data = NULL;
 			}
+
 			free(pkt);
 		}
 
