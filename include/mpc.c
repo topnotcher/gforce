@@ -48,6 +48,7 @@ static struct {
 static struct {
 
 	uint8_t byte; 
+	uint8_t len;
 	mpc_pkt * pkt ;
 
 	enum {
@@ -313,7 +314,9 @@ static inline void mpc_master_run() {
 
 	tx_state.status = TX_STATUS_BUSY;
 		
-	tx_state.pkt = tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
+	mpc_pkt * pkt = tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
+	tx_state.pkt = pkt;
+	tx_state.len = sizeof(*pkt) + pkt->len;
 	tx_state.byte = 0;
 
 	MPC_TWI.MASTER.ADDR = tx_state.queue.items[ tx_state.queue.hdr.read ].addr<<1 | 0;
@@ -348,7 +351,7 @@ MPC_TWI_MASTER_ISR  {
 			tx_state.status = TX_STATUS_IDLE;
 
 		} else {
-			if ( tx_state.byte < tx_state.pkt->len ) {
+			if ( tx_state.byte < tx_state.len ) {
 				MPC_TWI.MASTER.DATA  = ((uint8_t*)tx_state.pkt)[tx_state.byte++];
 			} else {
 				MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
