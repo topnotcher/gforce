@@ -156,9 +156,14 @@ void mpc_end_txn(void) {
 MPC_TWI_MASTER_ISR  {
 
     if ( (MPC_TWI.MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (MPC_TWI.MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
-		mpc_end_txn();
-		MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+		/** Go back to the first byte and try the transaction over. 
+		 * @TODO: What is a BUSERROR? And what happens if the slave receives part data? CRC would help here. 
+		 **/
+		tx_state.byte = 0;
+		tx_state.state = MPC_TX_STATE_IDLE;
 
+		//per AVR1308 example code.
+		MPC_TWI.MASTER.STATUS |= TWI_MASTER_ARBLOST_bm;
 	} else if ( MPC_TWI.MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 
 		//@TODO: need to handle this better! at the very least, end the txn?	
@@ -167,7 +172,8 @@ MPC_TWI_MASTER_ISR  {
 			//WHY IS THIS HERE???
 			MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 			MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-			mpc_end_txn();
+			tx_state.byte = 0;
+			tx_state.state = MPC_TX_STATE_IDLE;
 
 		} else {
 			if ( tx_state.byte < tx_state.len ) {
@@ -182,8 +188,8 @@ MPC_TWI_MASTER_ISR  {
 	//IDFK??
 	} else {
 		MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+		
+		//not sure wtf this is, so unlike the other errors, we'll just flush the dataaaa
 		mpc_end_txn();
-		//fail
-		return;
 	}
 }
