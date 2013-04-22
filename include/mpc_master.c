@@ -77,7 +77,7 @@ void mpc_master_init() {
 	/*CTRLC ACKACT ... master read*/
 	/*CTRLC: CMD bits are here. HRRERM*/
 	/* BAUD: 32000000/(2*100000) - 5 = 155*/
-	MPC_TWI.MASTER.BAUD = 35/*155*//*F_CPU/(2*MPU_TWI_BAUD) - 5*/;
+	MPC_TWI.MASTER.BAUD = MPC_TWI_BAUD/*155*//*F_CPU/(2*MPU_TWI_BAUD) - 5*/;
 
 	//per AVR1308
 	MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
