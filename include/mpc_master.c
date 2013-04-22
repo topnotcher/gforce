@@ -11,7 +11,22 @@
 #include <pkt.h>
 #include "mpc_master.h"
 
-static const uint8_t mpc_twi_addr = MPC_TWI_ADDR<<1;
+/**
+ * The shoulders need to differentiate left/right.
+ */
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+#include <avr/eeprom.h>
+static uint8_t mpc_twi_addr ;
+#endif
+
+/** 
+ * Otherwise, make it a constant that should optimize away most of the time.
+ */
+#ifdef MPC_TWI_ADDR
+static const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
+#endif
+
+
 
 static void mpc_end_txn(void);
 
@@ -67,6 +82,10 @@ void mpc_master_init() {
 	//per AVR1308
 	MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
+#endif
+	
 	memset(&queue ,0,sizeof queue);
 	memset(&tx_state,0 , sizeof tx_state);
 }
