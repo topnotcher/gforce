@@ -92,9 +92,11 @@ inline pkt_hdr* mpc_slave_recv() {
 
 	if ( recvq.read == recvq.write) return NULL; 
 
-	return recvq.items[recvq.read];
+	pkt_hdr * pkt = recvq.items[recvq.read];
 
-	recvq.read = (recvq.read == MPC_QUEUE_SIZE-1) ? 0 : recvq.read+1;	
+	recvq.read = (recvq.read == MPC_QUEUE_SIZE-1) ? 0 : recvq.read+1;
+
+	return pkt;
 }
 
 static inline void mpc_recv_byte(uint8_t data) {
@@ -140,7 +142,8 @@ static inline void mpc_recv_byte(uint8_t data) {
 		crc(&recv.crc, data, MPC_CRC_POLY);
 		recv.size++;
 	} else {
-		recv.size = 0;
+	//uH???	
+	//	recv.size = 0;
 	}
 }
 
@@ -198,12 +201,8 @@ MPC_TWI_SLAVE_ISR {
 		//@TODO ^^
 
 //		if ( recv.crc == recv.pkt.chksum )
-//
 			recv_pkt(recv.pkt);
 			recv.pkt = NULL;
-
-//		else if ( recv.pkt.data != NULL )
-//			free(recv.pkt.data);
 
 	    /* Disable stop interrupt. */
     	MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
