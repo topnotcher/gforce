@@ -182,16 +182,20 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 	if ( rx_state.size == 0 ) {
 		//fist byte = mpc_pkt.len
 		rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
+
+#ifndef MPC_DISABLE_CRC
 		rx_state.crc = MPC_CRC_SHIFT;
-		rx_state.pkt->len = data;
 		crc(&rx_state.crc, data, MPC_CRC_POLY);
+#endif
+		rx_state.pkt->len = data;
 		rx_state.size = 1;
 
 	} else {
 		((uint8_t*)rx_state.pkt)[rx_state.size] = data;
+#ifndef MPC_DISABLE_CRC
 		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
 			crc(&rx_state.crc, data, MPC_CRC_POLY);
-	
+#endif
 		rx_state.size++;
 	}
 }
@@ -247,7 +251,11 @@ MPC_TWI_SLAVE_ISR {
 		}
 	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
 
+#ifdef MPC_DISABLE_CRC
+		if (1) 
+#else
 		if ( rx_state.crc == rx_state.pkt->chksum )
+#endif
 			mpc_slave_recv_pkt(rx_state.pkt);
 		else {
 			free( rx_state.pkt );
@@ -294,12 +302,15 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	pkt->saddr = mpc_twi_addr;
 	pkt->chksum = MPC_CRC_SHIFT;
 
+#ifdef MPC_ENABLE_CRC
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
 		crc(&pkt->chksum, ((uint8_t*)pkt)[i], MPC_CRC_POLY);
-
+#endif
 	for ( uint8_t i = 0; i < len; ++i ) {
 			pkt->data[i] = data[i];
+#ifndef MPC_DISABLE_CRC
 			crc(&pkt->chksum, data[i], MPC_CRC_POLY);
+#endif
 	}
 	
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
