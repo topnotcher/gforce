@@ -79,7 +79,6 @@ void irtx_put(uint16_t data) {
 	_txc_interrupt_enable();
 }
 
-//the logic in this is backwarsd from what I would expect???
 ISR(PORTC_INT0_vect) {
 	if ( !(IRTX_USART_PORT.IN & _TXPIN_bm) )
 		IRTX_TIMER.CTRLB |= _CCXEN_bm;
