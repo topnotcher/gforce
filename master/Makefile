@@ -40,7 +40,7 @@ EXTRAINCDIRS = ../include
 #    -ahlms:  create assembler listing
 CFLAGS = -g -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
--Wall -Wstrict-prototypes \
+-Wall -Wstrict-prototypes -Werror\
 -DF_CPU=$(F_CPU) \
 -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
 $(patsubst %,-I%,$(EXTRAINCDIRS)) \
@@ -125,24 +125,19 @@ AVRDUDE_FLAGS = -p $(MCU) -c $(AVRDUDE_PROGRAMMER) -P $(AVRDUDE_PORT)
 
 
 # ---------------------------------------------------------------------------
-
-# Define directories, if needed.
-DIRAVR = c:/winavr
-DIRAVRBIN = $(DIRAVR)/bin
-DIRAVRUTILS = $(DIRAVR)/utils/bin
-DIRINC = .
-DIRLIB = $(DIRAVR)/avr/lib
-
-
 # Define programs and commands.
 SHELL = sh
 
-CC = avr-gcc
 
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-SIZE = avr-size
 
+
+AVRBIN=$(HOME)/progs/avr8-gnu-toolchain-linux_x86_64/bin/
+
+CC = $(AVRBIN)/avr-gcc
+
+OBJCOPY = $(AVRBIN)/avr-objcopy
+OBJDUMP = $(AVRBIN)/avr-objdump
+SIZE = $(AVRBIN)/avr-size
 
 # Programming support using avrdude.
 AVRDUDE = avrdude

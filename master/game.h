@@ -60,7 +60,7 @@ typedef struct {
 } game_state_t;
 
 void game_countdown(void);
-void stop_game();
+void stop_game(void);
 void stop_game_cmd(command_t *);
 void game_tick(void);
 

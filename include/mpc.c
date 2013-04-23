@@ -101,7 +101,7 @@ static uint8_t mpc_twi_addr ;
 static const uint8_t mpc_twi_addr = (MPC_TWI_ADDR<<1);
 #endif
 
-inline void mpc_init() {
+inline void mpc_init(void) {
 
 	 #ifdef MPC_TWI_ADDR_EEPROM_ADDR
 	mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
@@ -112,7 +112,7 @@ inline void mpc_init() {
 }
 
 
-static inline void mpc_master_init() {
+static inline void mpc_master_init(void) {
 
 	MPC_TWI.MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	MPC_TWI.MASTER.BAUD = MPC_TWI_BAUD;
@@ -128,7 +128,7 @@ static inline void mpc_master_init() {
 	/** @TODO set queue read/write and status separately here*/
 }
 
-static inline void mpc_slave_init() {
+static inline void mpc_slave_init(void) {
 	
 
 	/**@Todo better initialization here*/
@@ -161,7 +161,7 @@ static inline void queue_wr_idx(qhdr_t * q) {
  * Process queued bytes into packtes.
  */
 
-inline mpc_pkt* mpc_recv() {
+inline mpc_pkt* mpc_recv(void) {
 
 	mpc_master_run();
 
@@ -272,7 +272,7 @@ MPC_TWI_SLAVE_ISR {
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
-};
+}
 
 
 /****
@@ -307,7 +307,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	queue_wr_idx(&tx_state.queue.hdr);
 }
 
-static inline void mpc_master_run() {
+static inline void mpc_master_run(void) {
 
 	//notthing to do harr.
 	if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 

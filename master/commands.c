@@ -1,6 +1,6 @@
 #include "commands.h"
 
-command_handler_t command_table[N_COMMANDS] = {0};
+command_handler_t command_table[N_COMMANDS];
 
 
 inline void cmd_register(uint8_t cmd, uint8_t args, void (*cb)(command_t *)) {

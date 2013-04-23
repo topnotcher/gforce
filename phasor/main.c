@@ -11,6 +11,7 @@
  */
 #include <leds.h>
 #include "irtx.h"
+#include <irrx.h>
 #include "trigger.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )

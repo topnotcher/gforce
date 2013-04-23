@@ -38,7 +38,7 @@ led_state state = {
 	.status = idle,
 };
 
-const led_sequence seq_active = {
+/*makes it compile as pedantic.. led_sequence seq_active = {
 	.size = 8,
 	.repeat_time = 0,
 	.patterns = {
@@ -90,16 +90,8 @@ const led_sequence seq_active = {
 			.flashes = 1,
 			.on=6,
 			.off=0,
-		}/*,
-		{
-			.pattern = 
-			.flashes = 1,
-			.on=65,
-			.off = 15,
-		},*/
-
-	}
-};
+		}
+};*/
 
 inline void set_lights(uint8_t status) {
 	state.status = status ? start : stop;
@@ -196,14 +188,17 @@ inline void leds_run(void) {
 			goto start;
 
 		case stop:
+		default:
 			state.status = idle;
 			state.leds = ALL_OFF;
 			led_write();
 			break;
+
+
 	}
 }
 
-static inline void sclk_trigger() {
+static inline void sclk_trigger(void) {
 	LED_PORT.OUTSET = _SCLK_bm;
 	LED_PORT.OUTCLR = _SCLK_bm;
 }
@@ -223,7 +218,7 @@ static inline void led_write_header(void) {
 
 
 	//next five bits = function control
-	byte = 0b00000010;
+	byte = 0x02;//0b00000010;
 
 	for ( uint8_t i = 0; i < 5; ++i )  {
 		if ( (byte>>(4-i))&0x01 )
@@ -243,18 +238,18 @@ static inline void led_write_header(void) {
 	}
 }
 
-void led_write() {	
+void led_write(void) {	
 	//since we're bit-banging...
 	cli();
 
 	//now the actual value of the LED
-	for ( uint8_t led = 0,c = 0; led < N_LEDS; led++ ) {
+	for ( uint8_t led = 0,comp = 0; led < N_LEDS; led++ ) {
 		
 		if ( led == 0 || led == 4 )
 			led_write_header();
 
 		//this is ugly. It should be like... more lines.
-		uint16_t const * color = colors[( (led&0x01 ) ? state.leds[c++] : (state.leds[c]>>4) ) & 0x0F ];
+		uint16_t const * color = colors[( (led&0x01 ) ? state.leds[comp++] : (state.leds[comp]>>4) ) & 0x0F ];
 		
 		//for each component of the color: Blue, Green, Red (MSB->LSB)
 		for ( int8_t c = 2; c>=0; --c ) {
@@ -296,7 +291,7 @@ void led_write() {
 
 void led_set_seq(led_sequence * seq) {
 	//NOTE: BAD shit could happen here if lights are enabled when we do this.
-	if ( state.seq != NULL && state.seq != &seq_active ) free(state.seq);
+	if ( state.seq != NULL /*&& state.seq != &seq_active*/ ) free(state.seq);
 
 	//fix setting seq while it's already on.
 	if ( state.status != idle && state.status != stop ) 
@@ -305,7 +300,7 @@ void led_set_seq(led_sequence * seq) {
 	state.seq = seq;
 }
 
-void led_init() {
+void led_init(void) {
 
 
 	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm;
@@ -313,7 +308,7 @@ void led_init() {
 
 	LED_PORT.OUTCLR = _SCLK_bm | _SOUT_bm;
 
-	state.seq = &seq_active;
+	state.seq = NULL/*&seq_active*/;
 
 	//the state is set in its own initializer way up there^
 	led_write();
@@ -326,7 +321,7 @@ void led_init() {
 
 }
 
-static inline void led_timer_start() {
+static inline void led_timer_start(void) {
 	TCC0.CNT = 0;	
 	TCC0.CCA = 55000;
 	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;

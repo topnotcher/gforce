@@ -33,7 +33,7 @@ typedef struct {
 queue_t sendq;
 
 
-inline void irtx_init() {
+inline void irtx_init(void) {
 	
 	IRTX_USART_PORT.OUTCLR = _TXPIN_bm;
 	IRTX_USART_PORT.DIRSET = _TXPIN_bm;

@@ -24,14 +24,14 @@
 
 typedef uint8_t led_values_t[N_LEDS/2];
 
-typedef const struct {
+typedef struct {
 	led_values_t pattern;
 	uint8_t flashes;
 	uint8_t on;
 	uint8_t off;
 } led_pattern;
 
-typedef const struct {
+typedef struct {
 	uint8_t size;
 	uint8_t repeat_time;
 	led_pattern patterns[];
@@ -62,7 +62,7 @@ typedef struct {
 	 */
 	const uint8_t * leds;
 
-	const led_sequence * volatile seq;
+	led_sequence * seq;
 
 	uint8_t pattern;
 

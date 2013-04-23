@@ -3,7 +3,7 @@ MCU = atxmega32a4
 F_CPU = 32000000
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c leds.c irtx.c trigger.c irrx.c
+SRC = $(shell ls *.c)
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
@@ -33,9 +33,16 @@ EXTRAINCDIRS = ../include
 #  -Wall...:  warning level
 #  -Wa,...:   tell GCC to pass this to the assembler.
 #    -ahlms:  create assembler listing
+#    -pedantic/?
 CFLAGS = -g -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
--Wall -Wstrict-prototypes \
+-Wall -Wstrict-prototypes -Werror \
+-Wno-missing-braces -Wextra -Wno-missing-field-initializers -Wformat=2 \
+	      -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
+		      -Wbad-function-cast -Wstrict-overflow=5 -Wstrict-prototypes -Winline \
+			      -Wundef -Wnested-externs -Wcast-qual -Wshadow -Wunreachable-code \
+				      -Wlogical-op -Wfloat-equal -Wstrict-aliasing=2 -Wredundant-decls \
+					      -Wold-style-definition -Werror \
 -DF_CPU=$(F_CPU) \
 -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
 $(patsubst %,-I%,$(EXTRAINCDIRS)) 
@@ -120,23 +127,16 @@ AVRDUDE_FLAGS = -p $(MCU) -c $(AVRDUDE_PROGRAMMER) -P $(AVRDUDE_PORT)
 
 
 # ---------------------------------------------------------------------------
-
-# Define directories, if needed.
-DIRAVR = c:/winavr
-DIRAVRBIN = $(DIRAVR)/bin
-DIRAVRUTILS = $(DIRAVR)/utils/bin
-DIRINC = .
-DIRLIB = $(DIRAVR)/avr/lib
-
-
 # Define programs and commands.
 SHELL = sh
 
-CC = avr-gcc
+AVRBIN=$(HOME)/progs/avr8-gnu-toolchain-linux_x86_64/bin/
 
-OBJCOPY = avr-objcopy
-OBJDUMP = avr-objdump
-SIZE = avr-size
+CC = $(AVRBIN)/avr-gcc
+
+OBJCOPY = $(AVRBIN)/avr-objcopy
+OBJDUMP = $(AVRBIN)/avr-objdump
+SIZE = $(AVRBIN)/avr-size
 
 
 # Programming support using avrdude.
@@ -193,7 +193,8 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
 # Default target.
-all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
+# $(TARGET).eep was here - removed
+all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex \
 	$(TARGET).lss $(TARGET).sym sizeafter finished end
 
 
@@ -254,8 +255,11 @@ reset:
 	$(AVRDUDE) $(AVRDUDE_FLAGS)
 
 # Program the device.  
-program: $(TARGET).hex $(TARGET).eep
-	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+# $(TARGET).eep was here...
+#program: $(TARGET).hex $(TARGET).eep
+#	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+program: $(TARGET).hex
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
 
 full: $(TARGET).hex
 	make burn-fuse

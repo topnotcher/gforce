@@ -19,7 +19,7 @@ inline void scheduler_init() {
 	task_list = NULL;
 }
 
-void scheduler_register(void (*task_cb)(), task_freq_t task_freq, task_lifetime_t task_lifetime) {
+void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
 	cli();
 
 	scheduler_task * task;
