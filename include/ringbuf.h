@@ -20,6 +20,4 @@ uint8_t ringbuf_full(ringbuf_t *);
 
 void ringbuf_flush(ringbuf_t *);
 
-
-#define ringbuf_next_idx(idx,size) ((idx == size-1) ? 0 : idx+1)
 #endif

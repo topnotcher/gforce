@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "ringbuf.h"
 
+#define ringbuf_next_idx(idx,size) ((idx == size-1) ? 0 : idx+1)
+
+
 inline ringbuf_t * ringbuf_init(uint8_t size) {
 	ringbuf_t * buf;
 
