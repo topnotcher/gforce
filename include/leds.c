@@ -14,6 +14,12 @@
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
 
+
+static inline void led_timer_start(void);
+static inline void sclk_trigger(void);
+static inline void led_write(void);
+static inline void led_write_header(void);
+
 // {command}0000{repeat}0000|{8xled}0000 0000 0000 0000 0000 0000 0000 0000 |{on time}0000 {off time}
 //
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
@@ -197,12 +203,12 @@ inline void leds_run(void) {
 	}
 }
 
-inline void sclk_trigger() {
+static inline void sclk_trigger() {
 	LED_PORT.OUTSET = _SCLK_bm;
 	LED_PORT.OUTCLR = _SCLK_bm;
 }
 
-inline void led_write_header(void) {
+static inline void led_write_header(void) {
 	uint8_t byte = 0x25;
 	
 	for ( uint8_t i = 0; i < 6; ++i ) {	
@@ -320,7 +326,7 @@ void led_init() {
 
 }
 
-inline void led_timer_start() {
+static inline void led_timer_start() {
 	TCC0.CNT = 0;	
 	TCC0.CCA = 55000;
 	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;

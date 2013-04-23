@@ -77,13 +77,10 @@ typedef struct {
 
 //void led_on(uint8_t n);
 //void led_off(uint8_t n);
-void xlat_trigger(void);
-void sclk_trigger(void);
-void led_write(void);
 void led_init(void);
 //void set_state(void);
 void set_lights(uint8_t);
 void leds_run(void);
 void led_set_seq(led_sequence *);
-void led_timer_start(void);
+
 #endif

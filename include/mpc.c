@@ -68,10 +68,10 @@ static struct {
 
 } tx_state;
 
-static void mpc_slave_init(void);
-static void mpc_master_init(void);
+static inline void mpc_slave_init(void);
+static inline void mpc_master_init(void);
 
-static bool queue_empty(qhdr_t);
+static inline bool queue_empty(qhdr_t*);
 static inline void queue_rd_idx(qhdr_t *q);
 static inline void queue_wr_idx(qhdr_t *q);
 
@@ -145,8 +145,8 @@ static inline void mpc_slave_init() {
 #endif
 }
 
-static inline bool queue_empty(qhdr_t q) {
-	return q.read == q.write;
+static inline bool queue_empty(qhdr_t * q) {
+	return q->read == q->write;
 }
 
 static inline void queue_rd_idx(qhdr_t * q) {
@@ -168,7 +168,7 @@ inline mpc_pkt* mpc_recv() {
 	while ( !ringbuf_empty(rx_state.buf) )
 		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
 
-	if ( queue_empty(rx_state.queue.hdr) ) return NULL;
+	if ( queue_empty(&rx_state.queue.hdr) ) return NULL;
 
 	mpc_pkt * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
 	queue_rd_idx(&rx_state.queue.hdr);
@@ -310,7 +310,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 static inline void mpc_master_run() {
 
 	//notthing to do harr.
-	if ( queue_empty(tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
+	if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
 
 	tx_state.status = TX_STATUS_BUSY;
 		
