@@ -51,8 +51,9 @@ inline void irtx_init() {
 
 	IRTX_USART.CTRLA = 0;
 	IRTX_USART.CTRLB = USART_TXEN_bm;
-	//stop bits mode 1 => 2 stop bits for v4 compat
-	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc | (1<<USART_SBMODE_bp) ;
+
+	//NOTE : removed 1<<USART_SBMODE_bp Why does /LW use 2 stop bits?
+	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc ;
 
 	//assuming 32MHZ CPU clk per
 	IRTX_TIMER.CTRLA = TC_CLKSEL_DIV2_gc;

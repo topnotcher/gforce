@@ -21,7 +21,7 @@ inline void irrx_init() {
 	IRRX_USART.CTRLA |= USART_RXCINTLVL_MED_gc;
 	IRRX_USART.CTRLB |= USART_RXEN_bm;
 
-	//stop bits mode 1 => 2 stop bits for v4 compat
+	//NOTE : removed 1<<USART_SBMODE_bp Why does /LW use 2 stop bits?
 	IRRX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc | (1<<USART_SBMODE_bp) ;
 }
 
