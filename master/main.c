@@ -53,7 +53,7 @@ int main(void) {
 	game_init();
 	mpc_init();
 
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm;
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 	xbee_put('*');
 
@@ -66,6 +66,8 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
+
+		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
 	while (1) {
 		
 		mpc_pkt * pkt = mpc_recv();
@@ -100,6 +102,9 @@ int main(void) {
 			free(pkt);
 		}
 	
+		_delay_ms(1000);
+		mpc_send(0b1111,'A', data, 9);
+
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();

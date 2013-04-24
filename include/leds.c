@@ -11,14 +11,16 @@
 #include <leds.h>
 #include "colors.h"
 
+#include "scheduler.h"
+
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
 
-
-static inline void led_timer_start(void);
+static inline void led_timer_start(task_lifetime_t);
 static inline void sclk_trigger(void);
 static inline void led_write(void);
 static inline void led_write_header(void);
+static void led_timer_tick(void);
 
 // {command}0000{repeat}0000|{8xled}0000 0000 0000 0000 0000 0000 0000 0000 |{on time}0000 {off time}
 //
@@ -128,7 +130,7 @@ inline void leds_run(void) {
 			state.leds = state.seq->patterns[state.pattern].pattern;
 			state.status = on;
 			led_write();
-			led_timer_start();
+			led_timer_start(state.ticks);
 			return;
 
 		/* end case start */
@@ -146,7 +148,7 @@ inline void leds_run(void) {
 				state.status = off;
 				state.ticks = state.seq->patterns[state.pattern].off;
 				led_write();
-				led_timer_start();
+				led_timer_start(state.ticks);
 			}
 
 			return;
@@ -171,7 +173,7 @@ inline void leds_run(void) {
 				} else {
 					state.ticks = state.seq->repeat_time;
 					state.status = repeat;
-					led_timer_start();
+					led_timer_start(state.ticks);
 					return;
 				}
 			//procede to next pattern or continue flashing the current pattern.
@@ -312,23 +314,13 @@ void led_init(void) {
 
 	//the state is set in its own initializer way up there^
 	led_write();
-
-	//don't prescale
- 	TCC0.CTRLA |= TC_CLKSEL_DIV8_gc; 
-
-	//enable compare
-	TCC0.CTRLB |= TC0_CCAEN_bm;
-
 }
 
-static inline void led_timer_start(void) {
-	TCC0.CNT = 0;	
-	TCC0.CCA = 55000;
-	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;
+static inline void led_timer_start(uint8_t ticks) {
+	//@TODO tick configuration.
+	scheduler_register(led_timer_tick, 700, ticks);
 }
 
-ISR(TCC0_CCA_vect) {
-	if ( --state.ticks == 0 )
-		TCC0.INTCTRLB &= ~TC_CCAINTLVL_MED_gc;
-
+static void led_timer_tick(void) {
+	--state.ticks;
 }
