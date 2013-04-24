@@ -53,7 +53,7 @@ int main(void) {
 	game_init();
 	mpc_init();
 
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm;
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 	xbee_put('*');
 
@@ -66,6 +66,7 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
+
 	while (1) {
 		
 		mpc_pkt * pkt = mpc_recv();
@@ -99,7 +100,7 @@ int main(void) {
 
 			free(pkt);
 		}
-	
+		
 //		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();
