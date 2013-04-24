@@ -318,7 +318,8 @@ void led_init(void) {
 
 static inline void led_timer_start(uint8_t ticks) {
 	//@TODO tick configuration.
-	scheduler_register(led_timer_tick, 700, ticks);
+	scheduler_unregister(led_timer_tick);
+	scheduler_register(led_timer_tick, 1000, ticks);
 }
 
 static void led_timer_tick(void) {
