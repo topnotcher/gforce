@@ -105,6 +105,11 @@ cli();
 }
 
 SCHEDULER_RUN {
+/**
+ * @TODO: ISR potentially calls a function => all registers get pushed onto the stack
+ * This is true even if no tasks are ready to be called. Might be a worthless optimization, but doing this
+ * in assembly could save ~40-60? cycles per invocation.
+ */
 	//interrupts already disabled.
 
 	SCHEDULER_REGISTER = 0;
