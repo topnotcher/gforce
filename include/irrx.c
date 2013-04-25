@@ -117,7 +117,6 @@ void ir_rx(ir_pkt_t * pkt) {
 	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
 	//instead: require that state == RECEIVE OR the read queue is not updated.
 	//oorrr I'm just retarded
-	uint8_t read = rx_state.read;
 	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
 		process_rx_byte();
 
