@@ -69,18 +69,18 @@ static struct {
 
 	} pkts[N_BUFF];
 
-	uint8_t scheduled;
+//	uint8_t scheduled;
 } rx_state;
 
 
 static inline void process_rx_byte(void);
-static void rx_timer_tick(void);
+//static void rx_timer_tick(void);
 
 inline void irrx_init(void) {
 
 	rx_state.read = 0;
 	rx_state.write = 0;
-	rx_state.scheduled = 0; //hmm?
+//	rx_state.scheduled = 0; //hmm?
 
 	for (uint8_t i = 0; i < N_BUFF; ++i) {
 		rx_state.pkts[i].buf = ringbuf_init(RX_BUFF_SIZE);
@@ -143,8 +143,8 @@ void ir_rx(ir_pkt_t * pkt) {
 		if ( rx_state.read != rx_state.write )
 			rx_state.read = (rx_state.read >= N_BUFF) ? 0 : rx_state.read+1;
 		else {
-			scheduler_unregister(rx_timer_tick);
-			rx_state.scheduled = 0;
+//			scheduler_unregister(rx_timer_tick);
+//			rx_state.scheduled = 0;
 		}
 		sei();
 
@@ -192,7 +192,7 @@ static inline void process_rx_byte(void) {
 /**
  * Triggers an RX timeout and forces received data in a buffer to be processed.
  */
-static void rx_timer_tick(void) {
+/*static void rx_timer_tick(void) {
 
 	//only need to time out reception if it is receiving
 	if ( rx_state.pkts[rx_state.read].state != RX_STATE_RECEIVE )
@@ -200,7 +200,7 @@ static void rx_timer_tick(void) {
 
 	if ( ++rx_state.pkts[rx_state.read].timer == RX_TIMEOUT_TICKS )
 		rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
-}
+}*/
 
 
 ISR(IRRX_USART_RXC_vect) {
@@ -228,10 +228,10 @@ ISR(IRRX_USART_RXC_vect) {
 
 			rx_state.write = idx;
 			
-			if ( !rx_state.scheduled ) {
+			/*if ( !rx_state.scheduled ) {
 				rx_state.scheduled = 1;
 				scheduler_register(rx_timer_tick, RX_TIMEOUT_TIME , SCHEDULER_RUN_UNLIMITED);
-			}
+			}*/
 		}
 
 		rx_state.pkts[idx].state = RX_STATE_READY;
