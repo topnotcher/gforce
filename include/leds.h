@@ -37,41 +37,7 @@ typedef struct {
 	led_pattern patterns[];
 } led_sequence;
 
-typedef enum {
-	//lights are off 
-	idle,
-	//idle, but requested to turn them on.
-	start,
 
-	//lights are on, and the leds are on.
-	on,
-
-	//lights are on, but this is the off period of a flash.
-	off,
-
-	//repeat wait time.
-	repeat,
-
-	stop
-} led_status;
-
-typedef struct {
-
-	/**
-	 * Pointer to led_values_t;
-	 */
-	const uint8_t * leds;
-
-	led_sequence * seq;
-
-	uint8_t pattern;
-
-	uint8_t flashes;
-
-	volatile led_status status;
-
-	uint8_t ticks;
-} led_state; 
 
 
 

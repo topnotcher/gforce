@@ -75,7 +75,17 @@ int main(void) {
 		}
 
 		leds_run();
+
+		ir_pkt_t irpkt;
+		ir_rx(&irpkt);
+
+		if ( irpkt.size != 0 ) {
+				mpc_send(0x40, 'I', irpkt.data, irpkt.size);
+				free( irpkt.data );
+		}
 	}
+
+
 
 	return 0;
 }

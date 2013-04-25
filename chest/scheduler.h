@@ -27,6 +27,7 @@
 //we need the scheduler to use interrupts,
 //so rather than counting the scheduler ticks, 
 //we count the overflow ticks, which acts a a prescaler.
+//this is every 256 CPU instructions? seems a bit fuckin steeep. WE SHALL GO WITH IT
 #define SCHEDULER_HZ (((F_CPU/SCHEDULER_PRESCALER)/256))
 //TEMP - IFDK why it's running 2x as fast
 //#define SCHEDULER_HZ 131071

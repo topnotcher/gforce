@@ -16,6 +16,47 @@
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
 
+
+
+typedef enum {
+	//lights are off 
+	idle,
+	//idle, but requested to turn them on.
+	start,
+
+	//lights are on, and the leds are on.
+	on,
+
+	//lights are on, but this is the off period of a flash.
+	off,
+
+	//repeat wait time.
+	repeat,
+
+	stop
+} led_status;
+
+
+typedef struct {
+
+	/**
+	 * Pointer to led_values_t;
+	 */
+	const uint8_t * leds;
+
+	led_sequence * seq;
+
+	uint8_t pattern;
+
+	uint8_t flashes;
+
+	volatile led_status status;
+
+	uint8_t ticks;
+} led_state; 
+
+
+
 static inline void led_timer_start(task_lifetime_t);
 static inline void sclk_trigger(void);
 static inline void led_write(void);
