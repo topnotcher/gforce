@@ -114,7 +114,11 @@ void ir_rx(ir_pkt_t * pkt) {
 	//@TODO max bytes to process in one run because we dont have preemptive multiprocessing!
 	uint8_t i = 0;
 	const uint8_t process_max = 10;
-	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && rx_state.pkts[ rx_state.read ].state == RX_STATE_RECEIVE  && i++ < process_max ) 
+	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
+	//instead: require that state == RECEIVE OR the read queue is not updated.
+	//oorrr I'm just retarded
+	uint8_t read = rx_state.read;
+	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
 		process_rx_byte();
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
@@ -122,6 +126,7 @@ void ir_rx(ir_pkt_t * pkt) {
 //		mpc_send_cmd(0x40, 'P');
 		//the packet's last byte should always be a CRC of the whole packet.
 		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
+
 //		mpc_send_cmd(0x40, 'S');
 
 			pkt->data = rx_state.pkts[ rx_state.read ].data;
