@@ -122,29 +122,13 @@ void ir_rx(ir_pkt_t * pkt) {
 		process_rx_byte();
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
-		//mpc_send(0x40, 'T', pkt->data, pkt->size);
-//		mpc_send_cmd(0x40, 'P');
-		//the packet's last byte should always be a CRC of the whole packet.
-		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
-//		mpc_send_cmd(0x40, 'S');
+		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
 			pkt->data = rx_state.pkts[ rx_state.read ].data;
 			pkt->size = rx_state.pkts[ rx_state.read ].size;
 
-			//really not entirely necessary...
-//			pkt->data = (uint8_t*)realloc(pkt->data, pkt->size);
-
-			//temp
-//			static uint8_t on = 0;
-
-//			if ( pkt->data[0] == 0x38 )
-//				set_lights(on^=1);
-
-
 		} else {
-//			mpc_send_cmd(0x40, 'F');
-
 			free(rx_state.pkts[ rx_state.read ].data);
 		}
 		
@@ -154,7 +138,7 @@ void ir_rx(ir_pkt_t * pkt) {
 		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
 	
-
+		//why did I disable interrupts here?
 		cli(); 
 		//now the question is: increment read or leave it?
 		if ( rx_state.read != rx_state.write )
@@ -173,9 +157,9 @@ static inline void process_rx_byte(void) {
 
 	if ( rx_state.pkts[rx_state.read].size == 0 ) {
 
-//		rx_state.pkts[rx_state.read].state = RX_STATE_RECEIVE;
-		//until I figure out how to know how many bytes are in the paket based on the command...
-//		mpc_send(0x40, 'S', &data, 1);
+		/**
+		 * @TODO: wtf
+		 */
 		uint8_t max_size = (data == 0x38) ? MAX_PKT_SIZE : 4;
 		rx_state.pkts[rx_state.read].data = (uint8_t*)malloc(max_size);
 		rx_state.pkts[rx_state.read].max_size = max_size;
@@ -255,13 +239,11 @@ ISR(IRRX_USART_RXC_vect) {
 		rx_state.pkts[idx].size = 0;
 		ringbuf_flush(rx_state.pkts[idx].buf);
 
-	//so much for keeping processing out of the ISR?...
-	
-	//received a valid data byte, and at some point before said byte... there was a start byte... 
 	/**
 	 * @TODO when state is set to ready, start a timer that... ticks. Timer is reset when bytes are 
 	 * received. if timer > N, then set the state to process or empty.
 	 */
+	//received a valid data byte, and at some point before said byte... there was a start byte... 
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
 		rx_state.pkts[ rx_state.write ].timer = 0;
 		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
