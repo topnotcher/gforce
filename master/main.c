@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
@@ -7,13 +8,14 @@
 
 #include "scheduler.h"
 //#include "lcd.h"
-#include "lights.h"
+//#include "lights.h"
 //#include "ir_sensor.h"
 #include "sounds.h"
-#include "game.h"
+//#include "game.h"
 #include "xbee.h"
 #include <mpc.h>
 #include <colors.h>
+//#include <leds.h>
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -45,12 +47,12 @@ int main(void) {
 	CLK_CTRL = 0x04;
 
 	scheduler_init();
-	lights_init();
+	//lights_init();
 //	ir_sensor_init();
 //	lcd_init();
 	sound_init();
 	xbee_init();
-	game_init();
+//	game_init();
 	mpc_init();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
@@ -66,6 +68,7 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
+			uint8_t on = 0;
 
 	while (1) {
 		
@@ -73,12 +76,12 @@ int main(void) {
 
 		if ( pkt != NULL ) {
 
-			xbee_put(':');
-			xbee_put(pkt->cmd);
-			xbee_put(',');
-			char src;
+//			xbee_put(':');
+//			xbee_put(pkt->cmd);
+//			xbee_put(',');
+			//char src;
 
-			switch(pkt->saddr>>1) {
+/*			switch(pkt->saddr>>1) {
 			case 0b0001:
 					src = 'F';
 					break;
@@ -93,10 +96,20 @@ int main(void) {
 					break;
 			default:
 					src = '?';
+			}*/
+
+//			xbee_put(src);
+//			xbee_put('\n');
+//
+			if ( pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1)) {
+				 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
+				 mpc_send(0b1111,'A', data, 9);
+			} else {
+				mpc_send_cmd(0b1111,'B');
 			}
 
-			xbee_put(src);
-			xbee_put('\n');
+				//set_lights(1);
+
 
 			free(pkt);
 		}

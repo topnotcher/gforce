@@ -18,7 +18,7 @@
 
 #define N_BUFF 4
 #define RX_BUFF_SIZE 10
-#define MAX_PKT_SIZE 16
+#define MAX_PKT_SIZE 15
 
 //when the packet timer reaches this level, set the state to process.
 // 1/IR_BAUD*mil = uS per bit. Timeout after 11 bits. (too generous)
@@ -128,7 +128,7 @@ void ir_rx(ir_pkt_t * pkt) {
 			pkt->size = rx_state.pkts[ rx_state.read ].size;
 
 			//really not entirely necessary...
-			pkt->data = (uint8_t*)realloc(pkt->data, pkt->size);
+//			pkt->data = (uint8_t*)realloc(pkt->data, pkt->size);
 
 			//temp
 //			static uint8_t on = 0;
@@ -143,6 +143,8 @@ void ir_rx(ir_pkt_t * pkt) {
 			free(rx_state.pkts[ rx_state.read ].data);
 		}
 		
+		rx_state.pkts[ rx_state.read ].data = NULL;
+
 		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
 		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
@@ -231,8 +233,10 @@ ISR(IRRX_USART_RXC_vect) {
 			if ( ++idx >= N_BUFF ) 
 				idx = 0;
 			
-			if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY )  
+			if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY )  {
 				free( rx_state.pkts[ idx ].data );
+				rx_state.pkts[ idx ].data = NULL;
+			}
 
 			rx_state.write = idx;
 			
