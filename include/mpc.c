@@ -219,6 +219,9 @@ MPC_TWI_SLAVE_ISR {
 		uint8_t addr = MPC_TWI.SLAVE.DATA;
 		if ( addr & mpc_twi_addr ) {
 #endif
+			//basically a hack instead of having per-packet queues.
+			while ( !ringbuf_empty(rx_state.buf) )
+				mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
 
 			if ( rx_state.pkt != NULL ) 
 				free(rx_state.pkt);
