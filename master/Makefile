@@ -2,7 +2,7 @@
 MCU = atxmega256a3
 F_CPU = 32000000
 
-C_DEFS=W_SOUNDS=1 DEBUG=0
+C_DEFS=W_SOUNDS=0 DEBUG=0
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC = main.c scheduler.c sounds.c game.c util.c xbee.c commands.c  mpc.c ringbuf.c
