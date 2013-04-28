@@ -22,7 +22,7 @@
 #define _RXPIN_bm G4_PIN(IRRX_USART_RXPIN)
 
 #define N_BUFF 4
-#define RX_BUFF_SIZE 5
+#define RX_BUFF_SIZE 15
 #define MAX_PKT_SIZE 15
 
 //when the packet timer reaches this level, set the state to process.
@@ -82,7 +82,7 @@ static inline void process_rx_byte(void);
 static void rx_timer_tick(void);
 void ISR_RECEIVE_BYTE(uint8_t, uint8_t);
 void fml_free(void * foo) {
-	printf("free: 0x%016x\n", (unsigned int)foo);
+//	printf("free: 0x%016x\n", foo);
 	free(foo);
 	foo = NULL;
 }
@@ -99,42 +99,55 @@ int main(void) {
 		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
 		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
 		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
-		-1
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+		255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 1,2,3,4,5,255,6,6,7,8,0,  255,255,255,67, 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113, 
+
+		-1,-1,-1,-1
 	};
 	
-	uint8_t meh[] = {1,2,3,6};
+	uint8_t meh[] = {2,2};
+	uint8_t gogo = 1;
+	int rx_cnt = 0;
+	int proc_cnt = 0;
+	int i = 0;
 
-	for ( int i = 0,j = 0, gogo = 1; gogo == 1; ) {
-		j = ( j == 4) ? 0 : j;
+	while (1) {
 
-		for (; i < i+meh[j]; ++i ) {
-
-			uint8_t byte = (uint8_t)data[i];
+		for (int j = 0; j < 2; ++j ) {
+			uint8_t byte = (uint8_t)(data[i++]&0xff);
 			uint8_t bit8 = (byte != 255);
-//			if ( i == 18 ) {
-/*				rx_state.write++;
-				rx_state.pkts[rx_state.read].size = 1;
-				rx_state.pkts[rx_state.read].data = malloc(1);
-				rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;*/
-//			}
 
-			if ( data[i] >= 0 ) 
+			if ( data[i] >= 0 ) {
+				++rx_cnt;
 				ISR_RECEIVE_BYTE(bit8,byte);
-			else {
-				break;
-//				rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
+			} else {
 				gogo = 0;
+				break;
 			}
 		}
 
+		do {
 			ir_rx(&pkt) ;
+			proc_cnt++;
+//			printf("%d/%d\n",proc_cnt,rx_cnt);
 			if (pkt.size > 0)
-				printf("%02d: rx a packet, size = %d\n",i, pkt.size);
+			printf("%02d: rx a packet, size = %d\n",i, pkt.size);
 			if ( pkt.size != 0) {
 				free(pkt.data);
 				pkt.data = NULL;pkt.size = 0;
 			}
-			if (!gogo) break;
+		} while (gogo==0 && proc_cnt <= rx_cnt);
+
+		if ( gogo == 0 ) break;
 /////
 	}
 	return 0;
@@ -182,14 +195,13 @@ void ir_rx(ir_pkt_t * pkt) {
 	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
 		process_rx_byte();
 
+	
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
 
-		printf("rx_state.read: %d\n", rx_state.read);
-		printf("size: %d\n", rx_state.pkts[rx_state.read].size - 1);
 		//the packet's last byte should always be a CRC of the whole packet.
 		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
-			printf("Processing a packet. %d/%d\n", rx_state.read, rx_state.write);
+	//		printf("Processing a packet. %d/%d\n", rx_state.read, rx_state.write);
 
 			pkt->data = rx_state.pkts[ rx_state.read ].data;// realloc( rx_state.pkts[ rx_state.read ].data, pkt->size );
 			pkt->size = rx_state.pkts[ rx_state.read ].size;
@@ -202,7 +214,7 @@ void ir_rx(ir_pkt_t * pkt) {
 
 
 		} else {
-			printf("Trashed due to CRC\n");
+	//		printf("Trashed due to CRC\n");
 			fml_free(rx_state.pkts[ rx_state.read ].data);
 		}
 		
@@ -215,15 +227,20 @@ void ir_rx(ir_pkt_t * pkt) {
 
 //		sei(); 
 		//now the question is: increment read or leave it?
-		if ( rx_state.read != rx_state.write )
-			rx_state.read = (rx_state.read >= N_BUFF) ? 0 : rx_state.read+1;
+		if ( rx_state.read != rx_state.write ) {
+	//		printf("*****Read and write are different.\n");
+			rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
+		}
 		else {
+//			printf("*****Read and write are at the same position\n");
 //			scheduler_unregister(rx_timer_tick);
 //			rx_state.scheduled = 0;
 		}
 
 		//		cli();
 
+	} else {
+//		printf("QUEUE %d is not processed.\n", rx_state.read);
 	}
 }
 
@@ -234,7 +251,7 @@ static inline void process_rx_byte(void) {
 	if ( rx_state.pkts[rx_state.read].size == 0 ) {
 
 		uint8_t max_size = (data == 0x38) ? 15 : 4;
-		printf("Alloc: %d\n", max_size);
+//		printf("Alloc: %d\n", max_size);
 		rx_state.pkts[rx_state.read].data = (uint8_t*)malloc(max_size);
 		rx_state.pkts[rx_state.read].max_size = max_size;
 		rx_state.pkts[rx_state.read].crc = IR_CRC_SHIFT;
@@ -257,18 +274,18 @@ static inline void process_rx_byte(void) {
 				rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
 
 				
-				printf("Expected a CRC of 0x%02x, but have 0x%02x\n", rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size -1], rx_state.pkts[rx_state.read].crc);
+		//		printf("Expected a CRC of 0x%02x, but have 0x%02x\n", rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size -1], rx_state.pkts[rx_state.read].crc);
 				return;
 			}
 		} else {
-			printf("CRC: 0x%02x\n", rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size-1] );
+//			printf("CRC: 0x%02x\n", rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size-1] );
 			crc(&rx_state.pkts[rx_state.read].crc, rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size-1], IR_CRC_POLY);
 		}
 		rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size] = data;
 				
 		if ( ++rx_state.pkts[rx_state.read].size == rx_state.pkts[rx_state.read].max_size ) {
 			rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
-			printf("Process due to max size! %d/%d", rx_state.pkts[rx_state.read].size, rx_state.pkts[rx_state.read].max_size);
+		//	printf("Process due to max size! %d/%d", rx_state.pkts[rx_state.read].size, rx_state.pkts[rx_state.read].max_size);
 		}
 	}
 }
@@ -300,11 +317,11 @@ void ISR_RECEIVE_BYTE(uint8_t bit8, uint8_t data) {
 			//buffer will receive no new bytes -> process remaining bytes then set to empty.
 			rx_state.pkts[ idx ].state = RX_STATE_PROCESS;
 			printf("process due to rotate (size: %d; wr: %d; rd:%d)\n", rx_state.pkts[rx_state.write].size,rx_state.write,rx_state.read);
-			if ( ++idx >= N_BUFF ) 
+			if ( ++idx == N_BUFF ) 
 				idx = 0;
 			
 			if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY )  {
-				printf("2\n");
+//				printf("2\n");
 				fml_free( rx_state.pkts[ idx ].data );
 				rx_state.pkts[idx].data = NULL;
 			}
@@ -329,11 +346,11 @@ void ISR_RECEIVE_BYTE(uint8_t bit8, uint8_t data) {
 	 * received. if timer > N, then set the state to process or empty.
 	 */
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
-		printf("RX: 0x%02x\n", data);
+//		printf("RX: 0x%02x\n", data);
 		rx_state.pkts[ rx_state.write ].timer = 0;
 		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_READY ) {
-		printf("*RX 0x%02x\n", data);
+//		printf("*RX 0x%02x\n", data);
 
 		rx_state.pkts[ rx_state.write ].state = RX_STATE_RECEIVE;
 		rx_state.pkts[ rx_state.write ].timer = 0;

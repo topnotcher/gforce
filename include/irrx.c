@@ -107,8 +107,12 @@ void ir_rx(ir_pkt_t * pkt) {
 	//tells the caller whether data was returned: default to no
 	pkt->size = 0;
 
-	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY )
-		return;
+	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY ) {
+		if ( rx_state.read != rx_state.write ) 
+				rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
+		else
+			return;
+	}
 
 	//@TODO max bytes to process in one run because we dont have preemptive multiprocessing!
 	uint8_t i = 0;
