@@ -57,7 +57,7 @@ typedef struct {
 
 
 
-static inline void led_timer_start(task_lifetime_t);
+static inline void led_timer_start(void);
 static inline void sclk_trigger(void);
 static inline void led_write(void);
 static inline void led_write_header(void);
@@ -171,7 +171,7 @@ inline void leds_run(void) {
 			state.leds = state.seq->patterns[state.pattern].pattern;
 			state.status = on;
 			led_write();
-			led_timer_start(state.ticks);
+			led_timer_start();
 			return;
 
 		/* end case start */
@@ -189,7 +189,7 @@ inline void leds_run(void) {
 				state.status = off;
 				state.ticks = state.seq->patterns[state.pattern].off;
 				led_write();
-				led_timer_start(state.ticks);
+				led_timer_start();
 			}
 
 			return;
@@ -214,7 +214,7 @@ inline void leds_run(void) {
 				} else {
 					state.ticks = state.seq->repeat_time;
 					state.status = repeat;
-					led_timer_start(state.ticks);
+					led_timer_start();
 					return;
 				}
 			//procede to next pattern or continue flashing the current pattern.
@@ -355,14 +355,26 @@ void led_init(void) {
 
 	//the state is set in its own initializer way up there^
 	led_write();
+
+ 	TCC0.CTRLA |= TC_CLKSEL_DIV8_gc; 
+
+	//enable compare
+	TCC0.CTRLB |= TC0_CCAEN_bm;
+
 }
 
-static inline void led_timer_start(uint8_t ticks) {
-	//@TODO tick configuration.
-	scheduler_unregister(led_timer_tick);
-	scheduler_register(led_timer_tick, 1000, ticks);
+static inline void led_timer_start(void) {
+	TCC0.CNT = 0;	
+	TCC0.CCA = 55000;
+	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;
 }
 
-static void led_timer_tick(void) {
-	--state.ticks;
+static inline void led_timer_tick(void) {
+	if ( --state.ticks == 0 )
+		TCC0.INTCTRLB &= ~TC_CCAINTLVL_MED_gc;
+
+}
+
+ISR(TCC0_CCA_vect) {
+	led_timer_tick();
 }

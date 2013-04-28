@@ -126,7 +126,7 @@ void ir_rx(ir_pkt_t * pkt) {
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
 
-		if ( 1||rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
+		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
 			pkt->data = rx_state.pkts[ rx_state.read ].data;
 			pkt->size = rx_state.pkts[ rx_state.read ].size;

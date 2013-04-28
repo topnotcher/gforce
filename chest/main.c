@@ -17,7 +17,7 @@
 #include <buzz.h>
 #include <irrx.h>
 
-#include "scheduler.h"
+//#include "scheduler.h"
 
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
@@ -49,7 +49,7 @@ int main(void) {
 	sei();
 
 	//safe to pass PTR because we never leave main()
-	scheduler_init();
+//	scheduler_init();
 	led_init();
 	mpc_init();
 	buzz_init();
