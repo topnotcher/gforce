@@ -17,7 +17,7 @@
 #define _RXPIN_bm G4_PIN(IRRX_USART_RXPIN)
 
 #define N_BUFF 4
-#define RX_BUFF_SIZE 10
+#define RX_BUFF_SIZE 15
 #define MAX_PKT_SIZE 15
 
 //when the packet timer reaches this level, set the state to process.
@@ -66,7 +66,6 @@ static struct {
 		//copied to an ir_pkt_t after processing. 
 		uint8_t size;
 		uint8_t * data;
-
 	} pkts[N_BUFF];
 
 //	uint8_t scheduled;
@@ -122,7 +121,7 @@ void ir_rx(ir_pkt_t * pkt) {
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
 
-		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
+		if ( 1||rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
 			pkt->data = rx_state.pkts[ rx_state.read ].data;
 			pkt->size = rx_state.pkts[ rx_state.read ].size;
@@ -141,7 +140,7 @@ void ir_rx(ir_pkt_t * pkt) {
 		cli(); 
 		//now the question is: increment read or leave it?
 		if ( rx_state.read != rx_state.write )
-			rx_state.read = (rx_state.read >= N_BUFF) ? 0 : rx_state.read+1;
+			rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
 		else {
 //			scheduler_unregister(rx_timer_tick);
 //			rx_state.scheduled = 0;
@@ -218,7 +217,7 @@ ISR(IRRX_USART_RXC_vect) {
 			//buffer will receive no new bytes -> process remaining bytes then set to empty.
 			rx_state.pkts[ idx ].state = RX_STATE_PROCESS;
 
-			if ( ++idx >= N_BUFF ) 
+			if ( ++idx == N_BUFF-1 ) 
 				idx = 0;
 			
 			if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY )  {
