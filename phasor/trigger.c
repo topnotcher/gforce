@@ -31,16 +31,11 @@ inline void trigger_init(void) {
 
 	//configure interrupts
 	TRIGGER_PORT.INT0MASK = _TRIGPIN_bm;
-	TRIGGER_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
+	trigger_enable();
 }
 
 inline bool trigger_pressed(void) {
 	if ( _trigger_pressed ) {
-		trigger_disable();
-//		ticks = 0;
-		RTC.COMP = 500;
-		RTC.CNT = 0;
-		RTC.INTCTRL = RTC_COMPINTLVL_MED_gc;
 		_trigger_pressed = false;
 		return true;
 	}
@@ -48,17 +43,28 @@ inline bool trigger_pressed(void) {
 }
 static inline void trigger_enable(void) {
 	_trigger_enabled = true;
+	TRIGGER_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
 }
 static inline void trigger_disable(void) {
 	_trigger_enabled = false;
+	TRIGGER_PORT.INTCTRL &= ~PORT_INT0LVL_MED_gc;
 }
 static inline bool trigger_enabled(void) {
 	return _trigger_enabled;
 }
 
 ISR(PORTA_INT0_vect) {
-	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) &&  trigger_enabled() ) 
+	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) &&  trigger_enabled() ) {
+
+		RTC.COMP = 500;
+		RTC.CNT = 0;
+		RTC.INTCTRL = RTC_COMPINTLVL_MED_gc;
+	
+		trigger_disable();
+
 		_trigger_pressed = true;
+
+	}
 }
 
 ISR(RTC_COMP_vect) {
