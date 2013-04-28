@@ -103,9 +103,9 @@ int main(void) {
 //
 			if ( pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1)) {
 				 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
-				 mpc_send(pkt->saddr,'A', data, 9);
+				 mpc_send(0b1111,'A', data, 9);
 			} else {
-				mpc_send_cmd(pkt->saddr,'B');
+				mpc_send_cmd(0b1111,'B');
 			}
 
 				//set_lights(1);
