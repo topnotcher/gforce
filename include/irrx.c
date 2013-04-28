@@ -108,7 +108,8 @@ void ir_rx(ir_pkt_t * pkt) {
 	pkt->size = 0;
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY ) {
-		if ( rx_state.read != rx_state.write ) 
+		//SHOULD do this upon processing, but... shit is failing!
+		if ( rx_state.read != rx_state.write )
 				rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
 		else
 			return;
@@ -139,18 +140,6 @@ void ir_rx(ir_pkt_t * pkt) {
 		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
 		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
-	
-		//why did I disable interrupts here?
-		cli(); 
-		//now the question is: increment read or leave it?
-		if ( rx_state.read != rx_state.write )
-			rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
-		else {
-//			scheduler_unregister(rx_timer_tick);
-//			rx_state.scheduled = 0;
-		}
-		sei();
-
 	}
 }
 
@@ -213,7 +202,7 @@ ISR(IRRX_USART_RXC_vect) {
 	/**
 	 * This represents the start of a new packet
 	 */
-	if ( (data == 0xFF && !bit8) && rx_state.pkts[ rx_state.read ].state != RX_STATE_READY ) {
+	if ( (data == 0xFF && !bit8) && rx_state.pkts[ rx_state.write ].state != RX_STATE_READY ) {
 		
 		uint8_t idx = rx_state.write;
 		
@@ -228,6 +217,7 @@ ISR(IRRX_USART_RXC_vect) {
 				free( rx_state.pkts[ idx ].data );
 				rx_state.pkts[ idx ].data = NULL;
 			}
+			
 
 			rx_state.write = idx;
 			
