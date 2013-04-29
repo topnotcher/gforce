@@ -5,7 +5,10 @@
 #ifndef UART_H
 #define UART_H
 
+#ifndef UART_TX_QUEUE_SIZE
 #define UART_TX_QUEUE_SIZE 4
+#endif
+
 #define UART_START_BYTE 0xFF
 
 
