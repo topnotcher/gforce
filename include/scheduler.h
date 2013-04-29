@@ -33,8 +33,8 @@
 //to make the task run indefinitely.
 #define SCHEDULER_RUN_UNLIMITED 0
 
-typedef uint32_t task_freq_t;
-typedef uint32_t task_ticks_t;
+typedef uint16_t task_freq_t;
+typedef uint16_t task_ticks_t;
 typedef uint8_t task_lifetime_t;
 
 typedef struct {
@@ -53,8 +53,6 @@ typedef struct {
 } scheduler_task;
 
 void scheduler_init(void);
-
-void scheduler_run(void);
 
 void scheduler_register(void (*)(void), task_freq_t, task_lifetime_t );
 
