@@ -6,16 +6,13 @@ task_node * task_list;
 
 inline void scheduler_init(void) {
 
-	TCC0.CCA = 255;
-	TCC0.CTRLB |= TC0_CCAEN_bm;
-	SCHEDULER_CONTROL_REGISTER = SCHEDULER_PRESCALER_BITS;
-	/**
-	 * If I need to increase timer resolution:
-	 * see also: scheduler.h
-	 * TCCR2A |= _BV(WGM21);
-	 * OCR2A = 127;
-	 */
-	SCHEDULER_REGISTER = 0;
+	//@TODO
+	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
+	CLK.RTCCTRL = CLK_RTCSRC_ULP_gc | CLK_RTCEN_bm;
+	RTC.COMP = 1;
+	RTC.CNT = 0;
+	RTC.INTCTRL = RTC_COMPINTLVL_MED_gc;
+
 	task_list = NULL;
 }
 
@@ -67,7 +64,6 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 
 void scheduler_unregister(void (*task_cb)(void)) {
 cli();
-
 	if ( task_list == NULL )
 		goto end;
 
@@ -112,7 +108,7 @@ SCHEDULER_RUN {
  */
 	//interrupts already disabled.
 
-	SCHEDULER_REGISTER = 0;
+	RTC.CNT = 0;
 
 	task_node * node = task_list;
 	task_node * cur = task_list;

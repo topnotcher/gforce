@@ -4,17 +4,8 @@
 
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
-
-// set prescaler to 1
-#define SCHEDULER_CONTROL_REGISTER TCC0.CTRLA
-#define SCHEDULER_PRESCALER_BITS TC_CLKSEL_DIV1_gc
-
-#define SCHEDULER_REGISTER TCC0.CNT
-
-#define SCHEDULER_PRESCALER 1
-
-#define SCHEDULER_INTERRUPT_REGISTER TCC0.INTCTRLB
-#define SCHEDULER_INTERRUPT_ENABLE_BITS TC_CCAINTLVL_HI_gc
+#define SCHEDULER_INTERRUPT_REGISTER RTC.INTCTRL
+#define SCHEDULER_INTERRUPT_ENABLE_BITS RTC_COMPINTLVL_HI_gc
 
 //to change shit to a compare match...
 //#define SCHEDULER_INTERRUPT_ENABLE_BITS _BV(OCIE2A);
@@ -22,19 +13,19 @@
 //#define SCHEDULER_HZ (F_CPU/128)
 
 
-#define SCHEDULER_INTERRUPT_VECTOR TCC0_CCA_vect
+#define SCHEDULER_INTERRUPT_VECTOR RTC_COMP_vect
 
 //we need the scheduler to use interrupts,
 //so rather than counting the scheduler ticks, 
 //we count the overflow ticks, which acts a a prescaler.
 //this is every 256 CPU instructions? seems a bit fuckin steeep. WE SHALL GO WITH IT
-#define SCHEDULER_HZ (((F_CPU/SCHEDULER_PRESCALER)/256))
+
+#define SCHEDULER_HZ 1000
 //TEMP - IFDK why it's running 2x as fast
 //#define SCHEDULER_HZ 131071
 //#define SCHEDULER_HZ 62652
 // the number of microseconds per tick.
 #define SCHEDULER_TICK_US (1000000/SCHEDULER_HZ)
-
 
 #define SCHEDULER_RUN ISR(SCHEDULER_INTERRUPT_VECTOR)
 

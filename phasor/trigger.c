@@ -5,6 +5,7 @@
 #include "config.h"
 #include "trigger.h"
 #include <util.h>
+#include <scheduler.h>
 
 #define _TRIGPINCTRL G4_PINCTRL(TRIGGER_PIN)
 #define _TRIGPIN_bm G4_PIN(TRIGGER_PIN)
@@ -12,7 +13,7 @@
 static inline bool trigger_enabled(void);
 static inline void trigger_disable(void);
 static inline void trigger_enable(void);
-
+static void trigger_tick(void);
 
 static volatile bool _trigger_pressed;
 static volatile bool _trigger_enabled;
@@ -26,6 +27,7 @@ inline void trigger_init(void) {
 	_trigger_pressed = false;
 	_trigger_enabled = true;
 
+	//copied
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
 	CLK.RTCCTRL = CLK_RTCSRC_ULP_gc | CLK_RTCEN_bm;
 
@@ -56,10 +58,7 @@ static inline bool trigger_enabled(void) {
 ISR(PORTA_INT0_vect) {
 	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) &&  trigger_enabled() ) {
 
-		RTC.COMP = 500;
-		RTC.CNT = 0;
-		RTC.INTCTRL = RTC_COMPINTLVL_MED_gc;
-	
+		scheduler_register(trigger_tick, 500, 1);
 		trigger_disable();
 
 		_trigger_pressed = true;
@@ -67,9 +66,6 @@ ISR(PORTA_INT0_vect) {
 	}
 }
 
-ISR(RTC_COMP_vect) {
-//	RTC.CNT = 0;
-//	if ( ++ticks == 500 ) 
+void trigger_tick(void) {
 	trigger_enable();
-	RTC.INTCTRL &= ~RTC_COMPINTLVL_MED_gc;
 }
