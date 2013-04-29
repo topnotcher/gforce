@@ -1,6 +1,5 @@
 #include <avr/io.h>
 #include <util/crc16.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -19,7 +18,7 @@
 
 
 //return true if more processing is required before returning a packet.
-static inline bool uart_process_byte(uart_driver_t *driver, uint8_t data);
+static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data);
 
 uart_driver_t *uart_init(USART_t *usart, uint8_t buffsize) {
 	uart_driver_t * driver = malloc(sizeof *driver);
@@ -41,8 +40,7 @@ mpc_pkt * uart_rx(uart_driver_t * driver) {
 	//@TODO
 	const uint8_t process_max = 10;
 	uint8_t i = 0;
-	bool more = true;
-
+	uint8_t more = 1;
 	while ( !ringbuf_empty(driver->rx.buf) && more && i++ < process_max ) 
 		more = uart_process_byte(driver, ringbuf_get(driver->rx.buf));
 
@@ -53,10 +51,10 @@ mpc_pkt * uart_rx(uart_driver_t * driver) {
 }
 
 
-static inline bool uart_process_byte(uart_driver_t * driver, uint8_t data) {
+static inline uint8_t uart_process_byte(uart_driver_t * driver, uint8_t data) {
 
 	if ( driver->rx.state == RX_STATE_IDLE ) {
-
+		
 		if ( data == UART_START_BYTE ) 
 			driver->rx.state = RX_STATE_READY;
 
@@ -66,6 +64,7 @@ static inline bool uart_process_byte(uart_driver_t * driver, uint8_t data) {
 		driver->rx.crc = uart_crc(MPC_CRC_SHIFT, data);
 		driver->rx.pkt->len = data;
 		driver->rx.size = 1;
+		driver->rx.state = RX_STATE_RECEIVE;
 
 	} else if ( driver->rx.state == RX_STATE_RECEIVE ) {
 		((uint8_t*)driver->rx.pkt)[driver->rx.size] = data;
@@ -74,23 +73,25 @@ static inline bool uart_process_byte(uart_driver_t * driver, uint8_t data) {
 			driver->rx.crc = uart_crc(driver->rx.crc, data);
 
 
-		if ( ++driver->rx.size == driver->rx.pkt->len+sizeof(*driver->rx.pkt) ) {
+		if ( ++driver->rx.size == driver->rx.pkt->len+sizeof(*driver->rx.pkt) ) {	
+
 			driver->rx.state = RX_STATE_IDLE;
 
-			if ( driver->rx.crc == driver->rx.pkt->chksum )  
-				return false;
+			if ( driver->rx.crc == driver->rx.pkt->chksum ) 
+				return 0;
 			else 
 				free(driver->rx.pkt);
 		}
 	}
 
 	//packet not done = true
-	return true;
+	return 1;
 }
 
 
 inline void uart_rx_byte(uart_driver_t *  driver) {
-	ringbuf_put(driver->rx.buf, driver->usart->DATA);
+	uint8_t data = driver->usart->DATA;
+	ringbuf_put(driver->rx.buf, data);
 }
 
 //so  ttly copied from mpc :/

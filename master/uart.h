@@ -1,4 +1,6 @@
+#ifndef USART_DREINTLVL_MED_gc
 #include <avr/io.h>
+#endif
 #include <ringbuf.h>
 #include <mpc.h>
 
