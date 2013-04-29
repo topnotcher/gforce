@@ -71,8 +71,8 @@ int main(void) {
 
 	while (1) {
 		
-		mpc_pkt * pkt = xbee_recv();//mpc_recv();
-		//mpc_pkt * mpkt = mpc_recv();
+		//mpc_pkt * pkt = xbee_recv();//mpc_recv();
+		mpc_pkt * pkt = mpc_recv();
 	//	if (mpkt != NULL)
 	//		free(mpkt);
 		//	_delay_ms(500);
