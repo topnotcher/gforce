@@ -8,7 +8,7 @@ inline void scheduler_init(void) {
 
 	//@TODO
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
-	CLK.RTCCTRL = CLK_RTCSRC_ULP_gc | CLK_RTCEN_bm;
+	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc /*CLK_RTCSRC_ULP_gc*/ | CLK_RTCEN_bm;
 	RTC.COMP = 1;
 	RTC.CNT = 0;
 
