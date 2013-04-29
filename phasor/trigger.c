@@ -27,10 +27,6 @@ inline void trigger_init(void) {
 	_trigger_pressed = false;
 	_trigger_enabled = true;
 
-	//copied
-	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
-	CLK.RTCCTRL = CLK_RTCSRC_ULP_gc | CLK_RTCEN_bm;
-
 	//configure interrupts
 	TRIGGER_PORT.INT0MASK = _TRIGPIN_bm;
 	trigger_enable();
