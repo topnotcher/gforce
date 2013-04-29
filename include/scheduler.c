@@ -11,7 +11,6 @@ inline void scheduler_init(void) {
 	CLK.RTCCTRL = CLK_RTCSRC_ULP_gc | CLK_RTCEN_bm;
 	RTC.COMP = 1;
 	RTC.CNT = 0;
-	RTC.INTCTRL = RTC_COMPINTLVL_MED_gc;
 
 	task_list = NULL;
 }
