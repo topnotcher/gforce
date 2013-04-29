@@ -169,7 +169,7 @@ static inline void queue_wr_idx(qhdr_t * q) {
 
 inline mpc_pkt* mpc_recv(void) {
 
-	mpc_master_run();
+	//mpc_master_run();
 
 	while ( !ringbuf_empty(rx_state.buf) )
 		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
@@ -324,6 +324,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
 	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
 	queue_wr_idx(&tx_state.queue.hdr);
+	mpc_master_run();
 }
 
 static inline void mpc_master_run(void) {
@@ -368,6 +369,7 @@ MPC_TWI_MASTER_ISR  {
 			MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 			tx_state.byte = 0;
 			tx_state.status = TX_STATUS_IDLE;
+			mpc_master_run();
 
 		} else {
 			if ( tx_state.byte < tx_state.len ) {
