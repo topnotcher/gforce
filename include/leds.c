@@ -11,12 +11,10 @@
 #include <leds.h>
 #include "colors.h"
 
-#include "scheduler.h"
+#include <scheduler.h>
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
-
-
 
 typedef enum {
 	//lights are off 
@@ -53,6 +51,7 @@ typedef struct {
 	volatile led_status status;
 
 	uint8_t ticks;
+
 } led_state; 
 
 
@@ -61,7 +60,7 @@ static inline void led_timer_start(void);
 static inline void sclk_trigger(void);
 static inline void led_write(void);
 static inline void led_write_header(void);
-static void led_timer_tick(void);
+void led_timer_tick(void);
 
 // {command}0000{repeat}0000|{8xled}0000 0000 0000 0000 0000 0000 0000 0000 |{on time}0000 {off time}
 //
@@ -137,6 +136,10 @@ led_state state = {
 };*/
 
 inline void set_lights(uint8_t status) {
+
+	if ( !status && state.ticks ) 
+		scheduler_unregister(led_timer_tick);
+
 	state.status = status ? start : stop;
 }
 
@@ -355,26 +358,15 @@ void led_init(void) {
 
 	//the state is set in its own initializer way up there^
 	led_write();
-
- 	TCC0.CTRLA |= TC_CLKSEL_DIV8_gc; 
-
-	//enable compare
-	TCC0.CTRLB |= TC0_CCAEN_bm;
-
 }
 
 static inline void led_timer_start(void) {
-	TCC0.CNT = 0;	
-	TCC0.CCA = 55000;
-	TCC0.INTCTRLB |= TC_CCAINTLVL_MED_gc;
+	scheduler_register(led_timer_tick, LED_DELAY_TIME*state.ticks, 1);
 }
 
-static inline void led_timer_tick(void) {
-	if ( --state.ticks == 0 )
-		TCC0.INTCTRLB &= ~TC_CCAINTLVL_MED_gc;
+void led_timer_tick(void) {
+	state.ticks = 0;
+//	if ( --state.ticks == 0 )
+//		TCC0.INTCTRLB &= ~TC_CCAINTLVL_MED_gc;
 
-}
-
-ISR(TCC0_CCA_vect) {
-	led_timer_tick();
 }
