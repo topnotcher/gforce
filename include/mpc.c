@@ -5,6 +5,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/crc16.h>
 
 #include <g4config.h>
 #include "config.h"
@@ -15,6 +16,8 @@
 #ifndef MPC_QUEUE_SIZE
 	#define MPC_QUEUE_SIZE 8
 #endif
+
+
 
 /**
  * "template" for recvq and sendq so the inc/decrement logic can be shared
@@ -80,6 +83,9 @@ static void mpc_slave_recv_pkt(mpc_pkt * pkt);
 
 static void mpc_master_end_txn(void);
 static inline void mpc_master_run(void);
+
+
+#define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
 /** 
  * @TODo smart mode?
@@ -184,8 +190,7 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 		rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
 
 #ifndef MPC_DISABLE_CRC
-		rx_state.crc = MPC_CRC_SHIFT;
-		crc(&rx_state.crc, data, MPC_CRC_POLY);
+		rx_state.crc = mpc_crc(MPC_CRC_SHIFT, data);
 #endif
 		rx_state.pkt->len = data;
 		rx_state.size = 1;
@@ -194,7 +199,7 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 		((uint8_t*)rx_state.pkt)[rx_state.size] = data;
 #ifndef MPC_DISABLE_CRC
 		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
-			crc(&rx_state.crc, data, MPC_CRC_POLY);
+			rx_state.crc = mpc_crc(rx_state.crc,data);
 #endif
 		rx_state.size++;
 	}
@@ -305,14 +310,14 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	pkt->saddr = mpc_twi_addr;
 	pkt->chksum = MPC_CRC_SHIFT;
 
-#ifdef MPC_ENABLE_CRC
+#ifndef MPC_DISABLE_CRC
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
-		crc(&pkt->chksum, ((uint8_t*)pkt)[i], MPC_CRC_POLY);
+		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t*)pkt)[i]);
 #endif
 	for ( uint8_t i = 0; i < len; ++i ) {
 			pkt->data[i] = data[i];
 #ifndef MPC_DISABLE_CRC
-			crc(&pkt->chksum, data[i], MPC_CRC_POLY);
+			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
 #endif
 	}
 	
