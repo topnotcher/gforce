@@ -89,8 +89,8 @@ static inline bool uart_process_byte(uart_driver_t * driver, uint8_t data) {
 }
 
 
-inline void uart_rx_byte(uart_driver_t *  driver, uint8_t data) {
-	ringbuf_put(driver->rx.buf, data);
+inline void uart_rx_byte(uart_driver_t *  driver) {
+	ringbuf_put(driver->rx.buf, driver->usart->DATA);
 }
 
 //so  ttly copied from mpc :/

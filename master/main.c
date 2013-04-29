@@ -57,8 +57,6 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
-	xbee_put('*');
-
 
 	#if DEBUG == 0
 	/** 
@@ -72,7 +70,7 @@ int main(void) {
 
 	while (1) {
 		
-		mpc_pkt * pkt = mpc_recv();
+		mpc_pkt * pkt = xbee_recv();//mpc_recv();
 
 		if ( pkt != NULL ) {
 

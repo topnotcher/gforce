@@ -1,3 +1,5 @@
+#include <avr/io.h>
+#include <ringbuf.h>
 #include <mpc.h>
 
 #ifndef UART_H
@@ -56,7 +58,7 @@ uart_driver_t *uart_init(USART_t *usart, uint8_t buffsize);
 mpc_pkt * uart_rx(uart_driver_t * driver);
 
 //goes in the receive ISR
-void uart_rx_byte(uart_driver_t *  driver, uint8_t data);
+void uart_rx_byte(uart_driver_t *  driver);
 
 void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint8_t * data);
 

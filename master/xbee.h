@@ -1,6 +1,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include <mpc.h>
+
 #ifndef XBEE_H
 #define XBEE_H
 
@@ -15,6 +17,7 @@
 #define XBEE_BSEL_VALUE 12
 #define XBEE_BSCALE_VALUE 4
 
+#define XBEE_USART USARTF0
 
 
 #define XBEE_BAUDA USARTF0.BAUDCTRLA
@@ -69,14 +72,9 @@
 
 #define XBEE_QUEUE_MAX 25
 
-typedef struct {
-	uint8_t read;
-	uint8_t write;
-	uint8_t data[XBEE_QUEUE_MAX];
-} xbee_queue_t;
 
 void xbee_init(void);
-void xbee_put(uint8_t);
-void xbee_send(uint8_t [], uint8_t);
+
+mpc_pkt * xbee_recv(void);
 
 #endif
