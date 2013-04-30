@@ -15,6 +15,7 @@
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
+#define _SS_bm G4_PIN(LED_SS_PIN)
 
 typedef enum {
 	//lights are off 
@@ -321,8 +322,8 @@ void led_init(void) {
 
 
 	//SS will fuck you over hard per xmegaA, pp226.
-	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm | PIN4_bm;
-	LED_PORT.OUTSET = _SCLK_bm | _SOUT_bm | PIN4_bm;
+	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm | _SS_bm;
+	LED_PORT.OUTSET = _SCLK_bm | _SOUT_bm | _SS_bm;
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
