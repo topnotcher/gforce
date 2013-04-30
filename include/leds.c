@@ -16,8 +16,6 @@
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
 
-#define LED_SPI SPIC
-
 typedef enum {
 	//lights are off 
 	idle,
@@ -36,6 +34,7 @@ typedef enum {
 	stop
 } led_status;
 
+//DERPDERP
 #define LED_HEADER 0x94, 0x5F, 0xFF, 0xFF
 #define LED_HEADER_BYTES 4
 #define LED_TOTAL_BYTES 28
@@ -73,12 +72,9 @@ typedef struct {
 static inline void led_timer_start(void);
 static inline void sclk_trigger(void);
 static inline void led_write(void);
-//static inline void led_write_header(void);
 static void led_timer_tick(void);
 static inline void led_write_byte(void);
 
-// {command}0000{repeat}0000|{8xled}0000 0000 0000 0000 0000 0000 0000 0000 |{on time}0000 {off time}
-//
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
 
 
@@ -101,7 +97,7 @@ led_state state = {
 	}
 };
 
-/*makes it compile as pedantic..*/ led_sequence seq_active = {
+/*led_sequence seq_active = {
 	.size = 8,
 	.repeat_time = 0,
 	.patterns = {
@@ -155,7 +151,7 @@ led_state state = {
 			.off=0,
 		}
 	}
-};
+};*/
 
 inline void set_lights(uint8_t status) {
 	state.status = status ? start : stop;
@@ -282,7 +278,7 @@ void led_write(void) {
 		//lol hard coded :D
 		if ( led == 4 ) {
 			controller = 1;
-			byte = 0;
+			byte = LED_HEADER_BYTES;
 		}
 
 		//this is ugly. It should be like... more lines.
@@ -300,25 +296,10 @@ void led_write(void) {
 			}
 #endif
 			//each component = two bytes (inorite???)
-			state.bytes[controller][byte++] = (color[c_real]&0xFF)>>8;
+			state.bytes[controller][byte++] = (color[c_real]>>8)&0xFF;
 			state.bytes[controller][byte++] = color[c_real]&0xFF;
 		}
 	}
-
-	/**
-	 * in THEORY, keeping clk low for this amount of time
-	 * SHOULD make the data latch...
-	 * The requirement is something like 8 times the sclk_trigger() time.
-//	 */
-//	_delay_us(2);
-//	sclk_trigger(); //does this work with SPI enabled?
-/*	static volatile uint8_t i = 1;
-	while (i) {
-		LED_SPI.DATA = 0xFF;
-		while ( !(LED_SPI.STATUS & SPI_IF_bm) );
-
-	}*/
-
 
 	state.byte = 0;
 	state.controller = 0;
@@ -347,7 +328,7 @@ void led_init(void) {
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
 	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
-	state.seq = /*NULL*/&seq_active;
+	state.seq = NULL/*&seq_active*/;
 
 	//the state is set in its own initializer way up there^
 	led_write();
@@ -376,7 +357,6 @@ ISR(TCC0_CCA_vect) {
 }
 
 static inline void led_write_byte(void) {
-	//... could do a dma transfer instead....
 	if ( state.byte == LED_TOTAL_BYTES ) {
 		if ( state.controller == 1 ) {
 			sclk_trigger(); //does this work?
@@ -384,8 +364,7 @@ static inline void led_write_byte(void) {
 		} else {
 			state.controller = 1;
 			state.byte = 0;
-		}
-	}
+		}	}
 
 	LED_SPI.DATA = state.bytes[state.controller][state.byte++];
 }
