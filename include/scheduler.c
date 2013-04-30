@@ -26,14 +26,12 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 	task_node * node;
 
 	task = malloc( sizeof *task );
-	memset(task, 0, sizeof *task);
 	task->task = task_cb;
 	task->freq = task_freq;
 	task->lifetime = task_lifetime;
 	task->ticks = task_freq;
 
 	node = malloc( sizeof *node );
-	memset(node, 0, sizeof *node);
 	node->task = task;
 	node->next = NULL;
 
