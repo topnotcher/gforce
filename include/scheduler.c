@@ -138,4 +138,9 @@ SCHEDULER_RUN {
 
 		}
 	}
+
+	if ( task_list != NULL ) {
+		ticks = task_list->task->ticks;
+		RTC.COMP = ticks;
+	}
 }
