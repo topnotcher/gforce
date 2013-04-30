@@ -1,5 +1,6 @@
 # MCU name
-MCU = atxmega32a4
+MMCU = atxmega32a4u # for avr-gcc
+MCU = atxmega32a4 # for avrdude
 F_CPU = 32000000
 
 # List C source files here. (C dependencies are automatically generated.)
@@ -187,8 +188,8 @@ LST = $(patsubst %,$(TMP)/%, $(SRC:.c=.lst) $(ASRC:.S=.lst))
 
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
-ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
+ALL_CFLAGS = -mmcu=$(MMCU) -I. $(CFLAGS)
+ALL_ASFLAGS = -mmcu=$(MMCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
 

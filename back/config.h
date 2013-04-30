@@ -7,6 +7,8 @@
 #define LED_PORT PORTC
 #define LED_SCLK_PIN 7
 #define LED_SOUT_PIN 5
+#define LED_SS_PIN 4
+#define LED_SPI SPIC
 
 #define MPC_TWI_ADDR 0b0100
 #define MPC_TWI_ADDRMASK 0x0F
