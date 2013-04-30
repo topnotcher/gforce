@@ -4,12 +4,16 @@
 
 static task_node * task_list;
 
+//number of "ticks" skipped.
+static task_freq_t ticks;
+
 inline void scheduler_init(void) {
 
 	//@TODO
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
 	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc /*CLK_RTCSRC_ULP_gc*/ | CLK_RTCEN_bm;
 	RTC.COMP = 1;
+	ticks = 1;
 	RTC.CNT = 0;
 
 	task_list = NULL;
@@ -35,6 +39,8 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 
 	if ( task_list == NULL ) {
 		task_list = node;
+		RTC.COMP = 1;
+		ticks = 1;
 		SCHEDULER_INTERRUPT_REGISTER |= SCHEDULER_INTERRUPT_ENABLE_BITS;
 		goto end;
 	}
@@ -120,7 +126,7 @@ SCHEDULER_RUN {
 		// end up being a dangling pointer (causes AVR restart?)
 		cur = node->next;
 
-		if ( --node->task->ticks == 0 ) {
+		if ( (node->task->ticks -= ticks) == 0 ) {
 			node->task->task();
 
 			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 )
