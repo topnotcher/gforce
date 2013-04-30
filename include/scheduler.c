@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-task_node * task_list;
+static task_node * task_list;
 
 inline void scheduler_init(void) {
 
