@@ -5,6 +5,7 @@
 #include <uart.h>
 #include <util.h>
 
+#include <g4config.h>
 #include "config.h"
 #include <phasor_comm.h>
 

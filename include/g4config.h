@@ -14,4 +14,7 @@
 #define IR_CRC_POLY 0x24
 #define IR_CRC_SHIFT 0x55
 
+#define PHASOR_COMM_BSEL_VALUE 12
+#define PHASOR_COMM_BSCALE_VALUE 4
+
 #endif
