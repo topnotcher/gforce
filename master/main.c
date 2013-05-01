@@ -13,6 +13,7 @@
 #include "sounds.h"
 //#include "game.h"
 #include "xbee.h"
+#include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
 //#include <leds.h>
@@ -24,6 +25,8 @@
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
+
+static inline void process_ib_pkt(mpc_pkt * pkt);
 
 
 int main(void) {
@@ -52,6 +55,7 @@ int main(void) {
 //	lcd_init();
 	sound_init();
 	xbee_init();
+	phasor_comm_init();
 //	game_init();
 	mpc_init();
 
@@ -66,58 +70,13 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
-			uint8_t on = 0;
-	//uint8_t xbd[1] = {1};
 
 	while (1) {
 		
 		//mpc_pkt * pkt = xbee_recv();//mpc_recv();
-		mpc_pkt * pkt = mpc_recv();
-	//	if (mpkt != NULL)
-	//		free(mpkt);
-		//	_delay_ms(500);
-		if ( pkt != NULL ) {
-//			xbee_send('A',1,xbd);
+		process_ib_pkt(mpc_recv());
+		process_ib_pkt(phasor_comm_recv());
 
-
-//			xbee_put(':');
-//			xbee_put(pkt->cmd);
-//			xbee_put(',');
-			//char src;
-
-/*			switch(pkt->saddr>>1) {
-			case 0b0001:
-					src = 'F';
-					break;
-			case 0b0010:
-					src = 'L';
-					break;
-			case 0b0100:
-					src = 'B';
-					break;
-			case 0b1000:
-					src = 'R';
-					break;
-			default:
-					src = '?';
-			}*/
-
-//			xbee_put(src);
-//			xbee_put('\n');
-//
-			if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
-				 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
-				 mpc_send(0b1111,'A', data, 9);
-			} else {
-				mpc_send_cmd(0b1111,'B');
-			}
-
-				//set_lights(1);
-
-			free(pkt);
-		}
-		
-//		PORTC.OUTCLR = 0xff;
 		#if DEBUG == 0
 //		sleep_cpu();
 		#endif
@@ -126,3 +85,19 @@ int main(void) {
 	return 0;
 }
 
+
+static inline void process_ib_pkt(mpc_pkt * pkt) {
+	static uint8_t on = 0;
+	if ( pkt == NULL ) return;
+
+	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
+		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
+		 mpc_send(0b1111,'A', data, 9);
+	} else {
+		mpc_send_cmd(0b1111,'B');
+	}
+
+		//set_lights(1);
+
+	free(pkt);
+}
