@@ -22,7 +22,7 @@ inline void xbee_init(void) {
 	xbee_uart_driver = uart_init(&XBEE_USART, XBEE_QUEUE_MAX);
 }
 
-inline void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t * data) {
+inline void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
 	uart_tx(xbee_uart_driver, cmd, size, data);
 }
 
