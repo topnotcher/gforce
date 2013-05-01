@@ -38,7 +38,6 @@
 #define IRRX_USART_PORT PORTD
 #define IRRX_USART_RXPIN 2
 
-//#define 
 
 
 
@@ -47,5 +46,20 @@
  */
 #define TRIGGER_PORT PORTA
 #define TRIGGER_PIN 2
+
+/**************************************
+ * Master Communication Configuration
+ */
+#define PHASOR_COMM_USART USARTE0
+#define PHASOR_COMM_USART_PORT PORTE
+#define PHASOR_COMM_USART_TXPIN 3
+#define PHASOR_COMM_USART_RXPIN 2
+
+#define PHASOR_COMM_BSEL_VALUE 12
+#define PHASOR_COMM_BSCALE_VALUE 4
+
+
+#define PHASOR_COMM_TXC_ISR ISR(USARTE0_DRE_vect)
+#define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
 #endif
