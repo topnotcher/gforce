@@ -116,29 +116,34 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 	driver->tx.queue.write = ( driver->tx.queue.write == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.write + 1;
 
 	if ( driver->tx.state == TX_STATE_IDLE ) {
-		driver->tx.state = TX_STATE_BUSY;
+		driver->tx.state = TX_STATE_START;
 		usart_txc_interrupt_enable(driver->usart);
-		driver->tx.bytes = 0;
 	}
 }
 
 inline void usart_tx_process(uart_driver_t * driver) {
 
-	//assume everytime we hit this ISR, there is valid data to send...
-	mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
-	driver->usart->DATA = ((uint8_t*)pkt)[driver->tx.bytes];
+	//first byte of transfer
+	if ( driver->tx.state == TX_STATE_START ) {
+		driver->usart->DATA = 0xFF;
+		driver->tx.state = TX_STATE_TRANSMIT;
+		driver->tx.bytes = 0;
+	} else {
+		//assume everytime we hit this ISR, there is valid data to send..
+		mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+		driver->usart->DATA = ((uint8_t*)pkt)[driver->tx.bytes];
 	
-	if ( ++driver->tx.bytes == (sizeof(mpc_pkt) + pkt->len) ) {
+		if ( ++driver->tx.bytes == (sizeof(mpc_pkt) + pkt->len) ) {
 
-		driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
+			driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
 
-		//no more packets to send.
-		if ( driver->tx.queue.read == driver->tx.queue.write ) {
-			usart_txc_interrupt_disable(driver->usart);
-			driver->tx.state = TX_STATE_IDLE;
-		} else {
-			//just wait for the next DRE
-			driver->tx.bytes = 0;
+			//no more packets to send.
+			if ( driver->tx.queue.read == driver->tx.queue.write ) {
+				usart_txc_interrupt_disable(driver->usart);
+				driver->tx.state = TX_STATE_IDLE;
+			} else {
+				driver->tx.state = TX_STATE_START;		
+			}
 		}
 	}
 }

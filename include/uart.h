@@ -49,7 +49,9 @@ typedef struct {
 
 		enum {
 			TX_STATE_IDLE,
-			TX_STATE_BUSY
+			//beginning of a packet 
+			TX_STATE_START,
+			TX_STATE_TRANSMIT
 		} state;
 		
 		uint8_t bytes;
