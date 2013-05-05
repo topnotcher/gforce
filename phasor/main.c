@@ -59,7 +59,7 @@ int main(void) {
 			data[i] |= 0x100;
 
 	while(1) {
-		
+	
 		if ( trigger_pressed() ) 
 			irtx_send(data,16);
 
