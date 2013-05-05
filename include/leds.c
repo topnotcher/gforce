@@ -370,7 +370,7 @@ static inline void led_write_byte(void) {
 	LED_SPI.DATA = state.bytes[state.controller][state.byte++];
 }
 
-ISR(SPIC_INT_vect) {
+ISR(LED_SPI_vect) {
 	led_write_byte();
 }
 
