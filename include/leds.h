@@ -1,5 +1,4 @@
-#include <avr/io.h>
-
+#include <stdint.h>
 
 #ifndef LEDS_H
 #define LEDS_H

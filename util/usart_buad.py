@@ -1,5 +1,6 @@
+#!/usr/bin/python
 
-TARGET_BAUD = 1515.762
+TARGET_BAUD = 500000
 F_CPU = 32000000
 
 def p_error(a,e):
