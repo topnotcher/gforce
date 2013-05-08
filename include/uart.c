@@ -28,6 +28,7 @@ uart_driver_t *uart_init(USART_t *usart, uint8_t buffsize) {
 	driver->rx.size = 0;
 	driver->rx.state = RX_STATE_IDLE;
 
+	driver->tx.state = TX_STATE_IDLE;
 	driver->tx.queue.read = 0;
 	driver->tx.queue.write = 0;
 	driver->tx.bytes = 0;
