@@ -70,14 +70,14 @@ int main(void) {
 	 */
 //	SMCR = /*_BV(SM1) |  _BV(SM2) | _BV(SM0) |*/ _BV(SE);
 	#endif
-	uint8_t led_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
-	uint8_t led_pattern_size = 58;
+//	uint8_t led_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
+//	uint8_t led_pattern_size = 58;
 //	uint8_t led_pattern[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
 //	uint8_t led_pattern_size = 9;
 
 	while (1) {
 		
-		 mpc_send(0b0001,'A', led_pattern, led_pattern_size);
+/*		 mpc_send(0b0001,'A', led_pattern, led_pattern_size);
 		 _delay_ms(2500);
 		 mpc_send(0b0010,'A', led_pattern, led_pattern_size);
 		 _delay_ms(2500);
@@ -90,7 +90,7 @@ int main(void) {
 
 		 mpc_send_cmd(0b1111,'B');
 		 phasor_comm_send('B', NULL, 0);
-
+*/
 		//mpc_pkt * pkt = xbee_recv();//mpc_recv();
 		process_ib_pkt(mpc_recv());
 		process_ib_pkt(phasor_comm_recv());
@@ -105,17 +105,20 @@ int main(void) {
 
 
 static inline void process_ib_pkt(mpc_pkt * pkt) {
-/*	static uint8_t on = 0;
+	uint8_t led_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
+	uint8_t led_pattern_size = 58;
+
+
+	static uint8_t on = 0;
 	if ( pkt == NULL ) return;
 
 	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
-		 uint8_t data[] = {1, 1, (COLOR_RED<<4 | COLOR_BLUE) , (COLOR_ORANGE<<4 | COLOR_CYAN) , (COLOR_PINK<<4 | COLOR_GREEN) , (COLOR_PURPLE<<4 | COLOR_YELLOW), 10, 15, 15};	
-		 mpc_send(0b1111,'A', data, 9);
-		 phasor_comm_send('A',data,9);
+		 mpc_send(0b1111,'A', led_pattern, led_pattern_size);
+		 phasor_comm_send('A',led_pattern,led_pattern_size);
 	} else {
 		phasor_comm_send('B',NULL,0);
 		mpc_send_cmd(0b1111,'B');
-	}*/
+	}
 
 		//set_lights(1);
 
