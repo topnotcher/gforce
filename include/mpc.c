@@ -367,8 +367,9 @@ MPC_TWI_MASTER_ISR  {
 			//WHY IS THIS HERE???
 			MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 			MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-			tx_state.byte = 0;
 			tx_state.status = TX_STATUS_IDLE;
+
+			//should move to the next packet.
 			mpc_master_run();
 
 		} else {
@@ -378,6 +379,7 @@ MPC_TWI_MASTER_ISR  {
 				MPC_TWI.MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				MPC_TWI.MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 				mpc_master_end_txn();
+				mpc_master_run();
 			}
 
 		}
