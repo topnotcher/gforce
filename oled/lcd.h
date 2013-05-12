@@ -20,7 +20,8 @@
 
 //this should be >= 300ns.
 //I lowered it because it worked. shrug.
-#define LCD_CLK_DELAY() /*__asm__ __volatile__ ("nop")*/ _delay_us(25)
+#define LCD_CLK_DELAY() _delay_us(1) /*__asm__ __volatile__ ("nop; nop; nop; nop; nop; nop; nop; nop; nop;")*/
+/*_delay_us(25)*/
 
 // I pulled 10 out of my ass :).
 // This number should be small enoguh to avoid lag
@@ -45,25 +46,12 @@ typedef struct {
 
 
 void lcd_init(void);
-void lcd_cmd(char);
-void lcd_write(char);
-
-void lcd_out_raw(char);
 void lcd_out(char, lcd_data_type);
-void lcd_out_upper(char);
-void lcd_out_lower(char);
-
-void lcd_clk(void);
-void lcd_bl_on(void);
-void lcd_bl_off(void);
 void lcd_putstring(char *);
-
-void lcd_clear(void);
-
 void lcd_tick(void);
 
-bool lcd_busy(void);
-
-void lcd_toggle_read(bool);
+#define lcd_clear() lcd_cmd(0x01); lcd_cmd(2)
+#define lcd_write(/*char*/ data) lcd_out(data, LCD_TYPE_TEXT) 
+#define lcd_cmd(/*char*/ data) lcd_out(data,LCD_TYPE_CMD)
 
 #endif

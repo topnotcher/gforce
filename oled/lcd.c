@@ -15,6 +15,14 @@
 
 volatile lcd_queue_t lcd_queue;
 
+static inline void lcd_toggle_read(const bool read);
+static inline void lcd_clk(void);
+static inline void lcd_out_upper(char data);
+static inline void lcd_out_lower(char data);
+static inline void lcd_out_raw(char data);
+static inline bool lcd_busy(void);
+
+
 inline void lcd_init(void) {
 	LCD_CONTROL_PORT.DIRSET = _E_bm | _RS_bm | _RW_bm; 
 	LCD_DATA_PORT.DIRSET = 0xFF;
@@ -57,7 +65,7 @@ inline void lcd_init(void) {
 	_delay_us(100);
 	
 	//clear
-	lcd_out_raw(0x01);
+//	lcd_out_raw(0x01);
 	
 	_delay_ms(4);
 	
@@ -66,11 +74,14 @@ inline void lcd_init(void) {
 	
 	_delay_us(100);
 	
+	lcd_clear();
+	
 	//display on???
 	//0x0E works. 0x0F just adds blinking cursor
 	//lcd_cmd(0x0F);	
 	lcd_out_raw(0x0e);
 	 
+
 	_delay_us(100);
 
 	//memset((void *)&lcd_queue, 0, sizeof lcd_queue);
@@ -80,7 +91,7 @@ inline void lcd_init(void) {
 /**
  * completely raw output
  */
-void lcd_out_raw(char data) {
+static inline void lcd_out_raw(char data) {
 	lcd_out_upper(data);
 	lcd_out_lower(data);
 }
@@ -97,32 +108,19 @@ void lcd_out(char data, lcd_data_type type) {
 	lcd_queue.write = (lcd_queue.write == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.write+1;
 }
 
-inline void lcd_out_upper(char data) {
+static inline void lcd_out_upper(char data) {
 
 	//set the upper 4 bits
 	LCD_DATA_PORT.OUT = data;
-//	PIN_SET(LCD_PORT, LCD_DB_4, data&0b00010000);
-//	PIN_SET(LCD_PORT, LCD_DB_5, data&0b00100000);
-//	PIN_SET(LCD_PORT, LCD_DB_6, data&0b01000000);
-//	PIN_SET(LCD_PORT, LCD_DB_7, data&0b10000000);
 
 	lcd_clk();
 }
 
-inline void lcd_out_lower(char data) {
+static inline void lcd_out_lower(char data) {
 
 //	//set the lower 4 bits
 	LCD_DATA_PORT.OUT = data<<4; 
-//	PIN_SET(LCD_PORT, LCD_DB_4, data&0b00000001);
-///	PIN_SET(LCD_PORT, LCD_DB_5, data&0b00000010);
-//	PIN_SET(LCD_PORT, LCD_DB_6, data&0b00000100);
-//	PIN_SET(LCD_PORT, LCD_DB_7, data&0b00001000);
-
 	lcd_clk();
-}
-
-inline void lcd_cmd(char data) {
-	lcd_out(data,LCD_TYPE_CMD);
 }
 
 void lcd_putstring(char * string) {
@@ -133,11 +131,7 @@ void lcd_putstring(char * string) {
 	}
 }
 
-inline void lcd_write(char data) {
-	lcd_out(data, LCD_TYPE_TEXT);
-}
-
-inline void lcd_clk(void) {
+static inline void lcd_clk(void) {
 	PIN_HIGH(LCD_CONTROL_PORT, _E_bm);
 	LCD_CLK_DELAY();
 	PIN_LOW(LCD_CONTROL_PORT, _E_bm);
@@ -145,7 +139,7 @@ inline void lcd_clk(void) {
 
 //in theory, this should speed things up a bit when we
 //check the busy flag multiple times.
-inline void lcd_toggle_read(const bool read) {
+static inline void lcd_toggle_read(const bool read) {
 
 	//by default, we're in write mode.
 	static bool is_read = false;
@@ -173,7 +167,7 @@ inline void lcd_toggle_read(const bool read) {
 	}
 
 }
-bool lcd_busy(void) {
+static inline bool lcd_busy(void) {
 
 	lcd_toggle_read(true);
 
@@ -190,6 +184,9 @@ void lcd_tick(void) {
 //		scheduler_unregister(&lcd_tick);
 //	}
 
+	if ( lcd_queue.read == lcd_queue.write )
+		return;
+
 	if (lcd_busy()) 
 		return;
 
@@ -202,8 +199,4 @@ void lcd_tick(void) {
 	
 	lcd_out_raw(lcd_queue.data[lcd_queue.read].data);
 	lcd_queue.read = (lcd_queue.read == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.read+1;
-}
-
-inline void lcd_clear(void) {
-	lcd_cmd(0x01);
 }
