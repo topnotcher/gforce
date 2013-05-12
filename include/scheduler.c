@@ -1,3 +1,5 @@
+#include <util/atomic.h>
+
 #include <scheduler.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +23,7 @@ inline void scheduler_init(void) {
 	task_list = NULL;
 }
 
-void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
-	cli();
+void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 	scheduler_task * task;
 	task_node * node;
@@ -41,8 +42,8 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 		task_list = node;
 		set_ticks();
 		SCHEDULER_INTERRUPT_REGISTER |= SCHEDULER_INTERRUPT_ENABLE_BITS;
-		goto end;
-	}
+		return;
+	} 
 
 	/**
 	 * Everything gets inserted into the list in order of ticks
@@ -74,9 +75,9 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 
 	set_ticks();
 
-	end:
-		sei();
-}
+//	end:
+//		sei();
+}}
 
 static inline void set_ticks(void) {
 	RTC.CNT = 0;
@@ -84,8 +85,8 @@ static inline void set_ticks(void) {
 	ticks = task_list->task->ticks;
 }
 
-void scheduler_unregister(void (*task_cb)(void)) {
-	cli();
+void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+
 	if ( task_list == NULL )
 		goto end;
 
@@ -120,7 +121,7 @@ void scheduler_unregister(void (*task_cb)(void)) {
 	}
 	end:
 		sei();
-}
+}}
 
 SCHEDULER_RUN {
 /**
