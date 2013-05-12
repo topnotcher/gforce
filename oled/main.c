@@ -39,7 +39,7 @@ int main(void) {
 	
 	lcd_init();
 	sei();
-	lcd_putstring("      eep");
+	lcd_putstring("      eep!");
 	while(1) {
 		lcd_tick();
 	}

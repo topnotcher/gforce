@@ -17,8 +17,6 @@ volatile lcd_queue_t lcd_queue;
 
 static inline void lcd_toggle_read(const bool read);
 static inline void lcd_clk(void);
-static inline void lcd_out_upper(char data);
-static inline void lcd_out_lower(char data);
 static inline void lcd_out_raw(char data);
 static inline bool lcd_busy(void);
 
@@ -32,40 +30,32 @@ inline void lcd_init(void) {
 	PIN_LOW(LCD_CONTROL_PORT, _RS_bm);
 	PIN_LOW(LCD_CONTROL_PORT, _RW_bm);
 
-	//off by default
-//	lcd_bl_off();
-
-	//15?
+	//15
 	_delay_ms(100);
-
+	
 	//wake
-	//
-	lcd_out_upper(0x30);
+	lcd_out_raw(0x30);
 	_delay_ms(30);
-
-	lcd_out_upper(0x30);
+	lcd_out_raw(0x30);
 	_delay_ms(10);
-
-	lcd_out_upper(0x30);
+	lcd_out_raw(0x30);
 	_delay_ms(10);
-
-	//function set, 4-bit
-	lcd_out_upper(0x20);
-
-	_delay_ms(100);
-
-	//function set, 4-bit, 2-line 
-	lcd_out_raw(0x28);
-
+	
+	//set to 8bit/2 line (Func set)
+	lcd_out_raw(0x38); //try 3c?
+	
 	_delay_us(100);
 	
 	//display on??? 	
-	lcd_out_raw(0x08); 
+	lcd_out_raw(0x08); //0x0E works. 0x0F just adds blinking cursor
 
 	_delay_us(100);
 	
 	//clear
-//	lcd_out_raw(0x01);
+	lcd_out_raw(0x01);
+	//home
+	lcd_out_raw(0x02);
+	
 	
 	_delay_ms(4);
 	
@@ -74,17 +64,10 @@ inline void lcd_init(void) {
 	
 	_delay_us(100);
 	
-	lcd_clear();
+	//display on??? 	
+	lcd_out_raw(0x0F); //0x0E works. 0x0F just adds blinking cursor
 	
-	//display on???
-	//0x0E works. 0x0F just adds blinking cursor
-	//lcd_cmd(0x0F);	
-	lcd_out_raw(0x0e);
-	 
-
 	_delay_us(100);
-
-	//memset((void *)&lcd_queue, 0, sizeof lcd_queue);
 
 }
 
@@ -92,8 +75,8 @@ inline void lcd_init(void) {
  * completely raw output
  */
 static inline void lcd_out_raw(char data) {
-	lcd_out_upper(data);
-	lcd_out_lower(data);
+	LCD_DATA_PORT.OUT = data;
+	lcd_clk();
 }
 
 void lcd_out(char data, lcd_data_type type) {
@@ -106,21 +89,6 @@ void lcd_out(char data, lcd_data_type type) {
 	lcd_queue.data[lcd_queue.write].type = type;
 
 	lcd_queue.write = (lcd_queue.write == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.write+1;
-}
-
-static inline void lcd_out_upper(char data) {
-
-	//set the upper 4 bits
-	LCD_DATA_PORT.OUT = data;
-
-	lcd_clk();
-}
-
-static inline void lcd_out_lower(char data) {
-
-//	//set the lower 4 bits
-	LCD_DATA_PORT.OUT = data<<4; 
-	lcd_clk();
 }
 
 void lcd_putstring(char * string) {
