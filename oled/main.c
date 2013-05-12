@@ -12,6 +12,9 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+static inline void shift_string(char * string);
+static inline void lcd_scroll(char * string);
+
 
 int main(void) {
 
@@ -39,9 +42,42 @@ int main(void) {
 	
 	lcd_init();
 	sei();
-	lcd_putstring("      eep!");
-	while(1) {
-		lcd_tick();
-	}
+//	lcd_putstring("      eep!");
+//	for ( uint8_t i = 0; i<25; ++i ) lcd_tick();
+//	_delay_ms(1000);
+	char string[] = "      eep!      ";
+	lcd_scroll(string);
+
 	return 0;
+}
+
+static inline void lcd_scroll(char * string) {
+	while (1) {
+		lcd_cmd(0x02);
+		lcd_tick();
+//		lcd_clear();
+			
+		for ( uint8_t i = 0; i < 16 && *(string+i) != '\0'; ++i ) {
+			lcd_write(*(string+i));
+			lcd_tick();
+		}
+
+		shift_string(string);
+		
+		_delay_ms(125);
+	}
+}
+
+static inline void shift_string(char * string) {
+	char first = *string;
+
+	while ( 1 ) {
+		*string = *(string + 1);
+
+		if (*string == '\0') {
+			*string = first;
+			break;
+		}
+		string++;
+	}
 }
