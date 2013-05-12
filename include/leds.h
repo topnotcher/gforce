@@ -7,7 +7,7 @@
 
 #define LED(k) _BV(k)
 
-#define LED_DELAY_TIME 11
+#define LED_DELAY_TIME 13
 
 #include <colors.h>
 #define LED_PATTERN(A,B,C,D,E,F,G,H) { (COLOR(A)<<4) | COLOR(B), (COLOR(C)<<4) | COLOR(D), (COLOR(E)<<4) | COLOR(F), (COLOR(G)<<4) | COLOR(H) }
