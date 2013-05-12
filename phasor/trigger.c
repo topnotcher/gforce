@@ -34,14 +34,16 @@ inline void trigger_init(void) {
 
 inline bool trigger_pressed(void) {
 	if ( _trigger_pressed ) {
+		trigger_disable();
 		_trigger_pressed = false;
+		scheduler_register(trigger_tick, 500, 1);
 		return true;
 	}
 	return false;
 }
 static inline void trigger_enable(void) {
 	_trigger_enabled = true;
-	TRIGGER_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
+	TRIGGER_PORT.INTCTRL |= PORT_INT0LVL_MED_gc;
 }
 static inline void trigger_disable(void) {
 	_trigger_enabled = false;
@@ -52,11 +54,7 @@ static inline bool trigger_enabled(void) {
 }
 
 ISR(PORTA_INT0_vect) {
-	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) &&  trigger_enabled() ) {
-
-		scheduler_register(trigger_tick, 500, 1);
-		trigger_disable();
-
+	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/ ) {
 		_trigger_pressed = true;
 
 	}
