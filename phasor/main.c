@@ -4,16 +4,19 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 /**
  * G4 common includes.
  */
 #include <leds.h>
-#include <scheduler.h>
 #include "irtx.h"
 #include <irrx.h>
 #include "trigger.h"
+
+#include <mpc.h>
+#include <phasor_comm.h>
+#include <scheduler.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -41,14 +44,15 @@ int main(void) {
 	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
 	CLK_CTRL = 0x04;
 
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
-	scheduler_init();
+	
 	led_init();
 	irtx_init();
 	trigger_init();
 	irrx_init();
-
+	phasor_comm_init();
+	scheduler_init();
 	sei();
 
 	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
@@ -57,9 +61,35 @@ int main(void) {
 			data[i] |= 0x100;
 
 	while(1) {
-		
+	
 		if ( trigger_pressed() ) 
 			irtx_send(data,16);
+
+
+		mpc_pkt * pkt = phasor_comm_recv();
+
+		if ( pkt != NULL ) {
+			if ( pkt->cmd == 'A' ) {
+
+				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
+				memcpy((void*)seq, &pkt->data,pkt->len);
+				led_set_seq(seq);
+				set_lights(1);
+			} else if ( pkt->cmd == 'B' ) {
+				set_lights(0);
+			}
+
+			free(pkt);
+		}
+
+
+		ir_pkt_t irpkt;
+		ir_rx(&irpkt);
+
+		if ( irpkt.size != 0 ) {
+				phasor_comm_send('I', irpkt.data, irpkt.size);
+				free( irpkt.data );
+		}
 
 
 		leds_run();

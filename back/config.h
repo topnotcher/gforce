@@ -9,6 +9,7 @@
 #define LED_SOUT_PIN 5
 #define LED_SS_PIN 4
 #define LED_SPI SPIC
+#define LED_SPI_vect SPIC_INT_vect
 
 #define MPC_TWI_ADDR 0b0100
 #define MPC_TWI_ADDRMASK 0x0F
