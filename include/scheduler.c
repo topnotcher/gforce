@@ -159,7 +159,8 @@ SCHEDULER_RUN {
 
 	if ( task_list != NULL ) {
 
-		//only goal here is to keep min(ticks) in head position. 
+		//This ONLY puts the next item in the head position; it does NOT 
+		//necessarily put the list in /correct/ order
 		if ( reorder ) {
 			task_ticks_t min = task_list->task->ticks;
 			cur = task_list->next;
