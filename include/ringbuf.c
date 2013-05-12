@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include "ringbuf.h"
 
-#define ringbuf_next_idx(idx,size) ((idx == size-1) ? 0 : idx+1)
-
-
 inline ringbuf_t * ringbuf_init(uint8_t size) {
 	ringbuf_t * buf;
 
@@ -25,15 +22,7 @@ inline void ringbuf_deinit(ringbuf_t * buf) {
 	free(buf);
 }
 
-inline void ringbuf_put(ringbuf_t * const buf, uint8_t data) {
-	
-	//queue is full. (note: this wastes the current position in the queue.)
-	if ( ringbuf_full(buf) ) 
-		return;
-
-	buf->data[buf->write] = data;
-	buf->write = ringbuf_next_idx(buf->write,buf->size);
-}
+extern inline void ringbuf_put(ringbuf_t * const buf, uint8_t data);
 
 inline uint8_t ringbuf_get(ringbuf_t * buf) {
 	uint8_t data = buf->data[buf->read];
@@ -42,12 +31,4 @@ inline uint8_t ringbuf_get(ringbuf_t * buf) {
 
 
 	return data;
-}
-
-inline uint8_t ringbuf_empty(ringbuf_t * buf) {
-	return buf->read == buf->write;
-}
-
-inline uint8_t ringbuf_full(ringbuf_t * buf) {
-	return ringbuf_next_idx(buf->write, buf->size) == buf->read;
 }

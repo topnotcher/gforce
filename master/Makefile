@@ -41,11 +41,13 @@ EXTRAINCDIRS = ../include
 CFLAGS = -g -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
 -Wall -Wstrict-prototypes -Werror\
+-finline-functions -finline-functions-called-once -finline-limit=1000 -finline-small-functions\
 -DF_CPU=$(F_CPU) \
 -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
 $(patsubst %,-I%,$(EXTRAINCDIRS)) \
 $(patsubst %,-D%,$(C_DEFS))
 
+#-finline-functions -finline-functions-called-once -finline-limit=1000 -finline-small-functions\
 # Set a "language standard" compiler flag.
 #   Unremark just one line below to set the language standard to use.
 #   gnu99 = C99 + GNU extensions. See GCC manual for more information.
