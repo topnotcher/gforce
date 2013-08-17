@@ -18,29 +18,30 @@
 
 static uart_driver_t * display_uart_driver;
 
-static void tx_interrupt_enable(void);
-static void tx_interrupt_disable(void);
+static void tx_begin(void);
+static void tx_end(void);
 
 inline void display_init(void) {
 	//SS will fuck you over hard per xmegaA, pp226.
 	DISPLAY_PORT.DIRSET = _SCLK_bm | _SOUT_bm | _SS_bm;
-	DISPLAY_PORT.OUTSET = _SCLK_bm | _SOUT_bm;
-	DISPLAY_PORT.OUTCLR = _SS_bm;
+	DISPLAY_PORT.OUTSET = _SCLK_bm | _SOUT_bm | _SS_bm;
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
 	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_interrupt_enable, tx_interrupt_disable, 2);
+	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 2);
 }
 
-static void tx_interrupt_enable(void) {
+static void tx_begin(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
+	DISPLAY_PORT.OUTCLR = _SS_bm;
 }
 
-static void tx_interrupt_disable(void) {
+static void tx_end(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_OFF_gc;
+	DISPLAY_PORT.OUTSET = _SS_bm;
 }
 
 inline void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
