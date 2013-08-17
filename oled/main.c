@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/wdt.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,9 +44,14 @@ int main(void) {
 	
 	display_init();
 	comm_init();
+
+	wdt_enable(9);
+
 	sei();
 
 	while(1) {
+		wdt_reset();
+
 		mpc_pkt * pkt = comm_recv();
 //		display_tick();
 
