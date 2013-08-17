@@ -15,7 +15,10 @@
 
 typedef struct {
 
-	USART_t *usart;
+	void (* tx_begin)(void);
+	void (* tx_end)(void);
+	
+	register8_t * data;
 
 	struct {
 		//buffer of unprocessed bytes. 
@@ -59,12 +62,13 @@ typedef struct {
 } uart_driver_t; 
 
 
-uart_driver_t *uart_init(USART_t *usart, uint8_t buffsize);
+uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), uint8_t buffsize);
+
 mpc_pkt * uart_rx(uart_driver_t * driver);
 
 //Uart_driver_t * driver
 //@TODO make this an always_inline?
-#define uart_rx_byte(driver) do { uint8_t data = driver->usart->DATA; ringbuf_put(driver->rx.buf, data); } while(0)
+#define uart_rx_byte(driver) do { uint8_t data = *(driver->data); ringbuf_put(driver->rx.buf, data); } while(0)
 
 void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint8_t * data);
 

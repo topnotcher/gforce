@@ -5,6 +5,9 @@
 
 uart_driver_t * xbee_uart_driver;
 
+static void tx_interrupt_enable(void);
+static void tx_interrupt_disable(void);
+
 inline void xbee_init(void) {
 
 	XBEE_BAUDA = (uint8_t)( XBEE_BSEL_VALUE & 0x00FF );
@@ -19,7 +22,7 @@ inline void xbee_init(void) {
 	PORTF.OUTSET = PIN3_bm;
 	PORTF.DIRSET = PIN3_bm;
 
-	xbee_uart_driver = uart_init(&XBEE_USART, XBEE_QUEUE_MAX);
+	xbee_uart_driver = uart_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, XBEE_QUEUE_MAX);
 }
 
 inline void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
@@ -28,6 +31,14 @@ inline void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
 
 inline mpc_pkt * xbee_recv(void) {
 	return uart_rx(xbee_uart_driver);
+}
+
+static void tx_interrupt_enable(void) {
+	XBEE_USART.CTRLA |= USART_DREINTLVL_MED_gc;
+}
+
+static void tx_interrupt_disable(void) {
+	XBEE_USART.CTRLA &= ~USART_DREINTLVL_MED_gc;
 }
 
 XBEE_TXC_ISR {
