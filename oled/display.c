@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <util.h>
-#include "lcd.h"
+#include "display.h"
 
 #define PIN_LOW(PORT,PIN_bm) PORT.OUTCLR = PIN_bm
 #define PIN_HIGH(PORT,PIN_bm) PORT.OUTSET = PIN_bm
@@ -17,11 +17,11 @@ volatile lcd_queue_t lcd_queue;
 
 static inline void lcd_toggle_read(const bool read);
 static inline void lcd_clk(void);
-static inline void lcd_out_raw(char data);
+static inline void display_out_raw(char data);
 static inline bool lcd_busy(void);
 
 
-inline void lcd_init(void) {
+inline void display_init(void) {
 	LCD_CONTROL_PORT.DIRSET = _E_bm | _RS_bm | _RW_bm; 
 	LCD_DATA_PORT.DIRSET = 0xFF;
 
@@ -34,38 +34,38 @@ inline void lcd_init(void) {
 	_delay_ms(100);
 	
 	//wake
-	lcd_out_raw(0x30);
+	display_out_raw(0x30);
 	_delay_ms(30);
-	lcd_out_raw(0x30);
+	display_out_raw(0x30);
 	_delay_ms(10);
-	lcd_out_raw(0x30);
+	display_out_raw(0x30);
 	_delay_ms(10);
 	
 	//set to 8bit/2 line (Func set)
-	lcd_out_raw(0x38); //try 3c?
+	display_out_raw(0x38); //try 3c?
 	
 	_delay_us(100);
 	
 	//display on??? 	
-	lcd_out_raw(0x08); //0x0E works. 0x0F just adds blinking cursor
+	display_out_raw(0x08); //0x0E works. 0x0F just adds blinking cursor
 
 	_delay_us(100);
 	
 	//clear
-	lcd_out_raw(0x01);
+	display_out_raw(0x01);
 	//home
-	lcd_out_raw(0x02);
+	display_out_raw(0x02);
 	
 	
 	_delay_ms(4);
 	
 	//entry mode set
-	lcd_out_raw(0x06);
+	display_out_raw(0x06);
 	
 	_delay_us(100);
 	
 	//display on??? 	
-	lcd_out_raw(0x0F); //0x0E works. 0x0F just adds blinking cursor
+	display_out_raw(0x0F); //0x0E works. 0x0F just adds blinking cursor
 	
 	_delay_us(100);
 
@@ -74,15 +74,15 @@ inline void lcd_init(void) {
 /**
  * completely raw output
  */
-static inline void lcd_out_raw(char data) {
+static inline void display_out_raw(char data) {
 	LCD_DATA_PORT.OUT = data;
 	lcd_clk();
 }
 
-void lcd_out(char data, lcd_data_type type) {
+void display_out(char data, lcd_data_type type) {
 
 //	if ( lcd_queue.read == lcd_queue.write )
-//		scheduler_register(&lcd_tick, LCD_SCHEDULER_FREQ ,SCHEDULER_RUN_UNLIMITED);
+//		scheduler_register(&display_tick, LCD_SCHEDULER_FREQ ,SCHEDULER_RUN_UNLIMITED);
 
 
 	lcd_queue.data[lcd_queue.write].data = data;
@@ -91,10 +91,10 @@ void lcd_out(char data, lcd_data_type type) {
 	lcd_queue.write = (lcd_queue.write == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.write+1;
 }
 
-void lcd_putstring(char * string) {
+void display_putstring(char * string) {
 	
 	while ( *string != '\0' ) {
-		lcd_write( *string );
+		display_write( *string );
 		string++;
 	}
 }
@@ -146,10 +146,10 @@ static inline bool lcd_busy(void) {
 	return !(val == 0);
 }
 
-void lcd_tick(void) {
+void display_tick(void) {
 	// nothing to do here!
 //	if ( lcd_queue.read == (lcd_queue.write-1) ) {
-//		scheduler_unregister(&lcd_tick);
+//		scheduler_unregister(&display_tick);
 //	}
 
 	if ( lcd_queue.read == lcd_queue.write )
@@ -165,6 +165,6 @@ void lcd_tick(void) {
 	else
 		PIN_HIGH(LCD_CONTROL_PORT,_RS_bm);
 	
-	lcd_out_raw(lcd_queue.data[lcd_queue.read].data);
+	display_out_raw(lcd_queue.data[lcd_queue.read].data);
 	lcd_queue.read = (lcd_queue.read == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.read+1;
 }

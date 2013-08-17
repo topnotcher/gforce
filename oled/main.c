@@ -6,14 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lcd.h"
+#include "display.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
 static inline void shift_string(char * string);
-static inline void lcd_scroll(char * string);
+static inline void display_scroll(char * string);
 
 
 int main(void) {
@@ -40,26 +40,26 @@ int main(void) {
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
 	
-	lcd_init();
+	display_init();
 	sei();
-//	lcd_putstring("      eep!");
-//	for ( uint8_t i = 0; i<25; ++i ) lcd_tick();
+//	display_putstring("      eep!");
+//	for ( uint8_t i = 0; i<25; ++i ) display_tick();
 //	_delay_ms(1000);
 	char string[] = "      eep!      ";
-	lcd_scroll(string);
+	display_scroll(string);
 
 	return 0;
 }
 
-static inline void lcd_scroll(char * string) {
+static inline void display_scroll(char * string) {
 	while (1) {
-		lcd_cmd(0x02);
-		lcd_tick();
-//		lcd_clear();
+		display_cmd(0x02);
+		display_tick();
+//		display_clear();
 			
 		for ( uint8_t i = 0; i < 16 && *(string+i) != '\0'; ++i ) {
-			lcd_write(*(string+i));
-			lcd_tick();
+			display_write(*(string+i));
+			display_tick();
 		}
 
 		shift_string(string);
