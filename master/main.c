@@ -59,6 +59,7 @@ int main(void) {
 	phasor_comm_init();
 //	game_init();
 	mpc_init();
+	display_init();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
