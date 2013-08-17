@@ -24,7 +24,8 @@ static void tx_interrupt_disable(void);
 inline void display_init(void) {
 	//SS will fuck you over hard per xmegaA, pp226.
 	DISPLAY_PORT.DIRSET = _SCLK_bm | _SOUT_bm | _SS_bm;
-	DISPLAY_PORT.OUTSET = _SCLK_bm | _SOUT_bm | _SS_bm;
+	DISPLAY_PORT.OUTSET = _SCLK_bm | _SOUT_bm;
+	DISPLAY_PORT.OUTCLR = _SS_bm;
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
