@@ -113,8 +113,9 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 
 	static uint8_t on = 0;
 	if ( pkt == NULL ) return;
-
-	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
+	
+	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && !on)) {
+		on = 1;
 		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
 		phasor_comm_send('A',led_pattern,led_pattern_size);
 		
@@ -143,9 +144,10 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 		display_send(0, (uint8_t *)sensor, 3);
 
 
-	} else {
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 && on )  {
 		phasor_comm_send('B',NULL,0);
 		mpc_send_cmd(0b1111,'B');
+		on = 0;
 	}
 
 		//set_lights(1);
