@@ -51,8 +51,10 @@ int main(void) {
 
 		if (pkt == NULL) continue;
 
-		//display_clear();
-		//display_tick();display_tick();
+		display_cmd(0x02); display_tick();
+//		display_clear();
+//		display_tick();display_tick();
+		//_delay_ms(1);
 		display_putstring((char *)pkt->data);
 		
 		for (uint8_t i = 0; i < pkt->len; ++i)
