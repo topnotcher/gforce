@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "display.h"
+#include "comm.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -41,15 +42,34 @@ int main(void) {
 
 	
 	display_init();
+	comm_init();
 	sei();
+
+	while(1) {
+		mpc_pkt * pkt = comm_recv();
+//		display_tick();
+
+		if (pkt == NULL) continue;
+
+		//display_clear();
+		//display_tick();display_tick();
+		display_putstring((char *)pkt->data);
+		
+		for (uint8_t i = 0; i < pkt->len; ++i)
+			display_tick();
+
+		free(pkt);
+	}
 //	display_putstring("      eep!");
 //	for ( uint8_t i = 0; i<25; ++i ) display_tick();
 //	_delay_ms(1000);
-	char string[] = "      eep!      ";
-	display_scroll(string);
+//	char string[] = "      eep!      ";
+//	display_scroll(string);
 
 	return 0;
 }
+
+
 
 static inline void display_scroll(char * string) {
 	while (1) {

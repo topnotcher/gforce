@@ -30,15 +30,17 @@ inline void display_init(void) {
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
-	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
+	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV4_gc;
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 2);
+	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 5);
 }
 
 static void tx_begin(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	DISPLAY_PORT.OUTCLR = _SS_bm;
+	//because with SPI the ISR only triggers whena  byte finishes transferring
+	usart_tx_process(display_uart_driver);
 }
 
 static void tx_end(void) {

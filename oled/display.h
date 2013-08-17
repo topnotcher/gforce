@@ -50,8 +50,8 @@ void display_out(char, lcd_data_type);
 void display_putstring(char *);
 void display_tick(void);
 
-#define display_clear() display_cmd(0x01); lcd_cmd(2)
-#define display_write(/*char*/ data) display_out(data, LCD_TYPE_TEXT) 
 #define display_cmd(/*char*/ data) display_out(data,LCD_TYPE_CMD)
+#define display_clear() display_cmd(0x01); display_cmd(2)
+#define display_write(/*char*/ data) display_out(data, LCD_TYPE_TEXT) 
 
 #endif
