@@ -5,10 +5,10 @@ F_CPU = 32000000
 C_DEFS=W_SOUNDS=0 DEBUG=0
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c scheduler.c sounds.c game.c util.c xbee.c commands.c  mpc.c ringbuf.c uart.c  phasor_comm.c
+SRC = main.c scheduler.c sounds.c util.c xbee.c commands.c  mpc.c ringbuf.c uart.c  phasor_comm.c
 
 #these are not ready for this hardware
-# ir_sensor.c lcd.c
+# ir_sensor.c lcd.c game.c
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
