@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <stdint.h>
 
 #include <util.h>
@@ -11,6 +12,7 @@
 #define DISPLAY_PIN_SOUT 5
 #define DISPLAY_PIN_SCLK 7
 #define DISPLAY_PIN_SS 4
+#define DISPLAY_SPI_vect SPIC_INT_vect
 
 #define _SCLK_bm G4_PIN(DISPLAY_PIN_SCLK)
 #define _SOUT_bm G4_PIN(DISPLAY_PIN_SOUT)
@@ -48,3 +50,6 @@ inline void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size) 
 	uart_tx(display_uart_driver, cmd, size, data);
 }
 
+ISR(DISPLAY_SPI_vect) {
+	usart_tx_process(display_uart_driver);
+}
