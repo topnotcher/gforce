@@ -117,7 +117,30 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
 		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
 		phasor_comm_send('A',led_pattern,led_pattern_size);
-		display_send(0, (uint8_t *)"derp", 4);
+		
+		char * sensor;
+		switch(pkt->saddr) {
+		case 2:
+			sensor = "CH";
+			break;
+		case 4:
+			sensor = "LS";
+			break;
+		case 8:
+			sensor = "BA";
+			break;
+		case 16: 
+			sensor = "RS";
+			break;
+		case 32:
+			sensor = "PH";
+			break;
+		default:
+			sensor = "??";
+			break;
+		}
+
+		display_send(0, (uint8_t *)sensor, 3);
 
 
 	} else {

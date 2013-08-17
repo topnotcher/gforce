@@ -1,5 +1,7 @@
 #ifndef BOARD_CONFIG_H
 
+#define MPC_TWI_ADDR 16
+
 /**
  * Configuration specific to this board as required to work with includes etcetc
  */
