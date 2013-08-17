@@ -117,26 +117,36 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 inline void usart_tx_process(uart_driver_t * driver) {
 
 	//first byte of transfer
-	if ( driver->tx.state == TX_STATE_START ) {
+start:
+	if ( driver->tx.state == TX_STATE_START ) { 
 		*(driver->data) = 0xFF;
 		driver->tx.state = TX_STATE_TRANSMIT;
 		driver->tx.bytes = 0;
-	} else {
-		//assume everytime we hit this ISR, there is valid data to send..
-		mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+		return;
+	//not completely sent.
+	}
+
+	mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+
+	if ( driver->tx.bytes < (sizeof(mpc_pkt) + pkt->len) ) {
+
+		//mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
 		*(driver->data) = ((uint8_t*)pkt)[driver->tx.bytes];
-	
-		if ( ++driver->tx.bytes == (sizeof(mpc_pkt) + pkt->len) ) {
+		++driver->tx.bytes;
 
-			driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
+	//last byte finished sending.
+	} else {
+		driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
 
-			//no more packets to send.
-			if ( driver->tx.queue.read == driver->tx.queue.write ) {
-				driver->tx_end();
-				driver->tx.state = TX_STATE_IDLE;
-			} else {
-				driver->tx.state = TX_STATE_START;		
-			}
+		//no more packets to send.
+		if ( driver->tx.queue.read == driver->tx.queue.write ) {
+			driver->tx_end();
+			driver->tx.state = TX_STATE_IDLE;
+		} else {
+			driver->tx.state = TX_STATE_START;
+			//@TODO with USART, this is DRE int = we should send a byte NOW.
+			//with SPI,
+			goto start;
 		}
 	}
 }
