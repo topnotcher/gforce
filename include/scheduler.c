@@ -74,9 +74,6 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 	}
 
 	set_ticks();
-
-//	end:
-//		sei();
 }}
 
 static inline void set_ticks(void) {
@@ -87,8 +84,7 @@ static inline void set_ticks(void) {
 
 void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
-	if ( task_list == NULL )
-		goto end;
+	if ( task_list == NULL ) return;
 
 	//node we need to remove.
 	task_node * node = task_list;
@@ -119,8 +115,6 @@ void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTOREST
 			}
 		}
 	}
-	end:
-		sei();
 }}
 
 SCHEDULER_RUN {
