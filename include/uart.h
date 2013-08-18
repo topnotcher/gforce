@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <ringbuf.h>
 #include <mpc.h>
+#include <util.h>
 
 #ifndef UART_H
 #define UART_H
@@ -73,6 +74,6 @@ mpc_pkt * uart_rx(uart_driver_t * driver);
 void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint8_t * data);
 
 //goes in the DRE ISR
-void usart_tx_process(uart_driver_t * driver);
+void usart_tx_process(uart_driver_t * driver) ATTR_ALWAYS_INLINE;
 
 #endif

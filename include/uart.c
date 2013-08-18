@@ -6,6 +6,7 @@
 #include <g4config.h>
 #include "config.h"
 
+#include <util.h>
 #include <ringbuf.h>
 #include <mpc.h>
 
@@ -14,7 +15,7 @@
 #define uart_crc(crc,data) _crc_ibutton_update(crc,data)
 
 //return true if more processing is required before returning a packet.
-static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data);
+static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data)  ATTR_ALWAYS_INLINE;
 
 uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), uint8_t buffsize) {
 	uart_driver_t * driver = malloc(sizeof *driver);
