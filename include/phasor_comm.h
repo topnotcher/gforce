@@ -1,3 +1,5 @@
+#include <mpc.h>
+
 #ifndef PHASOR_COMM_H
 #define PHASOR_COMM_H
 
