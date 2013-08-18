@@ -152,6 +152,11 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 //		phasor_comm_send('B',NULL,0);
 //		mpc_send_cmd(0b1111,'B');
 //		on = 0;
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x0c ) {
+		if ( pkt->saddr == 8 || pkt->saddr == 2 )
+			do_deac();
+		else
+			do_stun();
 	}
 
 		//set_lights(1);

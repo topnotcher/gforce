@@ -16,7 +16,6 @@
 volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
 //volatile uint8_t game_running = 0;
-volatile uint8_t stunned = 0;
 
 volatile game_state_t game_state = {
 	.playing = 0,
@@ -126,7 +125,7 @@ void stun_timer() {
 
 	if ( game_countdown_time == 2 ) 
 	//	;		
-		lights_on();
+		lights_off();
 	
 	else if ( game_countdown_time == 0 ) {
 		lights_unstun();
@@ -140,7 +139,7 @@ void do_stun() {
 	if ( !game_state.active || !game_state.playing || game_state.stunned ) 
 		return;
 
-	stunned = 1;
+	game_state.stunned = 1;
 	game_countdown_time = 4;
 	
 //	lights_off();
