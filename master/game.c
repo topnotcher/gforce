@@ -149,7 +149,7 @@ void do_stun() {
 //	lights_off();
 	lights_stun();
 
-	scheduler_register(&stun_timer, 1000, 4);
+	scheduler_register(&stun_timer, 1000, game_countdown_time);
 }
 
 void do_deac() {
