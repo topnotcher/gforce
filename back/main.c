@@ -14,6 +14,7 @@
 #include <mpc.h>
 #include <buzz.h>
 #include <irrx.h>
+#include <scheduler.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -42,10 +43,10 @@ int main(void) {
 	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
 	CLK_CTRL = 0x04;
 
-	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm;
+	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 
-	//safe to pass PTR because we never leave main()
+	scheduler_init();	
 	led_init();
 	mpc_init();
 	buzz_init();
