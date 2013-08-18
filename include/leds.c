@@ -311,12 +311,10 @@ void led_write(void) {
 	led_write_byte();
 }
 void led_set_seq(led_sequence * seq) {
-	//NOTE: BAD shit could happen here if lights are enabled when we do this.
-	if ( state.seq != NULL /*&& state.seq != &seq_active*/ ) free(state.seq);
+	if ( state.status != idle && state.status != stop )
+		set_lights(0);
 
-	//fix setting seq while it's already on.
-	if ( state.status != idle && state.status != stop ) 
-		state.status = start;
+	if ( state.seq != NULL ) free(state.seq);
 
 	state.seq = seq;
 }
