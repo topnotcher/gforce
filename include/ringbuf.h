@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <util.h>
 
 #ifndef RINGBUF_H
 #define RINGBUF_H
@@ -28,7 +29,7 @@ uint8_t ringbuf_get(ringbuf_t *);
 
 void ringbuf_flush(ringbuf_t *);
 
-inline __attribute__((always_inline)) void ringbuf_put(ringbuf_t * const buf, uint8_t data) {
+inline ATTR_ALWAYS_INLINE void ringbuf_put(ringbuf_t * const buf, uint8_t data) {
 	
 	//queue is full. (note: this wastes the current position in the queue.)
 	//if full condition is not detected, then overflow will dump the entire queue (meh, just make the queue larger?)

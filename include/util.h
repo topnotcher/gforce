@@ -10,7 +10,7 @@
 #define G4_PIN(id) G4_CONCAT3(PIN,id,_bm)
 #define G4_PINCTRL(id) G4_CONCAT3(PIN,id,CTRL)
 
-
+#define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
 void crc(uint8_t * const shift, uint8_t byte, const uint8_t poly);
 
