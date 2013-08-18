@@ -25,11 +25,11 @@ volatile game_state_t game_state = {
 
 void ( *countdown_cb )(void);
 
-uint8_t led_stun_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
-uint8_t led_stun_pattern_size = 58;
+static uint8_t led_stun_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
+static uint8_t led_stun_pattern_size = 58;
 
-uint8_t led_active_pattern[] = {1,5,0x11,0x11,0x11,0x11, 1,5,5};
-uint8_t led_active_pattern_size = 9;
+static uint8_t led_active_pattern[] = {2,1, 0x01,0x01,0x01,0x01, 1,15,15, 0x10,0x10,0x10,0x10, 1,15,15 };
+static uint8_t led_active_pattern_size = 16;
 
 static inline void lights_on(void);
 static inline void lights_off(void);
@@ -42,12 +42,15 @@ inline void game_init() {
 }
 
 void game_countdown() {
-	
+	uint8_t data[] = {/*0x30 + game_countdown_time*/'A', 0};
+
 	if ( --game_countdown_time == 0 ) {
+		data[0] = 'B';
+		display_send(0,data,2);
 		countdown_cb();
 //		lcd_clear();
 	} else {
-		uint8_t data[] = {0x30 + game_countdown_time, 0};
+		data[0] = 0x30 + game_countdown_time;
 		display_send(0,data,2);
 //		lcd_clear();
 //		lcd_putstring("       ");
@@ -124,8 +127,9 @@ void stun_timer() {
 	--game_countdown_time;
 
 	if ( game_countdown_time == 2 ) 
+		mpc_send_cmd(0b0101,'B');
 	//	;		
-		lights_off();
+///		lights_off();
 	
 	else if ( game_countdown_time == 0 ) {
 		lights_unstun();
