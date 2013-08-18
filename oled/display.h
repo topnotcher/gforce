@@ -45,13 +45,13 @@ typedef struct {
 } lcd_queue_t;
 
 
-void lcd_init(void);
-void lcd_out(char, lcd_data_type);
-void lcd_putstring(char *);
-void lcd_tick(void);
+void display_init(void);
+void display_out(char, lcd_data_type);
+void display_putstring(char *);
+void display_tick(void);
 
-#define lcd_clear() lcd_cmd(0x01); lcd_cmd(2)
-#define lcd_write(/*char*/ data) lcd_out(data, LCD_TYPE_TEXT) 
-#define lcd_cmd(/*char*/ data) lcd_out(data,LCD_TYPE_CMD)
+#define display_cmd(/*char*/ data) display_out(data,LCD_TYPE_CMD)
+#define display_clear() display_cmd(0x01); display_cmd(2)
+#define display_write(/*char*/ data) display_out(data, LCD_TYPE_TEXT) 
 
 #endif

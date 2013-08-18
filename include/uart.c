@@ -13,17 +13,15 @@
 
 #define uart_crc(crc,data) _crc_ibutton_update(crc,data)
 
-#define usart_txc_interrupt_enable(usart) usart->CTRLA |= USART_DREINTLVL_MED_gc
-#define usart_txc_interrupt_disable(usart) usart->CTRLA &= ~USART_DREINTLVL_MED_gc
-
-
 //return true if more processing is required before returning a packet.
 static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data);
 
-uart_driver_t *uart_init(USART_t *usart, uint8_t buffsize) {
+uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), uint8_t buffsize) {
 	uart_driver_t * driver = malloc(sizeof *driver);
 
-	driver->usart = usart;
+	driver->tx_begin = tx_begin;
+	driver->tx_end = tx_end;
+	driver->data = data;
 	driver->rx.buf = ringbuf_init(buffsize);
 	driver->rx.size = 0;
 	driver->rx.state = RX_STATE_IDLE;
@@ -96,7 +94,7 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 
 	pkt->len = size;
 	pkt->cmd = cmd;
-	pkt->saddr = 0; //@TODO
+	pkt->saddr = MPC_TWI_ADDR<<1; //@TODO
 	pkt->chksum = MPC_CRC_SHIFT;
 
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
@@ -112,33 +110,43 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 
 	if ( driver->tx.state == TX_STATE_IDLE ) {
 		driver->tx.state = TX_STATE_START;
-		usart_txc_interrupt_enable(driver->usart);
+		driver->tx_begin();
 	}
 }
 
 inline void usart_tx_process(uart_driver_t * driver) {
 
 	//first byte of transfer
-	if ( driver->tx.state == TX_STATE_START ) {
-		driver->usart->DATA = 0xFF;
+start:
+	if ( driver->tx.state == TX_STATE_START ) { 
+		*(driver->data) = 0xFF;
 		driver->tx.state = TX_STATE_TRANSMIT;
 		driver->tx.bytes = 0;
+		return;
+	//not completely sent.
+	}
+
+	mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+
+	if ( driver->tx.bytes < (sizeof(mpc_pkt) + pkt->len) ) {
+
+		//mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+		*(driver->data) = ((uint8_t*)pkt)[driver->tx.bytes];
+		++driver->tx.bytes;
+
+	//last byte finished sending.
 	} else {
-		//assume everytime we hit this ISR, there is valid data to send..
-		mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
-		driver->usart->DATA = ((uint8_t*)pkt)[driver->tx.bytes];
-	
-		if ( ++driver->tx.bytes == (sizeof(mpc_pkt) + pkt->len) ) {
+		driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
 
-			driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
-
-			//no more packets to send.
-			if ( driver->tx.queue.read == driver->tx.queue.write ) {
-				usart_txc_interrupt_disable(driver->usart);
-				driver->tx.state = TX_STATE_IDLE;
-			} else {
-				driver->tx.state = TX_STATE_START;		
-			}
+		//no more packets to send.
+		if ( driver->tx.queue.read == driver->tx.queue.write ) {
+			driver->tx_end();
+			driver->tx.state = TX_STATE_IDLE;
+		} else {
+			driver->tx.state = TX_STATE_START;
+			//@TODO with USART, this is DRE int = we should send a byte NOW.
+			//with SPI,
+			goto start;
 		}
 	}
 }

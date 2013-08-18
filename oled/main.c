@@ -3,17 +3,19 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/wdt.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "lcd.h"
+#include "display.h"
+#include "comm.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
 static inline void shift_string(char * string);
-static inline void lcd_scroll(char * string);
+static inline void display_scroll(char * string);
 
 
 int main(void) {
@@ -40,26 +42,57 @@ int main(void) {
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
 	
-	lcd_init();
+	display_init();
+	comm_init();
+
+	wdt_enable(9);
+
 	sei();
-//	lcd_putstring("      eep!");
-//	for ( uint8_t i = 0; i<25; ++i ) lcd_tick();
+
+	while(1) {
+		wdt_reset();
+
+		mpc_pkt * pkt = comm_recv();
+//		display_tick();
+
+		if (pkt == NULL) continue;
+
+		display_cmd(0x02); display_tick();
+		display_cmd(0x01); 
+		for (uint8_t i = 0; i < 10; ++i) {
+			display_tick();
+			_delay_ms(1);
+		}
+//		display_clear();
+//		display_tick();display_tick();
+		//_delay_ms(1);
+		display_putstring((char *)pkt->data);
+		
+		for (uint8_t i = 0; i < pkt->len; ++i)
+			display_tick();
+
+		free(pkt);
+	}
+//	display_putstring("      eep!");
+//	for ( uint8_t i = 0; i<25; ++i ) display_tick();
 //	_delay_ms(1000);
-	char string[] = "      eep!      ";
-	lcd_scroll(string);
+//	char string[] = "      eep!      ";
+//	display_scroll(string);
 
 	return 0;
 }
 
-static inline void lcd_scroll(char * string) {
+
+
+static inline void display_scroll(char * string) {
 	while (1) {
-		lcd_cmd(0x02);
-		lcd_tick();
-//		lcd_clear();
+		display_cmd(0x02);
+		display_tick();
+//		display_clear();
 			
 		for ( uint8_t i = 0; i < 16 && *(string+i) != '\0'; ++i ) {
-			lcd_write(*(string+i));
-			lcd_tick();
+			display_write(*(string+i));
+			display_tick();
 		}
 
 		shift_string(string);

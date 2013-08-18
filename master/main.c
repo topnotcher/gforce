@@ -13,6 +13,7 @@
 #include "sounds.h"
 //#include "game.h"
 #include "xbee.h"
+#include "display.h"
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
@@ -58,6 +59,7 @@ int main(void) {
 	phasor_comm_init();
 //	game_init();
 	mpc_init();
+	display_init();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
@@ -111,13 +113,41 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 
 	static uint8_t on = 0;
 	if ( pkt == NULL ) return;
+	
+	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && !on)) {
+		on = 1;
+		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
+		phasor_comm_send('A',led_pattern,led_pattern_size);
+		
+		char * sensor;
+		switch(pkt->saddr) {
+		case 2:
+			sensor = "CH";
+			break;
+		case 4:
+			sensor = "LS";
+			break;
+		case 8:
+			sensor = "BA";
+			break;
+		case 16: 
+			sensor = "RS";
+			break;
+		case 32:
+			sensor = "PH";
+			break;
+		default:
+			sensor = "??";
+			break;
+		}
 
-	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && (on^=1))) {
-		 mpc_send(0b1111,'A', led_pattern, led_pattern_size);
-		 phasor_comm_send('A',led_pattern,led_pattern_size);
-	} else {
+		display_send(0, (uint8_t *)sensor, 3);
+
+
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 && on )  {
 		phasor_comm_send('B',NULL,0);
 		mpc_send_cmd(0b1111,'B');
+		on = 0;
 	}
 
 		//set_lights(1);
