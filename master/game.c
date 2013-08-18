@@ -45,19 +45,10 @@ void game_countdown() {
 	uint8_t data[] = {/*0x30 + game_countdown_time*/'A', 0};
 
 	if ( --game_countdown_time == 0 ) {
-		data[0] = 'B';
-		display_send(0,data,2);
 		countdown_cb();
-//		lcd_clear();
 	} else {
 		data[0] = 0x30 + game_countdown_time;
 		display_send(0,data,2);
-//		lcd_clear();
-//		lcd_putstring("       ");
-//		lcd_write( (0x30 + game_countdown_time) );*/
-//		lcd_bl_on();
-
-//		scheduler_register(&lcd_bl_off, SCHEDULER_HZ/8, 1);
 	}
 }
 
