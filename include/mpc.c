@@ -71,18 +71,18 @@ static struct {
 
 } tx_state;
 
-static inline void mpc_slave_init(void);
-static inline void mpc_master_init(void);
+static inline void mpc_slave_init(void) ATTR_ALWAYS_INLINE ;
+static inline void mpc_master_init(void) ATTR_ALWAYS_INLINE ;
 
-static inline bool queue_empty(qhdr_t*);
-static inline void queue_rd_idx(qhdr_t *q);
-static inline void queue_wr_idx(qhdr_t *q);
+static inline bool queue_empty(qhdr_t*) ATTR_ALWAYS_INLINE;
+static inline void queue_rd_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
+static inline void queue_wr_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
 
 static void mpc_slave_recv_byte(uint8_t);
 static void mpc_slave_recv_pkt(mpc_pkt * pkt);
 
 static void mpc_master_end_txn(void);
-static inline void mpc_master_run(void);
+static inline void mpc_master_run(void) ATTR_ALWAYS_INLINE;
 
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
