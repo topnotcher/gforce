@@ -69,11 +69,11 @@ typedef struct {
 
 
 
-static inline void led_timer_start(void);
-static inline void sclk_trigger(void);
-static inline void led_write(void);
-static void led_timer_tick(void);
-static inline void led_write_byte(void);
+static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
+static inline void sclk_trigger(void) ATTR_ALWAYS_INLINE;
+static inline void led_write(void) ATTR_ALWAYS_INLINE;
+static void led_timer_tick(void) ATTR_ALWAYS_INLINE;
+static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
 
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
 
