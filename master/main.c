@@ -18,6 +18,7 @@
 #include <mpc.h>
 #include <colors.h>
 //#include <leds.h>
+#include "game.h"
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -54,6 +55,7 @@ int main(void) {
 	//lights_init();
 //	ir_sensor_init();
 //	lcd_init();
+	scheduler_init();
 	sound_init();
 	xbee_init();
 	phasor_comm_init();
@@ -107,15 +109,16 @@ int main(void) {
 
 
 static inline void process_ib_pkt(mpc_pkt * pkt) {
-	uint8_t led_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
-	uint8_t led_pattern_size = 58;
+//	uint8_t led_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
+//	uint8_t led_pattern_size = 58;
 
 
-	static uint8_t on = 0;
 	if ( pkt == NULL ) return;
 	
-	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38 && !on)) {
-		on = 1;
+	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38)) {
+		start_game_cmd((command_t*)pkt->data);
+
+	/*	on = 1;
 		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
 		phasor_comm_send('A',led_pattern,led_pattern_size);
 		
@@ -141,13 +144,14 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 			break;
 		}
 
-		display_send(0, (uint8_t *)sensor, 3);
+		display_send(0, (uint8_t *)sensor, 3);*/
 
 
-	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 && on )  {
-		phasor_comm_send('B',NULL,0);
-		mpc_send_cmd(0b1111,'B');
-		on = 0;
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 )  {
+		stop_game_cmd((command_t*)pkt->data);
+//		phasor_comm_send('B',NULL,0);
+//		mpc_send_cmd(0b1111,'B');
+//		on = 0;
 	}
 
 		//set_lights(1);
