@@ -117,12 +117,15 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 	if ( pkt == NULL ) return;
 	
 	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38)) {
-		start_game_cmd((command_t*)pkt->data);
-		display_send(0,(uint8_t*)"...",4);
-	/*	on = 1;
-		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
-		phasor_comm_send('A',led_pattern,led_pattern_size);
-		
+		start_game_cmd((command_t*)pkt->data);	
+
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 )  {
+		stop_game_cmd((command_t*)pkt->data);
+//		phasor_comm_send('B',NULL,0);
+//		mpc_send_cmd(0b1111,'B');
+//		on = 0;
+	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x0c ) {
+
 		char * sensor;
 		switch(pkt->saddr) {
 		case 2:
@@ -145,15 +148,9 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 			break;
 		}
 
-		display_send(0, (uint8_t *)sensor, 3);*/
+		display_send(0, (uint8_t *)sensor, 3);
 
 
-	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 )  {
-		stop_game_cmd((command_t*)pkt->data);
-//		phasor_comm_send('B',NULL,0);
-//		mpc_send_cmd(0b1111,'B');
-//		on = 0;
-	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x0c ) {
 		if ( pkt->saddr == 8 || pkt->saddr == 2 )
 			do_deac();
 		else
