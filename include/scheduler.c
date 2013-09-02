@@ -10,6 +10,7 @@ static task_node * task_list;
 static task_freq_t ticks;
 
 static inline void set_ticks(void);
+static void scheduler_remove_node(task_node * rm_node);
 
 inline void scheduler_init(void) {
 
@@ -82,14 +83,25 @@ static inline void set_ticks(void) {
 	ticks = task_list->task->ticks;
 }
 
-void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+void scheduler_unregister(void (*task_cb)(void) ) {
+
+	task_node * node = task_list;
+
+	while ( node != NULL ) {
+		if ( node->task->task == task_cb )
+			scheduler_remove_node(node);
+		node = node->next;
+	}
+}
+
+static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 	if ( task_list == NULL ) return;
 
 	//node we need to remove.
 	task_node * node = task_list;
 	
-	if ( node->task->task == task_cb ) {
+	if ( rm_node == node ) {
 		task_list = node->next;
 		free(node->task);
 		free(node);
@@ -100,7 +112,7 @@ void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTOREST
 
 	} else {
 		while ( node->next != NULL ) {
-			if ( node->next->task->task == task_cb ) {
+			if ( node == rm_node ) {
 				//remove the node from the list.
 				task_node * tmp = node->next;
 				node->next = tmp->next;
@@ -117,14 +129,13 @@ void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTOREST
 	}
 }}
 
-SCHEDULER_RUN {
+
 /**
  * @TODO: ISR potentially calls a function => all registers get pushed onto the stack
  * This is true even if no tasks are ready to be called. Might be a worthless optimization, but doing this
  * in assembly could save ~40-60? cycles per invocation.
  */
-	//interrupts already disabled.
-
+SCHEDULER_RUN {
 
 	task_node * node = task_list;
 	task_node * cur = task_list;
@@ -139,11 +150,13 @@ SCHEDULER_RUN {
 		cur = node->next;
 
 		if ( /*node->task->ticks < ticks ||*/ (node->task->ticks -= ticks) == 0 ) {
+
 			node->task->task();
+
 			reorder = 1;
 
-			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 )
-				scheduler_unregister(node->task->task);
+			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 ) 
+				scheduler_remove_node(node);
 
 			// optimal to avoid updating ticks when unregistering.
 			else 
