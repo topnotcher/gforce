@@ -112,14 +112,12 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 
 	} else {
 		while ( node->next != NULL ) {
-			if ( node == rm_node ) {
-				//remove the node from the list.
-				task_node * tmp = node->next;
-				node->next = tmp->next;
-				
+			if ( node->next == rm_node ) {
+				node->next = rm_node->next;
+
 				//destroy the node.
-				free(tmp->task);
-				free(tmp);
+				free(rm_node->task);
+				free(rm_node);
 
 				break;
 			} else {
@@ -127,6 +125,7 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 			}
 		}
 	}
+
 }}
 
 
