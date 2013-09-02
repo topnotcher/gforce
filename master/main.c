@@ -80,7 +80,8 @@ int main(void) {
 //	uint8_t led_pattern_size = 9;
 
 	while (1) {
-		
+	
+
 /*		 mpc_send(0b0001,'A', led_pattern, led_pattern_size);
 		 _delay_ms(2500);
 		 mpc_send(0b0010,'A', led_pattern, led_pattern_size);
@@ -95,9 +96,9 @@ int main(void) {
 		 mpc_send_cmd(0b1111,'B');
 		 phasor_comm_send('B', NULL, 0);
 */
-		//mpc_pkt * pkt = xbee_recv();//mpc_recv();
-		process_ib_pkt(mpc_recv());
-		process_ib_pkt(phasor_comm_recv());
+		process_ib_pkt(xbee_recv());
+//		process_ib_pkt(mpc_recv());
+//		process_ib_pkt(phasor_comm_recv());
 
 		#if DEBUG == 0
 //		sleep_cpu();
@@ -117,7 +118,7 @@ static inline void process_ib_pkt(mpc_pkt * pkt) {
 	
 	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38)) {
 		start_game_cmd((command_t*)pkt->data);
-
+		display_send(0,(uint8_t*)"...",4);
 	/*	on = 1;
 		mpc_send(0b1111,'A', led_pattern, led_pattern_size);
 		phasor_comm_send('A',led_pattern,led_pattern_size);
