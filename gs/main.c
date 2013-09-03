@@ -69,7 +69,7 @@ int sendtogf(uint8_t * data, uint8_t data_len) {
 	mpc_pkt * pkt;
 	pkt = malloc(sizeof(*pkt)+data_len+1)+1;
 	pkt->cmd = 'I';
-	pkt->saddr = 8;
+	pkt->saddr = 4;
 	pkt->len = data_len;
 	pkt->chksum = MPC_CRC_SHIFT;
 
