@@ -21,8 +21,8 @@ typedef struct {
 	uint8_t ammo:4;
 	uint8_t rammoat:4;
 
-	uint8_t deac:3;
-	uint8_t stuns:5;
+	uint8_t deac:5;
+	uint8_t stuns:3;
 	
 	//game type e.g. solo
 	uint8_t mode:3;

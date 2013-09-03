@@ -14,7 +14,7 @@
 #include "game.h"
 #include "lights.h"
 
-volatile uint16_t game_time;
+//volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
 
 
@@ -25,6 +25,13 @@ volatile game_state_t game_state = {
 	.stunned = 0,
 	.active = 0
 };
+
+static struct { 
+	uint8_t deac_time;
+	uint8_t stun_time;
+	uint16_t game_time;
+} game_settings;
+
 
 void ( *countdown_cb )(void);
 
@@ -54,7 +61,11 @@ void start_game_cmd(command_t * cmd) {
 	game_state.stunned = 0;
 	game_state.active = 0;
 
-	game_time = settings->seconds;
+	game_settings.game_time = settings->seconds;
+	game_settings.deac_time = settings->deac+4;
+	//@TODO disable stun option
+	game_settings.stun_time = game_settings.deac_time/settings->stuns;
+
 	game_countdown_time = settings->prestart+1;
 	countdown_cb = &start_game_activate;
 
@@ -62,7 +73,7 @@ void start_game_cmd(command_t * cmd) {
 }
 
 void game_tick() {
-	if ( --game_time == 0 )
+	if ( --game_settings.game_time == 0 )
 		stop_game();
 }
 
@@ -107,7 +118,7 @@ void stun_timer() {
 
 	--game_countdown_time;
 
-	if ( game_countdown_time == 2 ) 
+	if ( game_countdown_time == (game_settings.stun_time>>1) ) 
 		mpc_send_cmd(0b0101,'B');
 	
 	else if ( game_countdown_time == 0 ) {
@@ -124,7 +135,7 @@ void do_stun() {
 		return;
 
 	game_state.stunned = 1;
-	game_countdown_time = 4;
+	game_countdown_time = game_settings.stun_time;
 	
 	lights_stun();
 
@@ -139,7 +150,7 @@ void do_deac() {
 	lights_off();
 //	sound_play_effect(SOUND_POWER_DOWN);
 	
-	game_countdown_time = 8;
+	game_countdown_time = game_settings.deac_time;
 //	countdown_cb = &/player_activate;
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
