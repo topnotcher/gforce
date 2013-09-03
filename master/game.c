@@ -12,6 +12,7 @@
 //#include "lcd.h"
 //#include "sounds.h"
 #include "game.h"
+#include "lights.h"
 
 volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
@@ -26,17 +27,6 @@ volatile game_state_t game_state = {
 };
 
 void ( *countdown_cb )(void);
-
-static uint8_t led_stun_pattern[] = {8,0,16,16,16,16,1,6,0,2,2,2,2,1,6,0,48,48,48,48,1,6,0,6,6,6,6,1,6,0,128,128,128,128,1,6,0,15,15,15,15,1,6,0,112,112,112,112,1,6,0,5,5,5,5,1,6,0};
-static uint8_t led_stun_pattern_size = 58;
-
-static uint8_t led_active_pattern[] = {2,1, 0x01,0x01,0x01,0x01, 1,15,15, 0x10,0x10,0x10,0x10, 1,15,15 };
-static uint8_t led_active_pattern_size = 16;
-
-static inline void lights_on(void);
-static inline void lights_off(void);
-static inline void lights_stun(void);
-static inline void lights_unstun(void);
 
 inline void game_init() {
 	//cmd_register(0x38, 11, &start_game_cmd);
@@ -152,27 +142,6 @@ void do_deac() {
 	game_countdown_time = 8;
 //	countdown_cb = &/player_activate;
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
-}
-
-static inline void lights_on(void) {
-	mpc_send(0b1111,'A', led_active_pattern, led_active_pattern_size);
-	phasor_comm_send('A',led_active_pattern,led_active_pattern_size);
-
-}
-
-static inline void lights_stun(void) {
-	mpc_send(0b1111,'A', led_stun_pattern, led_stun_pattern_size);
-	phasor_comm_send('A',led_stun_pattern,led_stun_pattern_size);
-
-}
-
-static inline void lights_off(void) {
-	phasor_comm_send('B',NULL,0);
-	mpc_send_cmd(0b1111,'B');
-}
-
-static inline void lights_unstun(void) {
-	lights_on();
 }
 
 
