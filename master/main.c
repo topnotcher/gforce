@@ -6,9 +6,9 @@
 #include <avr/sleep.h>
 
 
-#include "scheduler.h"
+#include <scheduler.h>
 //#include "lcd.h"
-//#include "lights.h"
+#include "lights.h"
 //#include "ir_sensor.h"
 #include "sounds.h"
 //#include "game.h"
@@ -52,15 +52,23 @@ int main(void) {
 	CLK_CTRL = 0x04;
 
 	scheduler_init();
-	scheduler_init();
 	sound_init();
 	xbee_init();
 	phasor_comm_init();
 	mpc_init();
 	display_init();
 
+	//clear shit by default.
+	lights_off();
+
+	_delay_ms(500);
+	display_write("Good Morning");
+
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
+
+	_delay_ms(500);
+	display_write("");
 
 	while (1) {
 

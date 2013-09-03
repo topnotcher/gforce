@@ -4,6 +4,7 @@
 
 #include <util.h>
 #include <uart.h>
+#include <string.h>
 
 #include "display.h"
 
@@ -52,6 +53,9 @@ inline void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size) 
 	uart_tx(display_uart_driver, cmd, size, data);
 }
 
+inline void display_write(char * str) {
+	display_send(0,(uint8_t*)str,strlen(str)+1);
+}
 ISR(DISPLAY_SPI_vect) {
 	usart_tx_process(display_uart_driver);
 }

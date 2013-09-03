@@ -5,5 +5,5 @@
 
 void display_init(void);
 void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size);
-
+void display_write(char *);
 #endif
