@@ -1,4 +1,3 @@
-#include "commands.h"
 #include <mpc.h>
 
 #ifndef GAME_H
@@ -7,7 +6,14 @@
 #define GAME_SECONDS 10
 #define GAME_START_SECONDS 3
 
-//shit isn't portable. deal.
+typedef struct {
+	uint8_t cmd;
+	uint8_t packs;
+	uint8_t wtfsthis;
+	uint8_t crc;
+} command_t;
+
+
 typedef struct {
 	command_t hdr;
 

@@ -5,8 +5,6 @@
 #include <mpc.h>
 
 
-//#include "lights.h"
-#include "commands.h"
 #include "scheduler.h"
 #include "display.h"
 //#include "lcd.h"
@@ -155,7 +153,7 @@ void do_deac() {
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
-inline void process_ir_pkt(mpc_pkt * pkt) {
+inline void process_ir_pkt(mpc_pkt const * const pkt) {
 
 	command_t const * const  cmd = (command_t*)pkt->data;
 
