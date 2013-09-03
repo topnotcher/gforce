@@ -1,4 +1,5 @@
 #include "commands.h"
+#include <mpc.h>
 
 #ifndef GAME_H
 #define GAME_H
@@ -61,10 +62,10 @@ typedef struct {
 
 void game_countdown(void);
 void stop_game(void);
-void stop_game_cmd(command_t *);
+void stop_game_cmd(command_t const*const);
 void game_tick(void);
 
-void start_game_cmd(command_t *);
+void start_game_cmd(command_t const*const);
 void start_game_activate(void);
 
 void player_activate(void);
@@ -75,5 +76,7 @@ void do_deac(void);
 void stun_timer(void);
 
 void game_init(void);
+
+void process_ir_pkt(mpc_pkt const * const pkt);
 
 #endif
