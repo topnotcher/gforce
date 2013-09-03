@@ -47,7 +47,7 @@ void game_countdown() {
 		countdown_cb();
 	} else {
 		data[6] = 0x30 + game_countdown_time;
-		display_send(0,data,7);
+		display_send(0,data,8);
 	}
 }
 
