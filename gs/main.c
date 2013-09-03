@@ -18,13 +18,13 @@ int sendtogf(uint8_t * data, uint8_t size);
 
 int main(int argc, char**argv) {
 
-    uint8_t start_data[] = {56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	uint8_t start_data[] = {56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
 	int start_data_len = 15;
 
-    uint8_t end_data[] = { 8, 127, 153, 250 };
+	uint8_t end_data[] = { 8, 127, 153, 250 };
 	int end_data_len = 4;
 
-    uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
+	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
 
@@ -69,7 +69,7 @@ int sendtogf(uint8_t * data, uint8_t data_len) {
 	mpc_pkt * pkt;
 	pkt = malloc(sizeof(*pkt)+data_len+1)+1;
 	pkt->cmd = 'I';
-	pkt->saddr = 8;
+	pkt->saddr = 4;
 	pkt->len = data_len;
 	pkt->chksum = MPC_CRC_SHIFT;
 
