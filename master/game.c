@@ -44,13 +44,13 @@ inline void game_init() {
 }
 
 void game_countdown() {
-	static uint8_t data[] = {'X', 0};
+	static uint8_t data[] = "       ";
 
 	if ( --game_countdown_time == 0 ) {
 		countdown_cb();
 	} else {
-		data[0] = 0x30 + game_countdown_time;
-		display_send(0,data,2);
+		data[6] = 0x30 + game_countdown_time;
+		display_send(0,data,7);
 	}
 }
 
@@ -67,7 +67,6 @@ void start_game_cmd(command_t * cmd) {
 	game_time = settings->seconds;
 	game_countdown_time = settings->prestart+1;
 	countdown_cb = &start_game_activate;
-	display_send(0,(uint8_t *)"...",4);
 
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
