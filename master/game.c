@@ -15,8 +15,6 @@
 
 volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
-volatile uint8_t stun_time;
-volatile uint8_t deac_time;
 
 
 //volatile uint8_t game_running = 0;
@@ -46,30 +44,13 @@ inline void game_init() {
 }
 
 void game_countdown() {
-	static uint8_t data[] = {/*0x30 + game_countdown_time*/'*', 'B', 0};
+	static uint8_t data[] = {'X', 0};
 
 	if ( --game_countdown_time == 0 ) {
 		countdown_cb();
-//		scheduler_unregister(&game_countdown);
-//		scheduler_unregister(&game_countdown);
-
 	} else {
-		data[1] = 0x30 + game_countdown_time;
-		display_send(0,data,3);
-		lights_off();
-	}
-}
-
-void deac_countdown(void) {
-	static uint8_t data[] = {/*0x30 + game_countdown_time*/'-', 'B', 0};
-
-	if ( --deac_time == 0 ) {
-		player_activate();
-		scheduler_unregister(&game_countdown);
-
-	} else {
-		data[1] = 0x30 + deac_time;
-		display_send(0,data,3);
+		data[0] = 0x30 + game_countdown_time;
+		display_send(0,data,2);
 	}
 }
 
@@ -127,23 +108,20 @@ void stop_game() {
 		scheduler_unregister(&game_tick);
 
 		//slight issue here: if we stop game during countdown.
-	//	scheduler_unregister(&game_countdown);
+		scheduler_unregister(&game_countdown);
 //		lcd_clear();
-
 		game_state.playing = 0;
 	}
 }
 
 void stun_timer() {
 
-	--stun_time;
+	--game_countdown_time;
 
-	if ( stun_time == 2 ) 
+	if ( game_countdown_time == 2 ) 
 		mpc_send_cmd(0b0101,'B');
-	//	;		
-///		lights_off();
 	
-	else if ( stun_time == 0 ) {
+	else if ( game_countdown_time == 0 ) {
 		lights_unstun();
 		game_state.stunned = 0;
 		game_state.active = 1;
@@ -157,12 +135,11 @@ void do_stun() {
 		return;
 
 	game_state.stunned = 1;
-	stun_time = 4;
+	game_countdown_time = 4;
 	
-//	lights_off();
 	lights_stun();
 
-	scheduler_register(&stun_timer, 1000, stun_time);
+	scheduler_register(&stun_timer, 1000, game_countdown_time);
 }
 
 void do_deac() {
@@ -173,10 +150,9 @@ void do_deac() {
 	lights_off();
 //	sound_play_effect(SOUND_POWER_DOWN);
 	
-	//@TODO
-	deac_time = 8;
+	game_countdown_time = 8;
 //	countdown_cb = &/player_activate;
-	scheduler_register(&deac_countdown, 1000, deac_time);
+	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
 static inline void lights_on(void) {
