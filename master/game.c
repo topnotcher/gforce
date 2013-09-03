@@ -33,6 +33,8 @@ static struct {
 
 void ( *countdown_cb )(void);
 
+static inline void handle_shot(const uint8_t, command_t const * const);
+
 inline void game_init() {
 	//cmd_register(0x38, 11, &start_game_cmd);
 	//cmd_register(0x08, 0, &stop_game_cmd);
@@ -127,11 +129,46 @@ void stun_timer() {
 	}
 }
 
-void do_stun() {
-	
+static inline void handle_shot(const uint8_t saddr, command_t const * const cmd) {
+
 	if ( !game_state.active || !game_state.playing || game_state.stunned ) 
 		return;
 
+	char * sensor;
+	switch(saddr) {
+	case 2:
+		sensor = "CH";
+		break;
+	case 4:
+		sensor = "LS";
+		break;
+	case 8:
+		sensor = "BA";
+		break;
+	case 16: 
+		sensor = "RS";
+		break;
+	case 32:
+		sensor = "PH";
+		break;
+	default:
+		sensor = "??";
+			break;
+	}
+
+	display_send(0, (uint8_t *)sensor, 3);
+
+	if ( saddr & (8 | 2) )
+		do_deac();
+	else
+		do_stun();
+
+	//derpderpderp
+}
+
+
+void do_stun() {
+	
 	game_state.stunned = 1;
 	game_countdown_time = game_settings.stun_time;
 	
@@ -141,9 +178,6 @@ void do_stun() {
 }
 
 void do_deac() {
-
-	if ( !game_state.active || !game_state.playing || game_state.stunned ) 
-		return;
 
 	lights_off();
 //	sound_play_effect(SOUND_POWER_DOWN);
@@ -164,35 +198,6 @@ inline void process_ir_pkt(mpc_pkt const * const pkt) {
 		stop_game_cmd(cmd);
 
 	} else if ( cmd->cmd == 0x0c ) {
-
-		char * sensor;
-		switch(pkt->saddr) {
-		case 2:
-			sensor = "CH";
-			break;
-		case 4:
-			sensor = "LS";
-			break;
-		case 8:
-			sensor = "BA";
-			break;
-		case 16: 
-			sensor = "RS";
-			break;
-		case 32:
-			sensor = "PH";
-			break;
-		default:
-			sensor = "??";
-			break;
-		}
-
-		display_send(0, (uint8_t *)sensor, 3);
-
-
-		if ( pkt->saddr == 8 || pkt->saddr == 2 )
-			do_deac();
-		else
-			do_stun();
+		handle_shot(pkt->saddr, cmd);
 	}
 }
