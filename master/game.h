@@ -1,4 +1,4 @@
-#include "commands.h"
+#include <mpc.h>
 
 #ifndef GAME_H
 #define GAME_H
@@ -6,7 +6,14 @@
 #define GAME_SECONDS 10
 #define GAME_START_SECONDS 3
 
-//shit isn't portable. deal.
+typedef struct {
+	uint8_t cmd;
+	uint8_t packs;
+	uint8_t wtfsthis;
+	uint8_t crc;
+} command_t;
+
+
 typedef struct {
 	command_t hdr;
 
@@ -61,10 +68,10 @@ typedef struct {
 
 void game_countdown(void);
 void stop_game(void);
-void stop_game_cmd(command_t *);
+void stop_game_cmd(command_t const*const);
 void game_tick(void);
 
-void start_game_cmd(command_t *);
+void start_game_cmd(command_t const*const);
 void start_game_activate(void);
 
 void player_activate(void);
@@ -75,5 +82,7 @@ void do_deac(void);
 void stun_timer(void);
 
 void game_init(void);
+
+void process_ir_pkt(mpc_pkt const * const pkt);
 
 #endif

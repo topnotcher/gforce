@@ -5,8 +5,6 @@
 #include <mpc.h>
 
 
-//#include "lights.h"
-#include "commands.h"
 #include "scheduler.h"
 #include "display.h"
 //#include "lcd.h"
@@ -47,11 +45,11 @@ void game_countdown() {
 		countdown_cb();
 	} else {
 		data[6] = 0x30 + game_countdown_time;
-		display_send(0,data,7);
+		display_send(0,data,8);
 	}
 }
 
-void start_game_cmd(command_t * cmd) {
+void start_game_cmd(command_t const * const cmd) {
 	if ( game_state.playing )
 		return;
 
@@ -97,7 +95,7 @@ void player_activate() {
 	lights_on();
 }
 
-void stop_game_cmd( command_t * cmd ) {
+void stop_game_cmd( command_t const * const cmd ) {
 	stop_game();
 }
 
@@ -155,4 +153,46 @@ void do_deac() {
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
+inline void process_ir_pkt(mpc_pkt const * const pkt) {
 
+	command_t const * const  cmd = (command_t*)pkt->data;
+
+	if ( cmd->cmd == 0x38) {
+		start_game_cmd(cmd);	
+
+	} else if ( cmd->cmd == 0x08 )  {
+		stop_game_cmd(cmd);
+
+	} else if ( cmd->cmd == 0x0c ) {
+
+		char * sensor;
+		switch(pkt->saddr) {
+		case 2:
+			sensor = "CH";
+			break;
+		case 4:
+			sensor = "LS";
+			break;
+		case 8:
+			sensor = "BA";
+			break;
+		case 16: 
+			sensor = "RS";
+			break;
+		case 32:
+			sensor = "PH";
+			break;
+		default:
+			sensor = "??";
+			break;
+		}
+
+		display_send(0, (uint8_t *)sensor, 3);
+
+
+		if ( pkt->saddr == 8 || pkt->saddr == 2 )
+			do_deac();
+		else
+			do_stun();
+	}
+}

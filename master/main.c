@@ -28,7 +28,7 @@
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
-static inline void process_ib_pkt(mpc_pkt * pkt);
+static inline void process_ib_pkt(mpc_pkt const * const pkt);
 
 
 int main(void) {
@@ -81,47 +81,12 @@ int main(void) {
 }
 
 
-static inline void process_ib_pkt(mpc_pkt * pkt) {
+static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 
 	if ( pkt == NULL ) return;
 	
-	if ( (pkt->cmd == 'I' && pkt->data[0] == 0x38)) {
-		start_game_cmd((command_t*)pkt->data);	
+	if ( pkt->cmd == 'I' )
+		process_ir_pkt(pkt);
 
-	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x08 )  {
-		stop_game_cmd((command_t*)pkt->data);
-	} else if ( pkt->cmd == 'I' && pkt->data[0] == 0x0c ) {
-
-		char * sensor;
-		switch(pkt->saddr) {
-		case 2:
-			sensor = "CH";
-			break;
-		case 4:
-			sensor = "LS";
-			break;
-		case 8:
-			sensor = "BA";
-			break;
-		case 16: 
-			sensor = "RS";
-			break;
-		case 32:
-			sensor = "PH";
-			break;
-		default:
-			sensor = "??";
-			break;
-		}
-
-		display_send(0, (uint8_t *)sensor, 3);
-
-
-		if ( pkt->saddr == 8 || pkt->saddr == 2 )
-			do_deac();
-		else
-			do_stun();
-	}
-
-	free(pkt);
+	free((void*)pkt);
 }
