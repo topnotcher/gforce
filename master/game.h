@@ -9,7 +9,7 @@
 typedef struct {
 	uint8_t cmd;
 	uint8_t packs;
-	uint8_t wtfsthis;
+	uint8_t data;
 	uint8_t crc;
 } command_t;
 
