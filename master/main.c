@@ -61,8 +61,8 @@ int main(void) {
 	//clear shit by default.
 	lights_off();
 
-	_delay_ms(500);
 	display_write("Good Morning");
+	_delay_ms(500);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
