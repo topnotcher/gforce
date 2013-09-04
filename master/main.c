@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-
+#include <avr/wdt.h>
 
 #include <scheduler.h>
 //#include "lcd.h"
@@ -69,12 +69,14 @@ int main(void) {
 
 	_delay_ms(500);
 	display_write("");
+	wdt_enable(9);
 
 	while (1) {
-
+		wdt_reset();
 		process_ib_pkt(xbee_recv());
 		process_ib_pkt(mpc_recv());
 		process_ib_pkt(phasor_comm_recv());
+
 	}
 
 	return 0;
