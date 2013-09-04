@@ -11,10 +11,10 @@
 //#include "sounds.h"
 #include "game.h"
 #include "lights.h"
+#include "xbee.h"
 
 //volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
-
 
 //volatile uint8_t game_running = 0;
 
@@ -200,4 +200,6 @@ inline void process_ir_pkt(mpc_pkt const * const pkt) {
 	} else if ( cmd->cmd == 0x0c ) {
 		handle_shot(pkt->saddr, cmd);
 	}
+
+	xbee_send('S', (uint8_t*)pkt->data, pkt->len);
 }
