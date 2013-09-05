@@ -45,10 +45,11 @@ void game_countdown() {
 
 	if ( --game_countdown_time == 0 ) {
 		countdown_cb();
+		data[6] = ' ';
 	} else {
 		data[6] = 0x30 + game_countdown_time;
-		display_send(0,data,8);
 	}
+	display_send(0,data,8);
 }
 
 void start_game_cmd(command_t const * const cmd) {
@@ -126,6 +127,7 @@ void stun_timer() {
 		game_state.stunned = 0;
 		game_state.active = 1;
 		scheduler_unregister(&stun_timer);
+		display_send(0,(uint8_t*)" ",2);
 	}
 }
 
@@ -137,31 +139,31 @@ static inline void handle_shot(const uint8_t saddr, command_t const * const cmd)
 	char * sensor;
 	switch(saddr) {
 	case 2:
-		sensor = "CH";
+		sensor = "Tagged: CH";
 		break;
 	case 4:
-		sensor = "LS";
+		sensor = "Tagged: LS";
 		break;
 	case 8:
-		sensor = "BA";
+		sensor = "Tagged: BA";
 		break;
 	case 16: 
-		sensor = "RS";
+		sensor = "Tagged: RS";
 		break;
 	case 32:
-		sensor = "PH";
+		sensor = "Tagged: PH";
 		break;
 	default:
-		sensor = "??";
+		sensor = "Tagged: ??";
 			break;
 	}
-
-	display_send(0, (uint8_t *)sensor, 3);
 
 	if ( saddr & (8 | 2) )
 		do_deac();
 	else
 		do_stun();
+
+	display_write(sensor);
 
 	//derpderpderp
 }
