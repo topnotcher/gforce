@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "g4config.h"
@@ -75,7 +76,13 @@ inline void irtx_init(void) {
 
 void irtx_send(irtx_pkt * pkt) {
 
-	sendq.pkts[sendq.write] = pkt;
+	irtx_pkt * npkt;
+
+	npkt = malloc(sizeof(*npkt) + pkt->size);
+	memcpy(npkt,pkt,sizeof(*npkt)+pkt->size);
+
+
+	sendq.pkts[sendq.write] = npkt;
 	sendq.write = (sendq.write == TX_QUEUE_MAX-1) ? 0 : sendq.write+1;
 	
 	_txc_interrupt_enable();
