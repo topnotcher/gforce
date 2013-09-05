@@ -22,6 +22,7 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+static inline void send_start_pkt(void);
 
 int main(void) {
 
@@ -55,15 +56,13 @@ int main(void) {
 	scheduler_init();
 	sei();
 
-	uint16_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
-	for ( uint8_t i = 0; i < 16; ++i )
-		if ( i > 3 )
-			data[i] |= 0x100;
 
+
+	
 	while(1) {
 	
 		if ( trigger_pressed() ) 
-			irtx_send(data,16);
+			send_start_pkt();
 
 
 		mpc_pkt * pkt = phasor_comm_recv();
@@ -97,3 +96,21 @@ int main(void) {
 
 	return 0;
 }
+
+static inline void send_start_pkt(void) {
+	static const uint8_t data[] = { 255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	const uint8_t data_len = 16;
+
+	irtx_pkt * pkt;
+	pkt = malloc(sizeof(*pkt) + data_len); 
+
+	pkt->size = data_len;
+	pkt->repeat = 3;
+
+	for ( uint8_t i = 0; i < pkt->size; ++i ) 
+		pkt->data[i] = data[i];
+
+	irtx_send(pkt);
+
+}
+
