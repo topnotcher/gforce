@@ -41,15 +41,15 @@ inline void game_init() {
 }
 
 void game_countdown() {
-	static uint8_t data[] = "       ";
+	static uint8_t data[] = "        ";
 
 	if ( --game_countdown_time == 0 ) {
 		countdown_cb();
-		data[6] = ' ';
+		data[7] = ' ';
 	} else {
-		data[6] = 0x30 + game_countdown_time;
+		data[7] = 0x30 + game_countdown_time;
 	}
-	display_send(0,data,8);
+	display_send(0,data,9);
 }
 
 void start_game_cmd(command_t const * const cmd) {
