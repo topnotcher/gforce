@@ -47,7 +47,7 @@ inline void display_init(void) {
 	_delay_us(100);
 	
 	//display on??? 	
-	display_out_raw(0x08); //0x0E works. 0x0F just adds blinking cursor
+	display_out_raw(0x08); 
 
 	_delay_us(100);
 	
@@ -64,8 +64,11 @@ inline void display_init(void) {
 	
 	_delay_us(100);
 	
-	//display on??? 	
-	display_out_raw(0x0F); //0x0E works. 0x0F just adds blinking cursor
+	//display on???
+	//0x0C = on, no cursor
+	//0x0E = on, steady cursor
+	//0x0F = on, blinking cursor.
+	display_out_raw(0x0C);
 	
 	_delay_us(100);
 
