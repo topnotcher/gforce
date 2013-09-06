@@ -39,7 +39,7 @@ inline void comm_init(void) {
 	COMM_SPI.CTRL = SPI_ENABLE_bm; /*SPI_MASTER_bm=0*/
 	COMM_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy, dummy, 10);
+	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy, dummy, 40);
 }
 
 void dummy(void) {}
