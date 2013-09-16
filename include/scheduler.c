@@ -152,22 +152,21 @@ SCHEDULER_RUN {
 
 			node->task->task();
 
-			reorder = 1;
-
-			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 ) 
+			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 ) {
 				scheduler_remove_node(node);
 
-			// optimal to avoid updating ticks when unregistering.
-			else 
+			} else {
+				reorder = 1;
 				node->task->ticks = node->task->freq;
+			}
 
 		}
 	}
 
 	if ( task_list != NULL ) {
-
-		//This ONLY puts the next item in the head position; it does NOT 
-		//necessarily put the list in /correct/ order
+		//the list is in order as of when items are inserted 
+		//so they can only become out of order when something run and is NOT unregistered
+		//
 		if ( reorder ) {
 			task_ticks_t min = task_list->task->ticks;
 			cur = task_list->next;
