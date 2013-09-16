@@ -11,6 +11,7 @@ static task_freq_t ticks;
 
 static inline void set_ticks(void);
 static void scheduler_remove_node(task_node * rm_node);
+static inline void scheduler_free_node(task_node * node);
 
 inline void scheduler_init(void) {
 
@@ -114,10 +115,7 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 		while ( node->next != NULL ) {
 			if ( node->next == rm_node ) {
 				node->next = rm_node->next;
-
-				//destroy the node.
-				free(rm_node->task);
-				free(rm_node);
+				scheduler_free_node(rm_node);
 
 				break;
 			} else {
@@ -128,6 +126,10 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 
 }}
 
+static inline void scheduler_free_node(task_node * node) {
+	free(node->task);
+	free(node);
+}
 
 /**
  * @TODO: ISR potentially calls a function => all registers get pushed onto the stack
@@ -148,7 +150,7 @@ SCHEDULER_RUN {
 		// end up being a dangling pointer (causes AVR restart?)
 		cur = node->next;
 
-		if ( /*node->task->ticks < ticks ||*/ (node->task->ticks -= ticks) == 0 ) {
+		if ( (node->task->ticks -= ticks) == 0 ) {
 
 			node->task->task();
 
@@ -156,7 +158,7 @@ SCHEDULER_RUN {
 				scheduler_remove_node(node);
 
 			} else {
-				reorder = 1;
+				reorder++;
 				node->task->ticks = node->task->freq;
 			}
 
@@ -165,14 +167,14 @@ SCHEDULER_RUN {
 
 	if ( task_list != NULL ) {
 		//the list is in order as of when items are inserted 
-		//so they can only become out of order when something run and is NOT unregistered
-		//
+		//so they can only become out of order when something run and is NOT unregistered. 
+		//In this case, the item that was run would have been on top (could have been top N items?)
 		if ( reorder ) {
 			task_ticks_t min = task_list->task->ticks;
 			cur = task_list->next;
 			task_node * prev = task_list;
 		
-			while ( cur != NULL ) {
+			while ( cur != NULL && reorder--) {
 				if ( cur->task->ticks < min ) {
 					min = cur->task->ticks;
 
