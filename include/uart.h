@@ -26,7 +26,10 @@ typedef struct {
 		ringbuf_t * buf;
 		
 		//packet being received.
-		mpc_pkt * pkt;
+		union { 
+			mpc_pkt pkt;
+			uint8_t pkt_raw[MPC_PKT_MAX_SIZE];
+		};
 
 		//bytes received in current packet. 
 		uint8_t size; 
