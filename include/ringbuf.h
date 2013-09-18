@@ -7,10 +7,10 @@
 #define ringbuf_next_idx(idx,size) ((idx == size-1) ? 0 : idx+1)
 
 //ringbuf_t * buf
-#define ringbuf_full(buf) (ringbuf_next_idx(buf->write, buf->size) == buf->read)
+#define ringbuf_full(buf) (ringbuf_next_idx((buf)->write, (buf)->size) == (buf)->read)
 
 //ringbuf_t * buf
-#define ringbuf_empty(buf) (buf->read == buf->write)
+#define ringbuf_empty(buf) ((buf)->read == (buf)->write)
 
 typedef struct {
 	volatile uint8_t read;

@@ -34,7 +34,9 @@ typedef struct {
 static struct {
 	uint8_t size;
 	uint8_t crc;
-	ringbuf_t * buf;
+	ringbuf_t buf;
+	uint8_t buf_raw[MPC_QUEUE_SIZE];
+
 	mpc_pkt * pkt;
 
 	struct {
@@ -139,8 +141,7 @@ static inline void mpc_slave_init(void) {
 
 	/**@Todo better initialization here*/
 	memset(&rx_state, 0, sizeof rx_state);
-	rx_state.buf = ringbuf_init(MPC_QUEUE_SIZE);
-
+	ringbuf_init(&rx_state.buf, MPC_QUEUE_SIZE, rx_state.buf_raw);
 
 	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
 
@@ -171,8 +172,8 @@ inline mpc_pkt* mpc_recv(void) {
 
 	//mpc_master_run();
 
-	while ( !ringbuf_empty(rx_state.buf) )
-		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
+	while ( !ringbuf_empty(&rx_state.buf) )
+		mpc_slave_recv_byte(ringbuf_get(&rx_state.buf));
 
 	if ( queue_empty(&rx_state.queue.hdr) ) return NULL;
 
@@ -208,8 +209,8 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
 
 	//before returning the packet, flush the bufffarrrr
-	while ( !ringbuf_empty(rx_state.buf) )
-		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
+	while ( !ringbuf_empty(&rx_state.buf) )
+		mpc_slave_recv_byte(ringbuf_get(&rx_state.buf));
 
 	rx_state.queue.items[ rx_state.queue.hdr.write ] = pkt;
 	queue_wr_idx(&rx_state.queue.hdr);
@@ -225,8 +226,8 @@ MPC_TWI_SLAVE_ISR {
 		if ( addr & mpc_twi_addr ) {
 #endif
 			//basically a hack instead of having per-packet queues.
-			while ( !ringbuf_empty(rx_state.buf) )
-				mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
+			while ( !ringbuf_empty(&rx_state.buf) )
+				mpc_slave_recv_byte(ringbuf_get(&rx_state.buf));
 
 			if ( rx_state.pkt != NULL ) 
 				free(rx_state.pkt);
@@ -253,7 +254,7 @@ MPC_TWI_SLAVE_ISR {
 
 		//slave read(master write)
 		} else {
-			ringbuf_put(rx_state.buf, MPC_TWI.SLAVE.DATA);
+			ringbuf_put(&rx_state.buf, MPC_TWI.SLAVE.DATA);
 			//@TODO SMART MODE
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 		}
