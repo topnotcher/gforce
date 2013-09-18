@@ -3,16 +3,6 @@
 #include "uart.h"
 #include "xbee.h"
 
-/** 
- * Ring buffer used by uart driver. 
- */
-static ringbuf_t uart_rx_buf;
-
-/** 
- * raw array wrapped by uart_rx_buf
- */
-static uint8_t uart_rx_buf_raw[XBEE_QUEUE_MAX]; 
-
 static uart_driver_t xbee_uart_driver;
 
 
@@ -33,8 +23,9 @@ inline void xbee_init(void) {
 	PORTF.OUTSET = PIN3_bm;
 	PORTF.DIRSET = PIN3_bm;
 
+	static ringbuf_t uart_rx_buf;
+	static uint8_t uart_rx_buf_raw[XBEE_QUEUE_MAX]; 
 	ringbuf_init(&uart_rx_buf, XBEE_QUEUE_MAX, uart_rx_buf_raw);
-
 	uart_init(&xbee_uart_driver, &XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, &uart_rx_buf);
 }
 

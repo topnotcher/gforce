@@ -14,16 +14,6 @@
 
 #define PHASOR_COMM_QUEUE_MAX 5
 
-/** 
- * Ring buffer used by uart driver. 
- */
-static ringbuf_t uart_rx_buf;
-
-/** 
- * raw array wrapped by uart_rx_buf
- */
-static uint8_t uart_rx_buf_raw[PHASOR_COMM_QUEUE_MAX];
-
 static uart_driver_t comm_uart_driver;
 
 static void tx_interrupt_enable(void);
@@ -42,6 +32,8 @@ inline void phasor_comm_init(void) {
 	PHASOR_COMM_USART_PORT.OUTSET = _TXPIN_bm;
 	PHASOR_COMM_USART_PORT.DIRSET = _TXPIN_bm;
 
+	static ringbuf_t uart_rx_buf;
+	static uint8_t uart_rx_buf_raw[PHASOR_COMM_QUEUE_MAX];
 	ringbuf_init(&uart_rx_buf, PHASOR_COMM_QUEUE_MAX, uart_rx_buf_raw);
 
 	uart_init(&comm_uart_driver, &PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, &uart_rx_buf);
