@@ -60,7 +60,6 @@ static inline uint8_t uart_process_byte(uart_driver_t * driver, uint8_t data) {
 
 	} else if ( driver->rx.state == RX_STATE_READY ) {
 
-//		driver->rx.pkt = malloc(sizeof(*driver->rx.pkt) + data);
 		driver->rx.crc = uart_crc(MPC_CRC_SHIFT, data);
 		driver->rx.pkt.len = data;
 		driver->rx.size = 1;

@@ -28,7 +28,7 @@
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
-static inline void process_ib_pkt(mpc_pkt const * const pkt);
+static inline void process_ib_pkt(mpc_pkt const * const pkt, uint8_t dyn);
 
 
 int main(void) {
@@ -73,9 +73,9 @@ int main(void) {
 
 	while (1) {
 		wdt_reset();
-		process_ib_pkt(xbee_recv());
-		process_ib_pkt(mpc_recv());
-		process_ib_pkt(phasor_comm_recv());
+		process_ib_pkt(xbee_recv(),0);
+		process_ib_pkt(mpc_recv(),1);
+		process_ib_pkt(phasor_comm_recv(),0);
 
 	}
 
@@ -83,12 +83,13 @@ int main(void) {
 }
 
 
-static inline void process_ib_pkt(mpc_pkt const * const pkt) {
+static inline void process_ib_pkt(mpc_pkt const * const pkt, uint8_t dyn) {
 
 	if ( pkt == NULL ) return;
 	
 	if ( pkt->cmd == 'I' )
 		process_ir_pkt(pkt);
 
-	free((void*)pkt);
+	if (dyn) 
+		free((void*)pkt);
 }
