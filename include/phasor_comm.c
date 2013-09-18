@@ -14,7 +14,17 @@
 
 #define PHASOR_COMM_QUEUE_MAX 5
 
-static uart_driver_t * comm_uart_driver;
+/** 
+ * Ring buffer used by uart driver. 
+ */
+static ringbuf_t uart_rx_buf;
+
+/** 
+ * raw array wrapped by uart_rx_buf
+ */
+static uint8_t uart_rx_buf_raw[PHASOR_COMM_QUEUE_MAX];
+
+static uart_driver_t comm_uart_driver;
 
 static void tx_interrupt_enable(void);
 static void tx_interrupt_disable(void);
@@ -32,15 +42,17 @@ inline void phasor_comm_init(void) {
 	PHASOR_COMM_USART_PORT.OUTSET = _TXPIN_bm;
 	PHASOR_COMM_USART_PORT.DIRSET = _TXPIN_bm;
 
-	comm_uart_driver = uart_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, PHASOR_COMM_QUEUE_MAX);
+	ringbuf_init(&uart_rx_buf, PHASOR_COMM_QUEUE_MAX, uart_rx_buf_raw);
+
+	uart_init(&comm_uart_driver, &PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, &uart_rx_buf);
 }
 
 inline void phasor_comm_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
-	uart_tx(comm_uart_driver, cmd, size, data);
+	uart_tx(&comm_uart_driver, cmd, size, data);
 }
 
 inline mpc_pkt * phasor_comm_recv(void) {
-	return uart_rx(comm_uart_driver);
+	return uart_rx(&comm_uart_driver);
 }
 
 static void tx_interrupt_enable(void) {
@@ -51,9 +63,9 @@ static void tx_interrupt_disable(void) {
 }
 
 PHASOR_COMM_TXC_ISR {
-	usart_tx_process(comm_uart_driver);
+	usart_tx_process(&comm_uart_driver);
 }
 
 PHASOR_COMM_RXC_ISR {
-	uart_rx_byte(comm_uart_driver);
+	uart_rx_byte(&comm_uart_driver);
 }

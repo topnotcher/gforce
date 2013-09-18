@@ -19,7 +19,8 @@ typedef struct {
 	uint8_t * data;
 } ringbuf_t;
 
-ringbuf_t * ringbuf_init(uint8_t size);
+
+void ringbuf_init(ringbuf_t * buf, uint8_t size, uint8_t * data);
 void ringbuf_deinit(ringbuf_t *);
 //void ringbuf_put(ringbuf_t * const buf, uint8_t data);
 uint8_t ringbuf_get(ringbuf_t *);

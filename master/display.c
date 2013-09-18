@@ -19,7 +19,7 @@
 #define _SOUT_bm G4_PIN(DISPLAY_PIN_SOUT)
 #define _SS_bm G4_PIN(DISPLAY_PIN_SS)
 
-static uart_driver_t * display_uart_driver;
+static uart_driver_t display_uart_driver;
 
 static void tx_begin(void);
 static void tx_end(void);
@@ -34,14 +34,15 @@ inline void display_init(void) {
 	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV4_gc;
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 5);
+	//note passing NULL ringbuf - RX is not used!
+	uart_init(&display_uart_driver, &DISPLAY_SPI.DATA, tx_begin, tx_end, (ringbuf_t *)NULL);
 }
 
 static void tx_begin(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	DISPLAY_PORT.OUTCLR = _SS_bm;
 	//because with SPI the ISR only triggers whena  byte finishes transferring
-	usart_tx_process(display_uart_driver);
+	usart_tx_process(&display_uart_driver);
 }
 
 static void tx_end(void) {
@@ -50,12 +51,12 @@ static void tx_end(void) {
 }
 
 inline void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
-	uart_tx(display_uart_driver, cmd, size, data);
+	uart_tx(&display_uart_driver, cmd, size, data);
 }
 
 inline void display_write(char * str) {
 	display_send(0,(uint8_t*)str,strlen(str)+1);
 }
 ISR(DISPLAY_SPI_vect) {
-	usart_tx_process(display_uart_driver);
+	usart_tx_process(&display_uart_driver);
 }
