@@ -46,6 +46,6 @@ void led_init(void);
 //void set_state(void);
 void set_lights(uint8_t);
 void leds_run(void);
-void led_set_seq(led_sequence *);
+void led_set_seq(uint8_t *,uint8_t);
 
 #endif
