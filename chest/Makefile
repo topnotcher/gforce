@@ -3,7 +3,8 @@ MCU = atxmega32a4
 F_CPU = 32000000
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(shell ls *.c)
+SRC = buzz.c  leds.c  main.c  mpc.c  ringbuf.c  scheduler.c  util.c
+#$(shell ls *.c)*
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 

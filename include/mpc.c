@@ -210,7 +210,7 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 	}
 }
 
-static inline void mpc_slave_recv_pkt() {
+static inline void mpc_slave_recv_pkt(void) {
 
 	//before returning the packet, flush the bufffarrrr
 	while ( !ringbuf_empty(&rx_state.buf) )

@@ -17,7 +17,7 @@ inline void ringbuf_flush(ringbuf_t * const buf) {
 	buf->read = buf->write = 0;
 }
 
-inline void ringbuf_deinit(ringbuf_t * buf) {
+inline void ringbuf_deinit(void) {
 	//derp.
 }
 

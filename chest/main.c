@@ -15,7 +15,7 @@
 #include <leds.h>
 #include <mpc.h>
 #include <buzz.h>
-#include <irrx.h>
+//#include <irrx.h> UNCOMMENT
 
 #include <scheduler.h>
 
@@ -53,7 +53,7 @@ int main(void) {
 	led_init();
 	mpc_init();
 	buzz_init();
-	irrx_init();
+//	irrx_init(); UNCOMMENT
 
 //set_lights(1);
 	while(1) {
@@ -62,7 +62,7 @@ int main(void) {
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
-
+				//@TODO 
 				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
 				memcpy((void*)seq, &pkt->data,pkt->len);
 				led_set_seq(seq);
@@ -71,18 +71,20 @@ int main(void) {
 				set_lights(0);
 			}
 
-			free(pkt);
+//			free(pkt);
 		}
 
 		leds_run();
 
+/*
+ * THIS NEEDS TO BE UNCOMMENTED
 		ir_pkt_t irpkt;
-		ir_rx(&irpkt);
+		//ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
 				mpc_send(0x40, 'I', irpkt.data, irpkt.size);
 				free( irpkt.data );
-		}
+		}*/
 	}
 
 
