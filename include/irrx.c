@@ -140,8 +140,6 @@ void ir_rx(ir_pkt_t * pkt) {
 		} else {
 		}
 		
-		rx_state.pkts[ rx_state.read ].data = NULL;
-
 		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
 		ringbuf_flush( &rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
