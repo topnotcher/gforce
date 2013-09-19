@@ -42,7 +42,7 @@ static struct {
 
 		union {
 			mpc_pkt pkt;
-			uint8_t pkt_raw[MPC_PKT_MAX_SIZE];
+			uint8_t data[MPC_PKT_MAX_SIZE];
 		} pkts[MPC_QUEUE_SIZE];
 
 	} queue;
@@ -194,7 +194,6 @@ inline mpc_pkt* mpc_recv(void) {
 static inline void mpc_slave_recv_byte(uint8_t data) {
 	if ( rx_state.size == 0 ) {
 		//fist byte = mpc_pkt.len
-		//rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
 
 #ifndef MPC_DISABLE_CRC
 		rx_state.crc = mpc_crc(MPC_CRC_SHIFT, data);
@@ -204,7 +203,7 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 		rx_state.size = 1;
 
 	} else {
-		rx_state.queue.pkts[rx_state.queue.hdr.write].pkt_raw[rx_state.size] = data;
+		rx_state.queue.pkts[rx_state.queue.hdr.write].data[rx_state.size] = data;
 #ifndef MPC_DISABLE_CRC
 		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
 			rx_state.crc = mpc_crc(rx_state.crc,data);
