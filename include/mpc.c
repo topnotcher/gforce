@@ -69,7 +69,10 @@ static struct {
 
 		struct {
 			uint8_t addr;
-			mpc_pkt * pkt;
+			union { 
+				mpc_pkt pkt;
+				uint8_t data[MPC_PKT_MAX_SIZE];
+			};
 		} items[MPC_QUEUE_SIZE];
 
 	} queue;
@@ -301,7 +304,7 @@ inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 //CALLER MUST FREE() data*
 void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
 
-	mpc_pkt * pkt = (mpc_pkt*)malloc(sizeof(*pkt) + len);
+	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.write ].pkt;
 
 	pkt->len = len;
 	pkt->cmd = cmd;
@@ -320,7 +323,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	}
 	
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
-	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
+//	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
 	queue_wr_idx(&tx_state.queue.hdr);
 	mpc_master_run();
 }
@@ -332,7 +335,7 @@ static inline void mpc_master_run(void) {
 
 	tx_state.status = TX_STATUS_BUSY;
 		
-	mpc_pkt * pkt = tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
+	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
 	tx_state.pkt = pkt;
 	tx_state.len = sizeof(*pkt) + pkt->len;
 	tx_state.byte = 0;
@@ -342,7 +345,7 @@ static inline void mpc_master_run(void) {
 }
 
 static inline void mpc_master_end_txn(void) {
-	free(tx_state.pkt);
+//	free(tx_state.pkt);
 	tx_state.status = TX_STATUS_IDLE;
 }
 
