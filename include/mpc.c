@@ -37,11 +37,14 @@ static struct {
 	ringbuf_t buf;
 	uint8_t buf_raw[MPC_QUEUE_SIZE];
 
-	mpc_pkt * pkt;
-
 	struct {
 		qhdr_t hdr;
-		mpc_pkt * items[MPC_QUEUE_SIZE];
+
+		union {
+			mpc_pkt pkt;
+			uint8_t pkt_raw[MPC_PKT_MAX_SIZE];
+		} pkts[MPC_QUEUE_SIZE];
+
 	} queue;
 
 } rx_state ;
@@ -81,7 +84,7 @@ static inline void queue_rd_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
 static inline void queue_wr_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
 
 static void mpc_slave_recv_byte(uint8_t);
-static void mpc_slave_recv_pkt(mpc_pkt * pkt);
+static void mpc_slave_recv_pkt(void);
 
 static void mpc_master_end_txn(void);
 static inline void mpc_master_run(void) ATTR_ALWAYS_INLINE;
@@ -177,7 +180,7 @@ inline mpc_pkt* mpc_recv(void) {
 
 	if ( queue_empty(&rx_state.queue.hdr) ) return NULL;
 
-	mpc_pkt * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
+	mpc_pkt * pkt = &(rx_state.queue.pkts[ rx_state.queue.hdr.read ].pkt);
 	queue_rd_idx(&rx_state.queue.hdr);
 
 	return pkt;
@@ -188,16 +191,17 @@ inline mpc_pkt* mpc_recv(void) {
 static inline void mpc_slave_recv_byte(uint8_t data) {
 	if ( rx_state.size == 0 ) {
 		//fist byte = mpc_pkt.len
-		rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
+		//rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
 
 #ifndef MPC_DISABLE_CRC
 		rx_state.crc = mpc_crc(MPC_CRC_SHIFT, data);
 #endif
-		rx_state.pkt->len = data;
+
+		rx_state.queue.pkts[rx_state.queue.hdr.write].pkt.len = data;
 		rx_state.size = 1;
 
 	} else {
-		((uint8_t*)rx_state.pkt)[rx_state.size] = data;
+		rx_state.queue.pkts[rx_state.queue.hdr.write].pkt_raw[rx_state.size] = data;
 #ifndef MPC_DISABLE_CRC
 		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
 			rx_state.crc = mpc_crc(rx_state.crc,data);
@@ -206,13 +210,12 @@ static inline void mpc_slave_recv_byte(uint8_t data) {
 	}
 }
 
-static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
+static inline void mpc_slave_recv_pkt() {
 
 	//before returning the packet, flush the bufffarrrr
 	while ( !ringbuf_empty(&rx_state.buf) )
 		mpc_slave_recv_byte(ringbuf_get(&rx_state.buf));
 
-	rx_state.queue.items[ rx_state.queue.hdr.write ] = pkt;
 	queue_wr_idx(&rx_state.queue.hdr);
 }
 
@@ -226,11 +229,11 @@ MPC_TWI_SLAVE_ISR {
 		if ( addr & mpc_twi_addr ) {
 #endif
 			//basically a hack instead of having per-packet queues.
+			//wait.. dont I already have those??? oh, oh, oh, no...
+			///need to make sure the previous packet is received fully before receiving the next. 
+			//(dear god this is ugly)
 			while ( !ringbuf_empty(&rx_state.buf) )
 				mpc_slave_recv_byte(ringbuf_get(&rx_state.buf));
-
-			if ( rx_state.pkt != NULL ) 
-				free(rx_state.pkt);
 
 			//set data interrupt because we actually give a shit
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
@@ -265,12 +268,10 @@ MPC_TWI_SLAVE_ISR {
 #else
 		if ( rx_state.crc == rx_state.pkt->chksum )
 #endif
-			mpc_slave_recv_pkt(rx_state.pkt);
+			mpc_slave_recv_pkt();
 		else {
-			free( rx_state.pkt );
+			//free( rx_state.pkt );
 		}
-
-		rx_state.pkt = NULL;
 
 	    /* Disable stop interrupt. */
     	MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
@@ -282,10 +283,6 @@ MPC_TWI_SLAVE_ISR {
 
 	// If unexpected state.
 	else {
-		if ( rx_state.pkt != NULL ) {
-			free(rx_state.pkt);
-			rx_state.pkt = NULL;
-		}
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
