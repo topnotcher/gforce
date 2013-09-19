@@ -59,7 +59,7 @@ void scheduler_register(void (*)(void), task_freq_t, task_lifetime_t );
 void scheduler_unregister(void (*)(void));
 
 struct task_node_st {
-	scheduler_task * task;
+	scheduler_task task;
 	struct task_node_st * next;
 };
 
