@@ -49,12 +49,15 @@ typedef struct {
 		} state;
 	} rx;
 
+	//@TODo make this byte oriented?
 	struct {
-		struct {
-			uint8_t read;
-			uint8_t write;
-			mpc_pkt * pkts[UART_TX_QUEUE_SIZE];
-		} queue;
+		uint8_t read;
+		uint8_t write;
+
+		union {
+			mpc_pkt pkt;
+			uint8_t data[MPC_PKT_MAX_SIZE];
+		} queue[UART_TX_QUEUE_SIZE];
 
 		enum {
 			TX_STATE_IDLE,

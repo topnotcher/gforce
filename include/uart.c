@@ -29,8 +29,8 @@ void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(voi
 	driver->rx.state = RX_STATE_IDLE;
 
 	driver->tx.state = TX_STATE_IDLE;
-	driver->tx.queue.read = 0;
-	driver->tx.queue.write = 0;
+	driver->tx.read = 0;
+	driver->tx.write = 0;
 	driver->tx.bytes = 0;
 
 }
@@ -72,7 +72,7 @@ static inline uint8_t uart_process_byte(uart_driver_t * driver, uint8_t data) {
 			driver->rx.crc = uart_crc(driver->rx.crc, data);
 
 		//wtf does sizeof rx.pkt =??? => it's the ACTUAL size of the mpc_pkt_t, not the size of the union
-		if ( ++driver->rx.size == driver->rx.pkt.len+sizeof(driver->rx.pkt) ) {	
+		if ( ++driver->rx.size == driver->rx.pkt.len+sizeof(driver->rx.pkt) ) {
 
 			driver->rx.state = RX_STATE_IDLE;
 
@@ -88,7 +88,7 @@ static inline uint8_t uart_process_byte(uart_driver_t * driver, uint8_t data) {
 //so  ttly copied from mpc :/
 void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint8_t * data) {
 
-	mpc_pkt * pkt = (mpc_pkt*)malloc(sizeof(*pkt) + size);
+	mpc_pkt * pkt = &driver->tx.queue[driver->tx.write].pkt;
 
 	pkt->len = size;
 	pkt->cmd = cmd;
@@ -96,15 +96,14 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 	pkt->chksum = MPC_CRC_SHIFT;
 
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
-		pkt->chksum = uart_crc(pkt->chksum, ((uint8_t*)pkt)[i]);
+		pkt->chksum = uart_crc(pkt->chksum, driver->tx.queue[driver->tx.write].data[i]);
 
 	for ( uint8_t i = 0; i < size; ++i ) {
-			pkt->data[i] = data[i];
+			driver->tx.queue[driver->tx.write].data[sizeof(*pkt)+i] = data[i];
 			pkt->chksum = uart_crc(pkt->chksum, data[i]);
 	}
 	
-	driver->tx.queue.pkts[ driver->tx.queue.write ] = pkt;
-	driver->tx.queue.write = ( driver->tx.queue.write == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.write + 1;
+	driver->tx.write = ( driver->tx.write == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.write + 1;
 
 	if ( driver->tx.state == TX_STATE_IDLE ) {
 		driver->tx.state = TX_STATE_START;
@@ -124,20 +123,20 @@ start:
 	//not completely sent.
 	}
 
-	mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
+	mpc_pkt * pkt = &driver->tx.queue[driver->tx.read].pkt;
 
 	if ( driver->tx.bytes < (sizeof(mpc_pkt) + pkt->len) ) {
 
 		//mpc_pkt * pkt = driver->tx.queue.pkts[driver->tx.queue.read];
-		*(driver->data) = ((uint8_t*)pkt)[driver->tx.bytes];
+		*(driver->data) = driver->tx.queue[driver->tx.read].data[driver->tx.bytes];
 		++driver->tx.bytes;
 
 	//last byte finished sending.
 	} else {
-		driver->tx.queue.read = ( driver->tx.queue.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.queue.read + 1;
+		driver->tx.read = ( driver->tx.read == UART_TX_QUEUE_SIZE - 1 ) ? 0 : driver->tx.read + 1;
 
 		//no more packets to send.
-		if ( driver->tx.queue.read == driver->tx.queue.write ) {
+		if ( driver->tx.read == driver->tx.write ) {
 			driver->tx_end();
 			driver->tx.state = TX_STATE_IDLE;
 		} else {
