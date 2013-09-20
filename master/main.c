@@ -94,5 +94,4 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 		phasor_comm_send('T', data, 18);
 	}
 
-	free((void*)pkt);
 }

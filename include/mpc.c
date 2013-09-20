@@ -27,22 +27,40 @@ typedef struct {
 	uint8_t write;
 } qhdr_t;
 
-
-/**
- * Receiver state
- */
 static struct {
-	uint8_t size;
-	uint8_t crc;
-	ringbuf_t * buf;
-	mpc_pkt * pkt;
+	
+	qhdr_t hdr;
 
 	struct {
-		qhdr_t hdr;
-		mpc_pkt * items[MPC_QUEUE_SIZE];
-	} queue;
+		enum {
+			//Dirty state 
+			RX_STATE_EMPTY,
+			//ready to receive data
+			RX_STATE_READY,
+			//receiving data 
+			RX_STATE_RECEIVE,
+			//no more data will be received for this pkt,
+			//so finish processing remaining bytes then return pkt.
+			RX_STATE_PROCESS,
+		} state ;
 
-} rx_state ;
+		uint8_t crc;
+
+		//# of bytes received to this buffer
+		//# processed. 
+		uint8_t size;
+		uint8_t processed;
+
+		union {
+			mpc_pkt pkt;
+			uint8_t data[MPC_PKT_MAX_SIZE];
+		};	
+
+	} pkts[MPC_QUEUE_SIZE];
+
+//	uint8_t scheduled;
+} rx_state;
+
 
 /** 
  * keep track of the state of teh sender.
@@ -64,7 +82,10 @@ static struct {
 
 		struct {
 			uint8_t addr;
-			mpc_pkt * pkt;
+			union { 
+				mpc_pkt pkt;
+				uint8_t data[MPC_PKT_MAX_SIZE];
+			};
 		} items[MPC_QUEUE_SIZE];
 
 	} queue;
@@ -78,12 +99,12 @@ static inline bool queue_empty(qhdr_t*) ATTR_ALWAYS_INLINE;
 static inline void queue_rd_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
 static inline void queue_wr_idx(qhdr_t *q) ATTR_ALWAYS_INLINE;
 
-static void mpc_slave_recv_byte(uint8_t);
-static void mpc_slave_recv_pkt(mpc_pkt * pkt);
-
 static void mpc_master_end_txn(void);
 static inline void mpc_master_run(void) ATTR_ALWAYS_INLINE;
 
+
+#define rx_read  (rx_state.pkts[rx_state.hdr.read])
+#define rx_write (rx_state.pkts[rx_state.hdr.write])
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
@@ -137,10 +158,8 @@ static inline void mpc_master_init(void) {
 static inline void mpc_slave_init(void) {
 	
 
-	/**@Todo better initialization here*/
+	/**@Todo better initialization here. Buffers must be RX_STATE_EMPTY */
 	memset(&rx_state, 0, sizeof rx_state);
-	rx_state.buf = ringbuf_init(MPC_QUEUE_SIZE);
-
 
 	MPC_TWI.SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
 
@@ -163,57 +182,63 @@ static inline void queue_wr_idx(qhdr_t * q) {
 	q->write = (q->write == MPC_QUEUE_SIZE-1) ? 0 : q->write+1;
 }
 
+static inline void process_rx_byte(void);
+
 /**
  * Process queued bytes into packtes.
  */
 
 inline mpc_pkt* mpc_recv(void) {
+	
+	mpc_pkt * ret = NULL;
 
-	//mpc_master_run();
-
-	while ( !ringbuf_empty(rx_state.buf) )
-		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
-
-	if ( queue_empty(&rx_state.queue.hdr) ) return NULL;
-
-	mpc_pkt * pkt = rx_state.queue.items[ rx_state.queue.hdr.read ];
-	queue_rd_idx(&rx_state.queue.hdr);
-
-	return pkt;
-}
-
-
-
-static inline void mpc_slave_recv_byte(uint8_t data) {
-	if ( rx_state.size == 0 ) {
-		//fist byte = mpc_pkt.len
-		rx_state.pkt = (mpc_pkt*)malloc( sizeof(mpc_pkt) + data );
-
-#ifndef MPC_DISABLE_CRC
-		rx_state.crc = mpc_crc(MPC_CRC_SHIFT, data);
-#endif
-		rx_state.pkt->len = data;
-		rx_state.size = 1;
-
-	} else {
-		((uint8_t*)rx_state.pkt)[rx_state.size] = data;
-#ifndef MPC_DISABLE_CRC
-		if ( rx_state.size != offsetof(mpc_pkt,chksum) )
-			rx_state.crc = mpc_crc(rx_state.crc,data);
-#endif
-		rx_state.size++;
+	if ( rx_read.state == RX_STATE_EMPTY ) {
+		//this should be happening on processing, but things are failing?
+		if ( rx_state.hdr.read != rx_state.hdr.write ) 
+			queue_rd_idx(&rx_state.hdr);
+		else
+			return ret;
 	}
+
+//	uint8_t i = 0;
+//	const uint8_t process_max = 10;
+	while ( rx_read.processed < rx_read.size ) 
+		process_rx_byte();
+
+	if ( rx_read.state == RX_STATE_PROCESS ) {
+#ifndef MPC_DISABLE_CRC
+		if ( rx_read.crc == rx_read.pkt.chksum )
+#endif
+			ret = &rx_read.pkt;
+
+		//could get epic fucked here since processing is being done asychronously
+		//shit could get written to this buffer while it is being processed.
+		rx_read.state = RX_STATE_EMPTY;
+	}
+	
+
+	return ret;
 }
 
-static inline void mpc_slave_recv_pkt(mpc_pkt * pkt) {
+static inline void process_rx_byte(void) {
 
-	//before returning the packet, flush the bufffarrrr
-	while ( !ringbuf_empty(rx_state.buf) )
-		mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
+#ifndef MPC_DISABLE_CRC 
+	uint8_t data = rx_read.data[rx_read.processed];
 
-	rx_state.queue.items[ rx_state.queue.hdr.write ] = pkt;
-	queue_wr_idx(&rx_state.queue.hdr);
+	if ( rx_read.processed == 0 ) {
+		rx_read.crc = mpc_crc(MPC_CRC_SHIFT,data);
+	} else if ( rx_read.processed != offsetof(mpc_pkt, chksum) ) {
+		rx_read.crc = mpc_crc( rx_read.crc,data );
+	}
+#endif
+
+	rx_read.processed++;
+
+	if ( rx_read.processed >= sizeof(mpc_pkt) + rx_read.pkt.len ) 
+		rx_read.state = RX_STATE_PROCESS;
+
 }
+
 
 MPC_TWI_SLAVE_ISR {
 
@@ -224,12 +249,17 @@ MPC_TWI_SLAVE_ISR {
 		uint8_t addr = MPC_TWI.SLAVE.DATA;
 		if ( addr & mpc_twi_addr ) {
 #endif
-			//basically a hack instead of having per-packet queues.
-			while ( !ringbuf_empty(rx_state.buf) )
-				mpc_slave_recv_byte(ringbuf_get(rx_state.buf));
+			if ( rx_write.state != RX_STATE_EMPTY ) {
+				//buffer will receive no new bytes => process 
+				rx_write.state = RX_STATE_PROCESS;
+				
+				queue_wr_idx(&rx_state.hdr);
 
-			if ( rx_state.pkt != NULL ) 
-				free(rx_state.pkt);
+			}
+			rx_write.state = RX_STATE_READY;
+			rx_write.size = 0;
+			rx_write.processed = 0;
+
 
 			//set data interrupt because we actually give a shit
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm;
@@ -237,8 +267,6 @@ MPC_TWI_SLAVE_ISR {
 			//also a stop interrupt.. Wait that's enabled with APIEN?
 			MPC_TWI.SLAVE.CTRLA |= TWI_SLAVE_PIEN_bm;
 
-			//this is SUPER temp //OR IS IT??? HMMM HMM YEAH ID IDDDDDDD MHHHM
-			rx_state.size = 0;
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 #ifdef MPC_TWI_ADDRMASK
 		} else {
@@ -253,24 +281,21 @@ MPC_TWI_SLAVE_ISR {
 
 		//slave read(master write)
 		} else {
-			ringbuf_put(rx_state.buf, MPC_TWI.SLAVE.DATA);
+			if ( rx_write.state == RX_STATE_READY )
+				rx_write.state = RX_STATE_RECEIVE;
+
+			//@TODO
+			if ( rx_write.size < MPC_PKT_MAX_SIZE )
+				rx_write.data[rx_write.size++] = MPC_TWI.SLAVE.DATA;
+		
 			//@TODO SMART MODE
 			MPC_TWI.SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 		}
 	} else if ( MPC_TWI.SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-
-#ifdef MPC_DISABLE_CRC
-		if (1) 
-#else
-		if ( rx_state.crc == rx_state.pkt->chksum )
-#endif
-			mpc_slave_recv_pkt(rx_state.pkt);
-		else {
-			free( rx_state.pkt );
-		}
-
-		rx_state.pkt = NULL;
-
+		//force process. Will start writing to a new queue if a new start is received
+		//or when the processor increments hdr.write (I hope)
+		rx_write.state = RX_STATE_PROCESS;
+	
 	    /* Disable stop interrupt. */
     	MPC_TWI.SLAVE.CTRLA &= ~TWI_SLAVE_PIEN_bm;
 
@@ -281,10 +306,6 @@ MPC_TWI_SLAVE_ISR {
 
 	// If unexpected state.
 	else {
-		if ( rx_state.pkt != NULL ) {
-			free(rx_state.pkt);
-			rx_state.pkt = NULL;
-		}
 		//todo?
 		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
 	}
@@ -303,7 +324,7 @@ inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 //CALLER MUST FREE() data*
 void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
 
-	mpc_pkt * pkt = (mpc_pkt*)malloc(sizeof(*pkt) + len);
+	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.write ].pkt;
 
 	pkt->len = len;
 	pkt->cmd = cmd;
@@ -322,7 +343,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const
 	}
 	
 	tx_state.queue.items[ tx_state.queue.hdr.write ].addr = addr; 
-	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
+//	tx_state.queue.items[ tx_state.queue.hdr.write ].pkt = pkt;
 	queue_wr_idx(&tx_state.queue.hdr);
 	mpc_master_run();
 }
@@ -334,7 +355,7 @@ static inline void mpc_master_run(void) {
 
 	tx_state.status = TX_STATUS_BUSY;
 		
-	mpc_pkt * pkt = tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
+	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
 	tx_state.pkt = pkt;
 	tx_state.len = sizeof(*pkt) + pkt->len;
 	tx_state.byte = 0;
@@ -344,7 +365,7 @@ static inline void mpc_master_run(void) {
 }
 
 static inline void mpc_master_end_txn(void) {
-	free(tx_state.pkt);
+//	free(tx_state.pkt);
 	tx_state.status = TX_STATUS_IDLE;
 }
 

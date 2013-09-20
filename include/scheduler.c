@@ -4,7 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-static task_node * task_list;
+#define MAX_TASKS 8
+
+static task_node _task_heap[MAX_TASKS];
+static task_node * task_list = NULL;
+
+#define _TASK_NODE_EMPTY(node) ((node)->task.task == NULL)
 
 //number of "ticks" skipped.
 static task_freq_t ticks;
@@ -21,22 +26,33 @@ inline void scheduler_init(void) {
 	ticks = 1;
 	RTC.CNT = 0;
 
-	task_list = NULL;
+	//unoccupied blocks have NULL function pointer. 
+	for ( uint8_t i = 0; i < MAX_TASKS; ++i ) 
+		_task_heap[i].task.task = NULL;
+
 }
 
 void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
-	scheduler_task * task;
-	task_node * node;
+	scheduler_task * task = NULL;
+	task_node * node = NULL;
 
-	task = malloc( sizeof *task );
+	//find the first free node
+	for ( uint8_t i = 0; i < MAX_TASKS; ++i ) {
+		if ( _TASK_NODE_EMPTY(&_task_heap[i]) ) {
+			node = &_task_heap[i];
+			task = &(node->task);
+			break;
+		}
+	}
+
+	//assuming that the loop alwaays finds an available node.
+
 	task->task = task_cb;
 	task->freq = task_freq;
 	task->lifetime = task_lifetime;
 	task->ticks = task_freq;
 
-	node = malloc( sizeof *node );
-	node->task = task;
 	node->next = NULL;
 
 	if ( task_list == NULL ) {
@@ -44,7 +60,7 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 		set_ticks();
 		SCHEDULER_INTERRUPT_REGISTER |= SCHEDULER_INTERRUPT_ENABLE_BITS;
 		return;
-	} 
+	}
 
 	/**
 	 * Everything gets inserted into the list in order of ticks
@@ -55,19 +71,19 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 	 */
 	task_node * cur = task_list;
 	while ( cur != NULL ) {
-		cur->task->ticks -= RTC.CNT;
+		cur->task.ticks -= RTC.CNT;
 		cur = cur->next;
 	}
 
 	//handle the case of replacing the head
-	if ( task_list->task->ticks >= task->ticks ) {
+	if ( task_list->task.ticks >= task->ticks ) {
 		node->next = task_list;
 		task_list = node;
 	} else {
 
 		task_node * tmp = task_list;
 
-		while ( tmp->next != NULL && tmp->next->task->ticks < task->ticks )
+		while ( tmp->next != NULL && tmp->next->task.ticks < task->ticks )
 			tmp = tmp->next;
 
 		node->next = tmp->next;
@@ -79,8 +95,8 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 
 static inline void set_ticks(void) {
 	RTC.CNT = 0;
-	RTC.COMP = task_list->task->ticks;
-	ticks = task_list->task->ticks;
+	RTC.COMP = task_list->task.ticks;
+	ticks = task_list->task.ticks;
 }
 
 void scheduler_unregister(void (*task_cb)(void) ) {
@@ -88,7 +104,7 @@ void scheduler_unregister(void (*task_cb)(void) ) {
 	task_node * node = task_list;
 
 	while ( node != NULL ) {
-		if ( node->task->task == task_cb )
+		if ( node->task.task == task_cb )
 			scheduler_remove_node(node);
 		node = node->next;
 	}
@@ -101,10 +117,12 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 	//node we need to remove.
 	task_node * node = task_list;
 	
+	//mark the node unused.
+	rm_node->task.task = NULL;
+
 	if ( rm_node == node ) {
+	
 		task_list = node->next;
-		free(node->task);
-		free(node);
 
 		//killed the head: no need to tick!
 		if ( task_list == NULL ) 
@@ -114,10 +132,6 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 		while ( node->next != NULL ) {
 			if ( node->next == rm_node ) {
 				node->next = rm_node->next;
-
-				//destroy the node.
-				free(rm_node->task);
-				free(rm_node);
 
 				break;
 			} else {
@@ -148,34 +162,33 @@ SCHEDULER_RUN {
 		// end up being a dangling pointer (causes AVR restart?)
 		cur = node->next;
 
-		if ( /*node->task->ticks < ticks ||*/ (node->task->ticks -= ticks) == 0 ) {
+		if ( (node->task.ticks -= ticks) == 0 ) {
 
-			node->task->task();
+			node->task.task();
 
-			reorder = 1;
-
-			if ( node->task->lifetime != SCHEDULER_RUN_UNLIMITED && --node->task->lifetime == 0 ) 
+			if ( node->task.lifetime != SCHEDULER_RUN_UNLIMITED && --node->task.lifetime == 0 ) {
 				scheduler_remove_node(node);
 
-			// optimal to avoid updating ticks when unregistering.
-			else 
-				node->task->ticks = node->task->freq;
+			} else {
+				reorder++;
+				node->task.ticks = node->task.freq;
+			}
 
 		}
 	}
 
 	if ( task_list != NULL ) {
-
-		//This ONLY puts the next item in the head position; it does NOT 
-		//necessarily put the list in /correct/ order
+		//the list is in order as of when items are inserted 
+		//so they can only become out of order when something run and is NOT unregistered. 
+		//In this case, the item that was run would have been on top (could have been top N items?)
 		if ( reorder ) {
-			task_ticks_t min = task_list->task->ticks;
+			task_ticks_t min = task_list->task.ticks;
 			cur = task_list->next;
 			task_node * prev = task_list;
 		
-			while ( cur != NULL ) {
-				if ( cur->task->ticks < min ) {
-					min = cur->task->ticks;
+			while ( cur != NULL && reorder--) {
+				if ( cur->task.ticks < min ) {
+					min = cur->task.ticks;
 
 					task_node * tmp = cur;
 					prev->next = cur->next;

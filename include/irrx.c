@@ -55,17 +55,21 @@ static struct {
 			RX_STATE_PROCESS,
 		} state ;
 
-		ringbuf_t * buf;
+		//@TODO why is this even a ring buffer ???
+		//@TODO all these buffers are fucked (why do I have so many??)
+		ringbuf_t buf;
+		uint8_t bufdata[RX_BUFF_SIZE];
+
 		uint8_t crc;
 
 		//size at which to process.
 		uint8_t max_size;
 		
 		//incremented by a timer :p.
-		uint8_t timer; 
+		uint8_t timer;
 		//copied to an ir_pkt_t after processing. 
 		uint8_t size;
-		uint8_t * data;
+		uint8_t data[MAX_PKT_SIZE];
 	} pkts[N_BUFF];
 
 //	uint8_t scheduled;
@@ -82,7 +86,7 @@ inline void irrx_init(void) {
 //	rx_state.scheduled = 0; //hmm?
 
 	for (uint8_t i = 0; i < N_BUFF; ++i) {
-		rx_state.pkts[i].buf = ringbuf_init(RX_BUFF_SIZE);
+		ringbuf_init(&rx_state.pkts[i].buf, RX_BUFF_SIZE,rx_state.pkts[i].bufdata);
 		rx_state.pkts[i].state = RX_STATE_EMPTY;
 		//size, crc = initialized at start byte
 		// data initialized first byte after start byte.
@@ -103,6 +107,7 @@ inline void irrx_init(void) {
 
 }
 
+/** @TODO WTF */
 void ir_rx(ir_pkt_t * pkt) {
 	//tells the caller whether data was returned: default to no
 	pkt->size = 0;
@@ -121,30 +126,28 @@ void ir_rx(ir_pkt_t * pkt) {
 	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
 	//instead: require that state == RECEIVE OR the read queue is not updated.
 	//oorrr I'm just retarded
-	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
+	while ( !ringbuf_empty(&rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
 		process_rx_byte();
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
 
 		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
+			//@TODO this is sooo fucked up
 			pkt->data = rx_state.pkts[ rx_state.read ].data;
 			pkt->size = rx_state.pkts[ rx_state.read ].size;
 
 		} else {
-			free(rx_state.pkts[ rx_state.read ].data);
 		}
 		
-		rx_state.pkts[ rx_state.read ].data = NULL;
-
 		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
-		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
+		ringbuf_flush( &rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
 	}
 }
 
 static inline void process_rx_byte(void) {
-	uint8_t data = ringbuf_get(rx_state.pkts[rx_state.read].buf);
+	uint8_t data = ringbuf_get(&rx_state.pkts[rx_state.read].buf);
 
 	if ( rx_state.pkts[rx_state.read].size == 0 ) {
 
@@ -152,7 +155,6 @@ static inline void process_rx_byte(void) {
 		 * @TODO: wtf
 		 */
 		uint8_t max_size = (data == 0x38) ? MAX_PKT_SIZE : 4;
-		rx_state.pkts[rx_state.read].data = (uint8_t*)malloc(max_size);
 		rx_state.pkts[rx_state.read].max_size = max_size;
 		rx_state.pkts[rx_state.read].crc = IR_CRC_SHIFT;
 
@@ -213,11 +215,6 @@ ISR(IRRX_USART_RXC_vect) {
 			if ( ++idx == N_BUFF-1 ) 
 				idx = 0;
 			
-			if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY )  {
-				free( rx_state.pkts[ idx ].data );
-				rx_state.pkts[ idx ].data = NULL;
-			}
-			
 
 			rx_state.write = idx;
 			
@@ -229,7 +226,7 @@ ISR(IRRX_USART_RXC_vect) {
 
 		rx_state.pkts[idx].state = RX_STATE_READY;
 		rx_state.pkts[idx].size = 0;
-		ringbuf_flush(rx_state.pkts[idx].buf);
+		ringbuf_flush(&rx_state.pkts[idx].buf);
 
 	/**
 	 * @TODO when state is set to ready, start a timer that... ticks. Timer is reset when bytes are 
@@ -238,11 +235,11 @@ ISR(IRRX_USART_RXC_vect) {
 	//received a valid data byte, and at some point before said byte... there was a start byte... 
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
 		rx_state.pkts[ rx_state.write ].timer = 0;
-		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
+		ringbuf_put( &rx_state.pkts[ rx_state.write ].buf , data );
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_READY ) {
 		rx_state.pkts[ rx_state.write ].state = RX_STATE_RECEIVE;
 		rx_state.pkts[ rx_state.write ].timer = 0;
-		ringbuf_put( rx_state.pkts[ rx_state.write ].buf, data );
+		ringbuf_put( &rx_state.pkts[ rx_state.write ].buf, data );
 	} else {
 		///fuck off
 		//this could happen if the receiver sets the state to RX_STATE_PROCESS, meaning that the 

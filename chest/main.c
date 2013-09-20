@@ -24,6 +24,8 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+extern uint8_t led_sequence_raw[];
+
 int main(void) {
 
 	// Enable 32 MHz Osc. 
@@ -53,7 +55,7 @@ int main(void) {
 	led_init();
 	mpc_init();
 	buzz_init();
-	irrx_init();
+	irrx_init(); 
 
 //set_lights(1);
 	while(1) {
@@ -62,26 +64,25 @@ int main(void) {
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
-
-				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
-				memcpy((void*)seq, &pkt->data,pkt->len);
-				led_set_seq(seq);
+				//@TODO 
+//				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
+				led_set_seq(pkt->data, pkt->len);
 				set_lights(1);
 			} else if ( pkt->cmd == 'B' ) {
 				set_lights(0);
 			}
 
-			free(pkt);
+//			free(pkt);
 		}
 
 		leds_run();
+
 
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
 				mpc_send(0x40, 'I', irpkt.data, irpkt.size);
-				free( irpkt.data );
 		}
 	}
 

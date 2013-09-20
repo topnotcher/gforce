@@ -4,6 +4,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include <util.h>
@@ -47,7 +48,10 @@ typedef struct {
 	 */
 	const uint8_t * leds;
 
-	led_sequence * seq;
+	union {
+		led_sequence * seq;
+		uint8_t * seq_data;
+	};
 
 	uint8_t pattern;
 
@@ -68,11 +72,13 @@ typedef struct {
 } led_state; 
 
 
+//max sequence size = 58 right now @TODO.
+static uint8_t led_sequence_raw[58];
 
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static inline void sclk_trigger(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
-static void led_timer_tick(void) ATTR_ALWAYS_INLINE;
+static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
 static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
 
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
@@ -310,13 +316,15 @@ void led_write(void) {
 
 	led_write_byte();
 }
-void led_set_seq(led_sequence * seq) {
+void led_set_seq(uint8_t * data, uint8_t len) {
 	if ( state.status != idle && state.status != stop )
 		set_lights(0);
 
-	if ( state.seq != NULL ) free(state.seq);
+	memcpy((void*)led_sequence_raw, data, len);
 
-	state.seq = seq;
+//	if ( state.seq != NULL ) free(state.seq);
+
+//	state.seq = seq;
 }
 
 void led_init(void) {
@@ -331,7 +339,8 @@ void led_init(void) {
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
 	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
-	state.seq = NULL/*&seq_active*/;
+	//state.seq = NULL/*&seq_active*/;
+	state.seq_data = led_sequence_raw;
 
 	//the state is set in its own initializer way up there^
 	led_write();

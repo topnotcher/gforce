@@ -17,13 +17,14 @@
 //return true if more processing is required before returning a packet.
 static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data)  ATTR_ALWAYS_INLINE;
 
-uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), uint8_t buffsize) {
-	uart_driver_t * driver = malloc(sizeof *driver);
+void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), ringbuf_t * rxbuf) {
 
 	driver->tx_begin = tx_begin;
 	driver->tx_end = tx_end;
 	driver->data = data;
-	driver->rx.buf = ringbuf_init(buffsize);
+
+	driver->rx.buf = rxbuf;
+
 	driver->rx.size = 0;
 	driver->rx.state = RX_STATE_IDLE;
 
@@ -32,7 +33,6 @@ uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx
 	driver->tx.queue.write = 0;
 	driver->tx.bytes = 0;
 
-	return driver;
 }
 
 mpc_pkt * uart_rx(uart_driver_t * driver) {
@@ -45,7 +45,7 @@ mpc_pkt * uart_rx(uart_driver_t * driver) {
 		more = uart_process_byte(driver, ringbuf_get(driver->rx.buf));
 
 	if ( !more ) 
-		return driver->rx.pkt;
+		return &driver->rx.pkt;
 
 	return NULL;
 }
@@ -60,27 +60,24 @@ static inline uint8_t uart_process_byte(uart_driver_t * driver, uint8_t data) {
 
 	} else if ( driver->rx.state == RX_STATE_READY ) {
 
-		driver->rx.pkt = malloc(sizeof(*driver->rx.pkt) + data);
 		driver->rx.crc = uart_crc(MPC_CRC_SHIFT, data);
-		driver->rx.pkt->len = data;
+		driver->rx.pkt.len = data;
 		driver->rx.size = 1;
 		driver->rx.state = RX_STATE_RECEIVE;
 
 	} else if ( driver->rx.state == RX_STATE_RECEIVE ) {
-		((uint8_t*)driver->rx.pkt)[driver->rx.size] = data;
+		driver->rx.pkt_raw[driver->rx.size] = data;
 
 		if ( driver->rx.size != offsetof(mpc_pkt,chksum) )
 			driver->rx.crc = uart_crc(driver->rx.crc, data);
 
-
-		if ( ++driver->rx.size == driver->rx.pkt->len+sizeof(*driver->rx.pkt) ) {	
+		//wtf does sizeof rx.pkt =??? => it's the ACTUAL size of the mpc_pkt_t, not the size of the union
+		if ( ++driver->rx.size == driver->rx.pkt.len+sizeof(driver->rx.pkt) ) {	
 
 			driver->rx.state = RX_STATE_IDLE;
 
-			if ( driver->rx.crc == driver->rx.pkt->chksum ) 
+			if ( driver->rx.crc == driver->rx.pkt.chksum ) 
 				return 0;
-			else 
-				free(driver->rx.pkt);
 		}
 	}
 

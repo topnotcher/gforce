@@ -17,12 +17,14 @@
 #include <buzz.h>
 #include <irrx.h>
 
-#include "scheduler.h"
+#include <scheduler.h>
 
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
+
+extern uint8_t led_sequence_raw[];
 
 int main(void) {
 
@@ -45,7 +47,7 @@ int main(void) {
 	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
 	CLK_CTRL = 0x04;
 
-	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC.CTRL | PMIC_HILVLEN_bm;
+	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 	sei();
 
 	//safe to pass PTR because we never leave main()
@@ -53,7 +55,7 @@ int main(void) {
 	led_init();
 	mpc_init();
 	buzz_init();
-	irrx_init();
+	irrx_init(); 
 
 //set_lights(1);
 	while(1) {
@@ -62,26 +64,25 @@ int main(void) {
 
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
-
-				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
-				memcpy((void*)seq, &pkt->data,pkt->len);
-				led_set_seq(seq);
+				//@TODO 
+//				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
+				led_set_seq(pkt->data, pkt->len);
 				set_lights(1);
 			} else if ( pkt->cmd == 'B' ) {
 				set_lights(0);
 			}
 
-			free(pkt);
+//			free(pkt);
 		}
 
 		leds_run();
+
 
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
 				mpc_send(0x40, 'I', irpkt.data, irpkt.size);
-				free( irpkt.data );
 		}
 	}
 

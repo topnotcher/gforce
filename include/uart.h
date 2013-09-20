@@ -22,13 +22,18 @@ typedef struct {
 	register8_t * data;
 
 	struct {
-		//buffer of unprocessed bytes. 
+		//buffer of unprocessed bytes 
 		ringbuf_t * buf;
 		
-		//packet being received.
-		mpc_pkt * pkt;
+		/**
+		 * Buffer the packet being received - static buffer size
+		 */
+		union { 
+			mpc_pkt pkt;
+			uint8_t pkt_raw[MPC_PKT_MAX_SIZE];
+		};
 
-		//bytes received in current packet. 
+		//number of bytes received in current packet. 
 		uint8_t size; 
 
 		//running crc...
@@ -63,13 +68,13 @@ typedef struct {
 } uart_driver_t; 
 
 
-uart_driver_t *uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), uint8_t buffsize);
+void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), ringbuf_t * rxbuf);
 
 mpc_pkt * uart_rx(uart_driver_t * driver);
 
 //Uart_driver_t * driver
 //@TODO make this an always_inline?
-#define uart_rx_byte(driver) do { uint8_t data = *(driver->data); ringbuf_put(driver->rx.buf, data); } while(0)
+#define uart_rx_byte(driver) do { uint8_t data = *((driver)->data); ringbuf_put((driver)->rx.buf, data); } while(0)
 
 void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint8_t * data);
 
