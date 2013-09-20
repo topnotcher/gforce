@@ -22,7 +22,7 @@ static volatile bool _trigger_enabled;
 
 inline void trigger_init(void) {
 	TRIGGER_PORT.DIRCLR = _TRIGPIN_bm;
-	TRIGGER_PORT._TRIGPINCTRL = PORT_OPC_PULLUP_gc;
+	TRIGGER_PORT._TRIGPINCTRL = PORT_OPC_PULLUP_gc | PORT_ISC_LEVEL_gc;
 
 	_trigger_pressed = false;
 	_trigger_enabled = true;
@@ -34,7 +34,6 @@ inline void trigger_init(void) {
 
 inline bool trigger_pressed(void) {
 	if ( _trigger_pressed ) {
-		trigger_disable();
 		_trigger_pressed = false;
 		scheduler_register(trigger_tick, 500, 1);
 		return true;
@@ -56,7 +55,7 @@ static inline bool trigger_enabled(void) {
 ISR(PORTA_INT0_vect) {
 	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/ ) {
 		_trigger_pressed = true;
-
+		trigger_disable();
 	}
 }
 

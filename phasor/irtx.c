@@ -1,5 +1,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "g4config.h"
@@ -22,12 +24,16 @@
 #define _txc_interrupt_enable() IRTX_USART.CTRLA |= USART_DREINTLVL_MED_gc
 #define _txc_interrupt_disable() IRTX_USART.CTRLA &= ~USART_DREINTLVL_MED_gc
 
-#define TX_QUEUE_MAX 25
+#define TX_QUEUE_MAX 5
 
 typedef struct {
 	uint8_t read;
 	uint8_t write;
-	uint16_t data[TX_QUEUE_MAX];
+
+	uint8_t byte;
+	uint8_t cnt;
+
+	irtx_pkt * pkts[TX_QUEUE_MAX];
 } queue_t;
 
 queue_t sendq;
@@ -64,16 +70,19 @@ inline void irtx_init(void) {
 	TCD0.IRTX_TIMER_CCx = 210;
 
 	sendq.read = sendq.write = 0;
+	sendq.byte = 0;
+	sendq.cnt = 0;
 }
 
-void irtx_send(uint16_t data[], uint8_t size) {
-	for ( uint8_t i = 0; i < size; ++i )
-		irtx_put(data[i]);
-}
+void irtx_send(irtx_pkt * pkt) {
 
-void irtx_put(uint16_t data) {
+	irtx_pkt * npkt;
 
-	sendq.data[sendq.write] = data;
+	npkt = malloc(sizeof(*npkt) + pkt->size);
+	memcpy(npkt,pkt,sizeof(*npkt)+pkt->size);
+
+
+	sendq.pkts[sendq.write] = npkt;
 	sendq.write = (sendq.write == TX_QUEUE_MAX-1) ? 0 : sendq.write+1;
 	
 	_txc_interrupt_enable();
@@ -88,9 +97,10 @@ ISR(PORTC_INT0_vect) {
 }
 
 ISR(IRTX_USART_DRE_vect) {
-	uint16_t data = sendq.data[sendq.read];
+	irtx_pkt * pkt = sendq.pkts[sendq.read];
+	uint8_t data = pkt->data[sendq.byte];
 	
-	if ( data & 0x100 )
+	if ( sendq.byte > 3 )
 		IRTX_USART.CTRLB |= 1<<USART_TXB8_bp;
 	else 
 		IRTX_USART.CTRLB &= ~(1<<USART_TXB8_bp);
@@ -98,9 +108,18 @@ ISR(IRTX_USART_DRE_vect) {
 
 	IRTX_USART.DATA = data;
 
-	sendq.read = (sendq.read == TX_QUEUE_MAX-1) ? 0 : sendq.read+1;
+	//last byte
+	if ( ++sendq.byte == pkt->size ) {
+		sendq.byte = 0;
+		//last retransmission
+		if ( ++sendq.cnt == pkt->repeat ) {
+			sendq.cnt = 0;
+			free(pkt);
+			sendq.read = (sendq.read == TX_QUEUE_MAX-1) ? 0 : sendq.read+1;
 
-	if ( sendq.read == sendq.write )
-		_txc_interrupt_disable();
 
+			if ( sendq.read == sendq.write )
+				_txc_interrupt_disable();
+		}
+	}
 }
