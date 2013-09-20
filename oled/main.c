@@ -71,7 +71,6 @@ int main(void) {
 		for (uint8_t i = 0; i < pkt->len; ++i)
 			display_tick();
 
-		free(pkt);
 	}
 //	display_putstring("      eep!");
 //	for ( uint8_t i = 0; i<25; ++i ) display_tick();
