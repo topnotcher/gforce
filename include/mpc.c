@@ -200,25 +200,22 @@ inline mpc_pkt* mpc_recv(void) {
 			return ret;
 	}
 
-	uint8_t i = 0;
-	const uint8_t process_max = 10;
-	uint8_t processed = rx_read.processed;
-	uint8_t size = rx_read.size; 
-	while ( processed < size && i++ < process_max ) {
+//	uint8_t i = 0;
+//	const uint8_t process_max = 10;
+	while ( rx_read.processed < rx_read.size ) 
 		process_rx_byte();
 
-		if ( rx_read.state == RX_STATE_PROCESS ) {
+	if ( rx_read.state == RX_STATE_PROCESS ) {
 #ifndef MPC_DISABLE_CRC
-			if ( rx_read.crc == rx_read.pkt.chksum )
+		if ( rx_read.crc == rx_read.pkt.chksum )
 #endif
-				ret = &rx_read.pkt;
+			ret = &rx_read.pkt;
 
-			//could get epic fucked here since processing is being done asychronously
-			//shit could get written to this buffer while it is being processed.
-			rx_read.state = RX_STATE_EMPTY;
-		}
-	
+		//could get epic fucked here since processing is being done asychronously
+		//shit could get written to this buffer while it is being processed.
+		rx_read.state = RX_STATE_EMPTY;
 	}
+	
 
 	return ret;
 }
