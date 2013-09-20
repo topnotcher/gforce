@@ -71,15 +71,12 @@ int main(void) {
 		if ( pkt != NULL ) {
 			if ( pkt->cmd == 'A' ) {
 
-				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
-				memcpy((void*)seq, &pkt->data,pkt->len);
-				led_set_seq(seq);
+				led_set_seq(pkt->data, pkt->len);
 				set_lights(1);
 			} else if ( pkt->cmd == 'B' ) {
 				set_lights(0);
 			}
 
-			free(pkt);
 		}
 
 
@@ -88,7 +85,6 @@ int main(void) {
 
 		if ( irpkt.size != 0 ) {
 				phasor_comm_send('I', irpkt.data, irpkt.size);
-				free( irpkt.data );
 		}
 
 
