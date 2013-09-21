@@ -3,6 +3,8 @@
 #include "uart.h"
 #include "xbee.h"
 
+#define _TXPIN_bm G4_PIN(XBEE_TX_PIN)
+
 static uart_driver_t * xbee_uart_driver;
 
 static void tx_interrupt_enable(void);
@@ -19,8 +21,8 @@ inline void xbee_init(void) {
 
 
 	//Manual, page 237.
-	PORTF.OUTSET = PIN3_bm;
-	PORTF.DIRSET = PIN3_bm;
+	XBEE_PORT.OUTSET = _TXPIN_bm;
+	XBEE_PORT.DIRSET = _TXPIN_bm;
 
 	xbee_uart_driver = uart_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, XBEE_QUEUE_MAX);
 }

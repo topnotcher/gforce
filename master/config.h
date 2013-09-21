@@ -19,6 +19,37 @@
 #define PHASOR_COMM_TXC_ISR ISR(USARTE0_DRE_vect)
 #define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
+/**************************************
+ * Heap Size
+ */
 #define MALLOC_HEAP_SIZE 2048
+
+
+/**************************************
+ * XBee Configuration
+ */
+#define XBEE_BSEL_VALUE 12
+#define XBEE_BSCALE_VALUE 4
+
+#define XBEE_PORT PORTF
+#define XBEE_TX_PIN 3
+
+#define XBEE_USART USARTF0
+
+/**
+ * ISR for transmitting
+ */
+#define XBEE_TXC_ISR ISR(USARTF0_DRE_vect)
+
+/**
+ * ISR for received bytes
+ */
+#define XBEE_RXC_ISR ISR(USARTF0_RXC_vect)
+
+
+#define XBEE_QUEUE_MAX 25
+
+
+
 
 #endif

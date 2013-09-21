@@ -3,30 +3,19 @@
 
 #include <mpc.h>
 
+#include "config.h"
+
 #ifndef XBEE_H
 #define XBEE_H
 
-/** 
- * Value of baud rate register.
- * (F_CPU/(16LU*XBEE_BAUD_RATE) - 1);
- * #define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
- * giant dicks get sucked if I put the expression here. 
- * Integer truncation??
- * BSEL=12, BSCALE =4 <-- damnnnn thats right
- */
-#define XBEE_BSEL_VALUE 12
-#define XBEE_BSCALE_VALUE 4
 
-#define XBEE_USART USARTF0
+#define XBEE_BAUDA XBEE_USART.BAUDCTRLA
 
-
-#define XBEE_BAUDA USARTF0.BAUDCTRLA
-
-#define XBEE_BAUDB USARTF0.BAUDCTRLB
+#define XBEE_BAUDB XBEE_USART.BAUDCTRLB
 	
-#define XBEE_CSRA USARTF0.CTRLA
-#define XBEE_CSRB USARTF0.CTRLB
-#define XBEE_CSRC USARTF0.CTRLC
+#define XBEE_CSRA XBEE_USART.CTRLA
+#define XBEE_CSRB XBEE_USART.CTRLB
+#define XBEE_CSRC XBEE_USART.CTRLC
 
 /**
  * (RX|TX)EN rx/tx enable.
@@ -42,11 +31,6 @@
 
 #define XBEE_CSRC_VALUE USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc
 
-/**
- * Data register
- */
-#define XBEE_UDR USARTF0.DATA
-
 
 /**
  * Use these when transferring data. 
@@ -55,23 +39,6 @@
  */
 #define xbee_txc_interrupt_enable() XBEE_CSRA |= USART_DREINTLVL_MED_gc
 #define xbee_txc_interrupt_disable() XBEE_CSRA &= ~USART_DREINTLVL_MED_gc
-
-
-/**
- * ISR for transmitting
- */
-#define XBEE_TXC_ISR ISR(USARTF0_DRE_vect)
-
-/**
- * ISR for received bytes
- */
-#define XBEE_RXC_ISR ISR(USARTF0_RXC_vect)
-
-
-
-
-#define XBEE_QUEUE_MAX 25
-
 
 void xbee_init(void);
 
