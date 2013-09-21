@@ -12,18 +12,23 @@
 
 #include <uart.h>
 
+#include <malloc.h>
+
 #define uart_crc(crc,data) _crc_ibutton_update(crc,data)
 
 //return true if more processing is required before returning a packet.
 static inline uint8_t uart_process_byte(uart_driver_t *driver, uint8_t data)  ATTR_ALWAYS_INLINE;
 
-void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), ringbuf_t * rxbuf) {
+uart_driver_t * uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), const uint8_t rxbuffsize) {
+	uart_driver_t * driver;
+
+	driver = smalloc(sizeof *driver); 
 
 	driver->tx_begin = tx_begin;
 	driver->tx_end = tx_end;
 	driver->data = data;
 
-	driver->rx.buf = rxbuf;
+	driver->rx.buf = ringbuf_init(rxbuffsize);
 
 	driver->rx.size = 0;
 	driver->rx.state = RX_STATE_IDLE;
@@ -33,6 +38,7 @@ void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(voi
 	driver->tx.write = 0;
 	driver->tx.bytes = 0;
 
+	return driver;
 }
 
 mpc_pkt * uart_rx(uart_driver_t * driver) {

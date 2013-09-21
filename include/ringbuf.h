@@ -16,11 +16,10 @@ typedef struct {
 	volatile uint8_t read;
 	volatile uint8_t write;
 	uint8_t size;
-	uint8_t * data;
+	uint8_t data[];
 } ringbuf_t;
 
-
-void ringbuf_init(ringbuf_t * buf, uint8_t size, uint8_t * data);
+ringbuf_t * ringbuf_init(const uint8_t size);
 void ringbuf_deinit(void);
 //void ringbuf_put(ringbuf_t * const buf, uint8_t data);
 uint8_t ringbuf_get(ringbuf_t *);

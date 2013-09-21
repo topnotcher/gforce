@@ -1,15 +1,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "ringbuf.h"
+#include <malloc.h>
 
 /**
  * data and buf are expected to be allocated already so they can be statically allocated.
  */
-inline void ringbuf_init(ringbuf_t * buf, uint8_t size, uint8_t * data) {
+inline ringbuf_t * ringbuf_init(const uint8_t size) {
+	ringbuf_t * buf;
+
+	//@TODO check return
+	buf = smalloc(sizeof(*buf)+size);
+
 	buf->size = size;
 	buf->read = 0;
 	buf->write = 0;
-	buf->data = data;
+
+	return buf;
 
 }
 

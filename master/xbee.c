@@ -3,8 +3,7 @@
 #include "uart.h"
 #include "xbee.h"
 
-static uart_driver_t xbee_uart_driver;
-
+static uart_driver_t * xbee_uart_driver;
 
 static void tx_interrupt_enable(void);
 static void tx_interrupt_disable(void);
@@ -23,18 +22,15 @@ inline void xbee_init(void) {
 	PORTF.OUTSET = PIN3_bm;
 	PORTF.DIRSET = PIN3_bm;
 
-	static ringbuf_t uart_rx_buf;
-	static uint8_t uart_rx_buf_raw[XBEE_QUEUE_MAX]; 
-	ringbuf_init(&uart_rx_buf, XBEE_QUEUE_MAX, uart_rx_buf_raw);
-	uart_init(&xbee_uart_driver, &XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, &uart_rx_buf);
+	xbee_uart_driver = uart_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, XBEE_QUEUE_MAX);
 }
 
 inline void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
-	uart_tx(&xbee_uart_driver, cmd, size, data);
+	uart_tx(xbee_uart_driver, cmd, size, data);
 }
 
 inline mpc_pkt * xbee_recv(void) {
-	return uart_rx(&xbee_uart_driver);
+	return uart_rx(xbee_uart_driver);
 }
 
 static void tx_interrupt_enable(void) {
@@ -46,9 +42,9 @@ static void tx_interrupt_disable(void) {
 }
 
 XBEE_TXC_ISR {
-	usart_tx_process(&xbee_uart_driver);
+	usart_tx_process(xbee_uart_driver);
 }
 
 XBEE_RXC_ISR {
-	uart_rx_byte((&xbee_uart_driver));
+	uart_rx_byte(xbee_uart_driver);
 }

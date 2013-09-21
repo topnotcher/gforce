@@ -70,8 +70,7 @@ typedef struct {
 	} tx;
 } uart_driver_t; 
 
-
-void uart_init(uart_driver_t * driver, register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), ringbuf_t * rxbuf);
+uart_driver_t * uart_init(register8_t * data, void (* tx_begin)(void), void (* tx_end)(void), const uint8_t rxbuffsize);
 
 mpc_pkt * uart_rx(uart_driver_t * driver);
 

@@ -16,12 +16,15 @@ static size_t heap_offset = (size_t)0;
  * This is intended to be used during boot so any errors should be found
  * when the board turns on.
  */
-void *smalloc(size_t size) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-	void * addr = (void*)heap_offset;
+void *smalloc(size_t size) { 
+	void * addr;
 
-	heap_offset += size;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		addr = (void*)heap+heap_offset;
 
-	//@TODO check for overflow, throw an error 
+		heap_offset += size;
+	}
 
-	return heap_offset;
-}}
+	//@TODO check for overflow, throw an error 	
+	return addr;
+}

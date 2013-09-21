@@ -10,7 +10,6 @@
 #include <g4config.h>
 #include "config.h"
 #include <mpc.h>
-#include <ringbuf.h>
 #include <util.h>
 
 #ifndef MPC_QUEUE_SIZE
