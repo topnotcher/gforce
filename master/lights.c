@@ -12,19 +12,19 @@ static uint8_t led_active_pattern_size = 16;
 
 
 inline void lights_on(void) {
-	mpc_send(0b1111,'A', led_active_pattern, led_active_pattern_size);
-	phasor_comm_send('A',led_active_pattern,led_active_pattern_size);
+	mpc_send(0b1111,'A', led_active_pattern_size, led_active_pattern);
+	phasor_comm_send('A', led_active_pattern_size, led_active_pattern);
 
 }
 
 inline void lights_stun(void) {
-	mpc_send(0b1111,'A', led_stun_pattern, led_stun_pattern_size);
-	phasor_comm_send('A',led_stun_pattern,led_stun_pattern_size);
+	mpc_send(0b1111,'A', led_stun_pattern_size, led_stun_pattern);
+	phasor_comm_send('A',led_stun_pattern_size, led_stun_pattern);
 
 }
 
 inline void lights_off(void) {
-	phasor_comm_send('B',NULL,0);
+	phasor_comm_send('B',0,NULL);
 	mpc_send_cmd(0b1111,'B');
 }
 

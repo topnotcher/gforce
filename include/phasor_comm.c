@@ -35,7 +35,7 @@ inline void phasor_comm_init(void) {
 	comm_uart_driver = uart_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, PHASOR_COMM_QUEUE_MAX);
 }
 
-inline void phasor_comm_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
+inline void phasor_comm_send(const uint8_t cmd, const uint8_t size, uint8_t * data) {
 	uart_tx(comm_uart_driver, cmd, size, data);
 }
 

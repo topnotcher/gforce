@@ -25,7 +25,7 @@ inline void xbee_init(void) {
 	xbee_uart_driver = uart_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, XBEE_QUEUE_MAX);
 }
 
-inline void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
+inline void xbee_send(const uint8_t cmd,const uint8_t size, uint8_t * data) {
 	uart_tx(xbee_uart_driver, cmd, size, data);
 }
 

@@ -203,5 +203,5 @@ inline void process_ir_pkt(mpc_pkt const * const pkt) {
 		handle_shot(pkt->saddr, cmd);
 	}
 
-	xbee_send('S', (uint8_t*)pkt, sizeof(*pkt)+pkt->len);
+	xbee_send('S',sizeof(*pkt)+pkt->len, (uint8_t*)pkt);
 }

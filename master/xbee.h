@@ -77,7 +77,7 @@ void xbee_init(void);
 
 mpc_pkt * xbee_recv(void);
 
-void xbee_send(const uint8_t cmd, uint8_t * data, const uint8_t size);
+void xbee_send(const uint8_t cmd, const uint8_t size ,uint8_t * data);
 
 
 #endif

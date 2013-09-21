@@ -91,7 +91,7 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 		process_ir_pkt(pkt);
 	else if ( pkt->cmd == 'T' ) {
 		uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
-		phasor_comm_send('T', data, 18);
+		phasor_comm_send('T', 18,data);
 	}
 
 }

@@ -317,11 +317,11 @@ MPC_TWI_SLAVE_ISR {
  */
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
-	mpc_send(addr, cmd, NULL, 0);
+	mpc_send(addr, cmd, 0, NULL);
 }
 
 //CALLER MUST FREE() data*
-void mpc_send(const uint8_t addr, const uint8_t cmd, uint8_t * const data, const uint8_t len) {
+void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t * const data) {
 
 	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.write ].pkt;
 
