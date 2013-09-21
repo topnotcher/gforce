@@ -24,7 +24,7 @@
 
 #define RX_BUFF_SIZE 40
 
-uart_driver_t comm_uart_driver;
+uart_driver_t * comm_uart_driver;
 
 void dummy(void);
 
@@ -41,20 +41,16 @@ inline void comm_init(void) {
 	COMM_SPI.CTRL = SPI_ENABLE_bm; /*SPI_MASTER_bm=0*/
 	COMM_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	static ringbuf_t uart_rx_buf;
-	static uint8_t uart_rx_buf_raw[RX_BUFF_SIZE]; 
-	ringbuf_init(&uart_rx_buf, RX_BUFF_SIZE, uart_rx_buf_raw);
-
-	uart_init(&comm_uart_driver, &COMM_SPI.DATA, dummy,dummy, &uart_rx_buf);
+	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy,dummy, RX_BUFF_SIZE);
 
 }
 
 void dummy(void) {}
 
 inline mpc_pkt * comm_recv(void) {
-	return uart_rx(&comm_uart_driver);
+	return uart_rx(comm_uart_driver);
 }
 
 ISR(COMM_SPI_vect) {
-	uart_rx_byte(&comm_uart_driver);
+	uart_rx_byte(comm_uart_driver);
 }
