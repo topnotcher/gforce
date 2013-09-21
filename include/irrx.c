@@ -57,8 +57,7 @@ static struct {
 
 		//@TODO why is this even a ring buffer ???
 		//@TODO all these buffers are fucked (why do I have so many??)
-		ringbuf_t buf;
-		uint8_t bufdata[RX_BUFF_SIZE];
+		ringbuf_t * buf;
 
 		uint8_t crc;
 
@@ -86,7 +85,7 @@ inline void irrx_init(void) {
 //	rx_state.scheduled = 0; //hmm?
 
 	for (uint8_t i = 0; i < N_BUFF; ++i) {
-		ringbuf_init(&rx_state.pkts[i].buf, RX_BUFF_SIZE,rx_state.pkts[i].bufdata);
+		rx_state.pkts[i].buf = ringbuf_init(RX_BUFF_SIZE);
 		rx_state.pkts[i].state = RX_STATE_EMPTY;
 		//size, crc = initialized at start byte
 		// data initialized first byte after start byte.
@@ -126,7 +125,7 @@ void ir_rx(ir_pkt_t * pkt) {
 	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
 	//instead: require that state == RECEIVE OR the read queue is not updated.
 	//oorrr I'm just retarded
-	while ( !ringbuf_empty(&rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
+	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
 		process_rx_byte();
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
@@ -141,13 +140,13 @@ void ir_rx(ir_pkt_t * pkt) {
 		}
 		
 		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
-		ringbuf_flush( &rx_state.pkts[ rx_state.read ].buf );
+		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
 	}
 }
 
 static inline void process_rx_byte(void) {
-	uint8_t data = ringbuf_get(&rx_state.pkts[rx_state.read].buf);
+	uint8_t data = ringbuf_get(rx_state.pkts[rx_state.read].buf);
 
 	if ( rx_state.pkts[rx_state.read].size == 0 ) {
 
@@ -226,7 +225,7 @@ ISR(IRRX_USART_RXC_vect) {
 
 		rx_state.pkts[idx].state = RX_STATE_READY;
 		rx_state.pkts[idx].size = 0;
-		ringbuf_flush(&rx_state.pkts[idx].buf);
+		ringbuf_flush(rx_state.pkts[idx].buf);
 
 	/**
 	 * @TODO when state is set to ready, start a timer that... ticks. Timer is reset when bytes are 
@@ -235,11 +234,11 @@ ISR(IRRX_USART_RXC_vect) {
 	//received a valid data byte, and at some point before said byte... there was a start byte... 
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
 		rx_state.pkts[ rx_state.write ].timer = 0;
-		ringbuf_put( &rx_state.pkts[ rx_state.write ].buf , data );
+		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_READY ) {
 		rx_state.pkts[ rx_state.write ].state = RX_STATE_RECEIVE;
 		rx_state.pkts[ rx_state.write ].timer = 0;
-		ringbuf_put( &rx_state.pkts[ rx_state.write ].buf, data );
+		ringbuf_put( rx_state.pkts[ rx_state.write ].buf, data );
 	} else {
 		///fuck off
 		//this could happen if the receiver sets the state to RX_STATE_PROCESS, meaning that the 

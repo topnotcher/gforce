@@ -62,4 +62,7 @@
 #define PHASOR_COMM_TXC_ISR ISR(USARTE0_DRE_vect)
 #define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
+
+#define MALLOC_HEAP_SIZE 512
+
 #endif

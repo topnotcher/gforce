@@ -45,6 +45,8 @@
 #define IRRX_USART_PORT PORTE
 #define IRRX_USART_RXPIN 2
 
+#define MPC_QUEUE_SIZE 4
 
+#define MALLOC_HEAP_SIZE 100
 
 #endif

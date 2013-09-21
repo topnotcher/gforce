@@ -20,7 +20,7 @@ void *smalloc(size_t size) {
 	void * addr;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		addr = (void*)heap+heap_offset;
+		addr = (void*)(heap+heap_offset);
 
 		heap_offset += size;
 	}
