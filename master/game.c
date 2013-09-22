@@ -105,8 +105,11 @@ void stop_game_cmd( command_t const * const cmd ) {
 void stop_game() {
 	if ( game_state.playing ) {
 		lights_off();
+
 //		sound_play_effect(SOUND_POWER_DOWN);
 		scheduler_unregister(&game_tick);
+
+		display_write("            ");
 
 		//slight issue here: if we stop game during countdown.
 		scheduler_unregister(&game_countdown);
