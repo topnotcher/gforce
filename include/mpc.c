@@ -347,12 +347,22 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	mpc_master_run();
 }
 
+/**
+ * This is a mess.
+ */
 static inline void mpc_master_run(void) {
 
-	//notthing to do harr.
-	if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
+	/**
+	 * Makes it reentrant.
+	 * If master_run() is re-entered before or after this block, one of the 
+	 * calls will return since tx_state.status will be TX_STATUS_BUSY;
+	 */
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		//notthing to do harr.
+		if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
 
-	tx_state.status = TX_STATUS_BUSY;
+		tx_state.status = TX_STATUS_BUSY;
+	}
 		
 	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
 	tx_state.pkt = pkt;
