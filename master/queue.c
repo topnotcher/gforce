@@ -38,6 +38,7 @@ uint8_t * queue_poll(queue_t * queue) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if (queue->items[queue->read] != NULL) {
 			ret = queue->items[queue->read];
+			queue->items[queue->read] = NULL;
 			queue->read = queue_next_idx(queue->read, queue->size);
 		}
 	}
