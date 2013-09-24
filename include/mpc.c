@@ -6,6 +6,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/crc16.h>
+#include <util/atomic.h>
 
 #include <g4config.h>
 #include "config.h"
@@ -350,19 +351,18 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 /**
  * This is a mess.
  */
-static inline void mpc_master_run(void) {
+static inline void mpc_master_run(void) { 
 
-	/**
-	 * Makes it reentrant.
-	 * If master_run() is re-entered before or after this block, one of the 
-	 * calls will return since tx_state.status will be TX_STATUS_BUSY;
-	 */
+	uint8_t okay = 1;
+
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		//notthing to do harr.
-		if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) return; 
+		if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) 
+			okay = 0; 
 
 		tx_state.status = TX_STATUS_BUSY;
 	}
+	
+	if (!okay) return;
 		
 	mpc_pkt * pkt = &tx_state.queue.items[ tx_state.queue.hdr.read ].pkt;
 	tx_state.pkt = pkt;
