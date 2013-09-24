@@ -17,7 +17,7 @@ queue_t * queue_create(const uint8_t size) {
 	return q;
 }
 
-uint8_t queue_offer(queue_t * queue, uint8_t * data) {
+uint8_t queue_offer(queue_t * queue, void * data) {
 
 	uint8_t mkay = 0;
 
@@ -32,7 +32,7 @@ uint8_t queue_offer(queue_t * queue, uint8_t * data) {
 	return mkay;
 }
 
-uint8_t * queue_poll(queue_t * queue) {
+void * queue_poll(queue_t * queue) {
 	uint8_t * ret = NULL;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
