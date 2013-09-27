@@ -74,7 +74,9 @@ int main(void) {
 	while (1) {
 		wdt_reset();
 		process_ib_pkt(xbee_recv());
-		process_ib_pkt(mpc_recv());
+//		process_ib_pkt(mpc_recv());
+		mpc_tx_process();
+		mpc_rx_process();
 		process_ib_pkt(phasor_comm_recv());
 
 	}
