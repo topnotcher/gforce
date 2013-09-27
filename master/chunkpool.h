@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <util/atomic.h>
 #ifndef CHUNKALLOC_H
 #define CHUNKALLOC_H
 
@@ -19,6 +18,6 @@ chunkpool_t * chunkpool_create(const uint8_t buffsize, const uint8_t chunks);
 
 uint8_t * chunkpool_acquire(chunkpool_t * pool); 
 
-#define chunkpool_release(buff) do { ((chunkpool_chunk_t *)((buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt = 0; } while (0)
+#define chunkpool_release(buff) do { ((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt = 0; } while (0)
 
 #endif
