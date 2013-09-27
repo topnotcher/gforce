@@ -113,6 +113,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	}
 	
 	twi_send(twi, frame);
+	chunkpool_decref(frame);
 }
 
 void mpc_tx_process(void) {

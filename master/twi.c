@@ -24,6 +24,7 @@ twi_driver_t * twi_init(
 	 * Slave initialization
 	 */
 	twi->rx.queue = queue_create(4);
+	twi->rx.frame = NULL;
 	dev->SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
 
 	dev->SLAVE.ADDR = addr;
@@ -36,6 +37,7 @@ twi_driver_t * twi_init(
 	 */
 	twi->tx.state = TWI_TX_STATE_IDLE;
 	twi->tx.queue = queue_create(4);
+	twi->tx.frame = NULL;
 
 	dev->MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	dev->MASTER.BAUD = baud;
@@ -52,7 +54,7 @@ twi_driver_t * twi_init(
 void twi_send(twi_driver_t * twi, comm_frame_t * frame) {
 	//@todo log failure?
 	queue_offer( twi->tx.queue, (void*)frame );
-
+	chunkpool_incref(frame);
 }
 
 comm_frame_t * twi_rx(twi_driver_t * twi) {
@@ -103,7 +105,7 @@ void twi_master_isr(twi_driver_t * twi) {
 			twi->dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 			
 			if (twi->tx.frame != NULL) {
-				chunkpool_release(twi->tx.frame);
+				chunkpool_decref(twi->tx.frame);
 				twi->tx.frame = NULL;
 			}
 		
@@ -115,8 +117,10 @@ void twi_master_isr(twi_driver_t * twi) {
 				twi->dev->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				twi->dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
-				chunkpool_release(twi->tx.frame);
-				twi->tx.frame = NULL;
+				if ( twi->tx.frame != NULL ) {
+					chunkpool_decref(twi->tx.frame);
+					twi->tx.frame = NULL;
+				}
 
 				twi->tx.state = TWI_TX_STATE_IDLE;
 			}
@@ -126,7 +130,7 @@ void twi_master_isr(twi_driver_t * twi) {
 		twi->dev->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 
 		if (twi->tx.frame != NULL) {
-			chunkpool_release(twi->tx.frame);
+			chunkpool_decref(twi->tx.frame);
 			twi->tx.frame = NULL;
 		}
 
