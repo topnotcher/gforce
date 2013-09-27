@@ -80,16 +80,15 @@ void twi_tx(twi_driver_t * twi) {
 void twi_master_isr(twi_driver_t * twi) {
 
 	if ( (twi->dev->MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (twi->dev->MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
-		/*
-		 * @TODO: Ideally this should restart the transmission 
-		 * ... which requires blocking on the bus state. The master SHOULD be 
-		 * 	smart enough to do this..
-		 **/
-
 		//per AVR1308 example code.
 		twi->dev->MASTER.STATUS |= TWI_MASTER_ARBLOST_bm;
 
-		//now in theory it will restart the transaction when the bus becomes idle? theory...
+		/**
+		 * According to xmegaA, the master should be smart enough to wait 
+		 * until bussstate == idle before it tries to restart the transaction.
+		 * So in theory, this works. If it doesn't work, chances are the tx.state
+		 * will stay BUSY indefinitely.
+		 */
 		twi->tx.byte = 0;
 		twi->dev->MASTER.ADDR = twi->tx.frame->daddr<<1;
 
@@ -143,10 +142,8 @@ void twi_slave_isr(twi_driver_t * twi) {
     // If address match. 
 	if ( (twi->dev->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->dev->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
-//#ifdef MPC_TWI_ADDRMASK
 		uint8_t addr = twi->dev->SLAVE.DATA;
 		if ( addr & twi->addr ) {
-//#endif
 	
 			//just in case - but if it is not-null, then there's an
 			//in complete transaction. it's probably garbage, so drop it.
@@ -159,12 +156,10 @@ void twi_slave_isr(twi_driver_t * twi) {
 			twi->dev->SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;
 			twi->dev->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
-//#ifdef MPC_TWI_ADDRMASK
 		} else {
 			//is this right?
 			twi->dev->SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
-//#endif
 
 	// data interrupt 
 	} else if (twi->dev->SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
