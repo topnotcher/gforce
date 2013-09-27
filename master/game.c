@@ -35,12 +35,12 @@ void ( *countdown_cb )(void);
 
 static inline void handle_shot(const uint8_t, command_t const * const);
 
-inline void game_init() {
+inline void game_init(void) {
 	//cmd_register(0x38, 11, &start_game_cmd);
 	//cmd_register(0x08, 0, &stop_game_cmd);
 }
 
-void game_countdown() {
+void game_countdown(void) {
 	static uint8_t data[] = "        ";
 
 	if ( --game_countdown_time == 0 ) {
@@ -73,17 +73,17 @@ void start_game_cmd(command_t const * const cmd) {
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
-void game_tick() {
+void game_tick(void) {
 	if ( --game_settings.game_time == 0 )
 		stop_game();
 }
 
-void start_game_activate() {
+void start_game_activate(void) {
 	scheduler_register(&game_tick, 1000, SCHEDULER_RUN_UNLIMITED);
 	player_activate();
 }
 
-void player_activate() {
+void player_activate(void) {
 	
 	/** 
 	 * Because we'll get fucked sideways if someone gets deaced
@@ -102,7 +102,7 @@ void stop_game_cmd( command_t const * const cmd ) {
 	stop_game();
 }
 
-void stop_game() {
+void stop_game(void) {
 	if ( game_state.playing ) {
 		lights_off();
 
@@ -118,7 +118,7 @@ void stop_game() {
 	}
 }
 
-void stun_timer() {
+void stun_timer(void) {
 
 	--game_countdown_time;
 
@@ -172,7 +172,7 @@ static inline void handle_shot(const uint8_t saddr, command_t const * const cmd)
 }
 
 
-void do_stun() {
+void do_stun(void) {
 	
 	game_state.stunned = 1;
 	game_countdown_time = game_settings.stun_time;
@@ -182,7 +182,7 @@ void do_stun() {
 	scheduler_register(&stun_timer, 1000, game_countdown_time);
 }
 
-void do_deac() {
+void do_deac(void) {
 
 	lights_off();
 //	sound_play_effect(SOUND_POWER_DOWN);
