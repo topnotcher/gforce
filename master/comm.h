@@ -62,4 +62,10 @@ void comm_begin_rx(comm_driver_t * comm);
 void comm_end_rx(comm_driver_t * comm);
 void comm_send(comm_driver_t * comm, comm_frame_t * frame);
 
+#define comm_tx_has_more(comm) ((comm)->tx.byte < (comm)->tx.frame->size)
+#define comm_tx_next(comm) ((comm)->tx.frame->data[(comm)->tx.byte++])
+#define comm_tx_daddr(comm) ((comm)->tx.frame->daddr)
+#define comm_tx_rewind(comm) ((comm)->tx.byte = 0)
+#define comm_rx_byte(comm,byte) (((comm)->rx.frame->data[(comm)->rx.frame->size++]) = (byte))
+#define comm_rx_full(comm) ((comm)->rx.frame->size >= (comm)->mtu)
 #endif

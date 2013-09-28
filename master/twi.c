@@ -40,7 +40,7 @@ comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, cons
  * task to initiate TWI transfers.
  */
 static void begin_tx(comm_driver_t * comm) {
-	((TWI_t*)(comm->dev->dev))->MASTER.ADDR = comm->tx.frame->daddr<<1 /*| 0*/;
+	((TWI_t*)(comm->dev->dev))->MASTER.ADDR = comm_tx_daddr(comm)<<1 /*| 0*/;
 }
 
 void twi_master_isr(comm_driver_t * comm) {
@@ -56,8 +56,8 @@ void twi_master_isr(comm_driver_t * comm) {
 		 * So in theory, this works. If it doesn't work, chances are the tx.state
 		 * will stay BUSY indefinitely.
 		 */
-		comm->tx.byte = 0;
-		twi->MASTER.ADDR = comm->tx.frame->daddr<<1;
+		comm_tx_rewind(comm);
+		twi->MASTER.ADDR = comm_tx_daddr(comm)<<1;
 
 	} else if ( twi->MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 
@@ -72,8 +72,8 @@ void twi_master_isr(comm_driver_t * comm) {
 			comm_end_tx(comm);
 
 		} else {
-			if ( comm->tx.byte < comm->tx.frame->size ) {
-				twi->MASTER.DATA = comm->tx.frame->data[comm->tx.byte++];
+			if ( comm_tx_has_more(comm) ) {
+				twi->MASTER.DATA = comm_tx_next(comm);
 			} else {
 				twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 				twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
@@ -116,8 +116,8 @@ void twi_slave_isr(comm_driver_t * comm) {
 		} else {
 			
 			//if it exceeds MTU, it gets dropped when the next start is received.
-			if ( comm->rx.frame->size < comm->mtu )
-				comm->rx.frame->data[comm->rx.frame->size++] = twi->SLAVE.DATA;
+			if ( !comm_rx_full(comm) )
+				comm_rx_byte(comm,twi->SLAVE.DATA);
 				
 			//@TODO SMART MODE
 			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
