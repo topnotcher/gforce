@@ -17,7 +17,7 @@
 
 #include "display.h"
 
-static twi_driver_t * twi;
+static comm_driver_t * comm;
 static chunkpool_t * chunkpool;
 
 /**
@@ -28,6 +28,8 @@ static chunkpool_t * chunkpool;
 #endif
 
 inline void mpc_init(void) {
+
+	comm_dev_t * twi;
 
 	uint8_t mpc_twi_addr;
 	uint8_t mask;
@@ -45,7 +47,9 @@ inline void mpc_init(void) {
 	#endif
 
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), 8);
-	twi = twi_init(&MPC_TWI, mpc_twi_addr, mask, MPC_TWI_BAUD, MPC_PKT_MAX_SIZE, chunkpool);
+	twi = twi_init(&MPC_TWI, mpc_twi_addr, mask, MPC_TWI_BAUD);
+	comm = comm_init(twi, mpc_twi_addr, MPC_PKT_MAX_SIZE, chunkpool);
+
 }
 
 
@@ -58,7 +62,7 @@ void mpc_rx_process(void) {
 	comm_frame_t * frame;
 	mpc_pkt * pkt;
 
-	if ( (frame = twi_rx(twi)) == NULL ) 
+	if ( (frame = comm_rx(comm)) == NULL ) 
 		return;
 	
 	pkt = (mpc_pkt*)frame->data;
@@ -76,6 +80,7 @@ void mpc_rx_process(void) {
 	if ( pkt->cmd == 'I' )
 		process_ir_pkt(pkt);
 
+	chunkpool_decref(frame);
 }
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
@@ -98,7 +103,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	pkt->len = len;
 	pkt->cmd = cmd;
 	//@TODO
-	pkt->saddr = twi->addr;
+	pkt->saddr = comm->addr;
 	pkt->chksum = MPC_CRC_SHIFT;
 
 #ifndef MPC_DISABLE_CRC
@@ -112,18 +117,19 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 #endif
 	}
 	
-	twi_send(twi, frame);
+	//@TODO FIX THIS
+	comm_send(comm, frame);
 	chunkpool_decref(frame);
 }
 
 void mpc_tx_process(void) {
-	twi_tx(twi);
+	comm_tx(comm);
 }
 
 MPC_TWI_MASTER_ISR {
-	twi_master_isr(twi);
+	twi_master_isr(comm);
 }
 
 MPC_TWI_SLAVE_ISR {
-	twi_slave_isr(twi);
+	twi_slave_isr(comm);
 }

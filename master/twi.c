@@ -4,29 +4,19 @@
 #include "twi.h"
 #include <stddef.h>
 
-twi_driver_t * twi_init( 
-			TWI_t * dev, 
-			const uint8_t addr, 
-			const uint8_t mask, 
-			const uint8_t baud, 
-			const uint8_t mtu, 
-			chunkpool_t * pool ) {
+static void begin_tx(comm_driver_t * comm);
 
-	twi_driver_t * twi;
-	twi = smalloc(sizeof *twi);
+comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud ) {
 
-	twi->dev = dev;
-	twi->addr = addr;
-	twi->mtu = mtu;
-	twi->pool = pool;
+	comm_dev_t * comm;
+	comm = smalloc(sizeof *comm);
+	
+	comm->dev = dev;
 
 	/**
 	 * Slave initialization
 	 */
-	twi->rx.queue = queue_create(4);
-	twi->rx.frame = NULL;
 	dev->SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
-
 	dev->SLAVE.ADDR = addr;
 
 	if (mask)
@@ -35,55 +25,30 @@ twi_driver_t * twi_init(
 	/**
 	 * Master initialization
 	 */
-	twi->tx.state = TWI_TX_STATE_IDLE;
-	twi->tx.queue = queue_create(4);
-	twi->tx.frame = NULL;
-
 	dev->MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	dev->MASTER.BAUD = baud;
 
 	//per AVR1308
 	dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 
-	return twi;
-}
+	comm->begin_tx = begin_tx;
 
-/**
- * note: this assumes that * frame must have been allocated by the chunk pool allocator
- */
-void twi_send(twi_driver_t * twi, comm_frame_t * frame) {
-	//@todo log failure?
-	queue_offer( twi->tx.queue, (void*)frame );
-	chunkpool_incref(frame);
-}
-
-comm_frame_t * twi_rx(twi_driver_t * twi) {
-	return queue_poll(twi->rx.queue);
+	return comm;
 }
 
 /**
  * task to initiate TWI transfers.
  */
-void twi_tx(twi_driver_t * twi) {
-	comm_frame_t * frame;
-	
-	if ( twi->tx.state != TWI_TX_STATE_IDLE ) 
-		return;
-
-	if ( (frame = queue_poll(twi->tx.queue)) != NULL ) {
-		//safe to modify and idle status indicates that the entire tx state is safe to modify.
-		twi->tx.state = TWI_TX_STATE_BUSY;
-		twi->tx.frame = frame;
-		twi->tx.byte = 0;
-		twi->dev->MASTER.ADDR = frame->daddr<<1 /*| 0*/;
-	}
+static void begin_tx(comm_driver_t * comm) {
+	((TWI_t*)(comm->dev->dev))->MASTER.ADDR = comm->tx.frame->daddr<<1 /*| 0*/;
 }
 
-void twi_master_isr(twi_driver_t * twi) {
+void twi_master_isr(comm_driver_t * comm) {
+	TWI_t * twi = (TWI_t*)comm->dev->dev;
 
-	if ( (twi->dev->MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (twi->dev->MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
+	if ( (twi->MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (twi->MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
 		//per AVR1308 example code.
-		twi->dev->MASTER.STATUS |= TWI_MASTER_ARBLOST_bm;
+		twi->MASTER.STATUS |= TWI_MASTER_ARBLOST_bm;
 
 		/**
 		 * According to xmegaA, the master should be smart enough to wait 
@@ -91,101 +56,76 @@ void twi_master_isr(twi_driver_t * twi) {
 		 * So in theory, this works. If it doesn't work, chances are the tx.state
 		 * will stay BUSY indefinitely.
 		 */
-		twi->tx.byte = 0;
-		twi->dev->MASTER.ADDR = twi->tx.frame->daddr<<1;
+		comm->tx.byte = 0;
+		twi->MASTER.ADDR = comm->tx.frame->daddr<<1;
 
-	} else if ( twi->dev->MASTER.STATUS & TWI_MASTER_WIF_bm ) {
+	} else if ( twi->MASTER.STATUS & TWI_MASTER_WIF_bm ) {
 
 		//@TODO should this really drop the packet, or should it retry?
 		//when it is read as 0, most recent ack bit was NAK. 
-		if (twi->dev->MASTER.STATUS & TWI_MASTER_RXACK_bm) {
+		if (twi->MASTER.STATUS & TWI_MASTER_RXACK_bm) {
 			//WHY IS THIS HERE???
 			//and why is the busstate manually set?
-			twi->dev->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-			twi->dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+			twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+			twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
 			
-			if (twi->tx.frame != NULL) {
-				chunkpool_decref(twi->tx.frame);
-				twi->tx.frame = NULL;
-			}
-		
-			twi->tx.state = TWI_TX_STATE_IDLE;
+			comm_end_tx(comm);
+
 		} else {
-			if ( twi->tx.byte < twi->tx.frame->size ) {
-				twi->dev->MASTER.DATA = twi->tx.frame->data[twi->tx.byte++];
+			if ( comm->tx.byte < comm->tx.frame->size ) {
+				twi->MASTER.DATA = comm->tx.frame->data[comm->tx.byte++];
 			} else {
-				twi->dev->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-				twi->dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-
-				if ( twi->tx.frame != NULL ) {
-					chunkpool_decref(twi->tx.frame);
-					twi->tx.frame = NULL;
-				}
-
-				twi->tx.state = TWI_TX_STATE_IDLE;
+				twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+				twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+				comm_end_tx(comm);
 			}
 		}
 	//IDFK??
 	} else {
-		twi->dev->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-
-		if (twi->tx.frame != NULL) {
-			chunkpool_decref(twi->tx.frame);
-			twi->tx.frame = NULL;
-		}
-
-		twi->tx.state = TWI_TX_STATE_IDLE;
-
+		twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
+		comm_end_tx(comm);
 	}
 }
 
 
 
-void twi_slave_isr(twi_driver_t * twi) {
+void twi_slave_isr(comm_driver_t * comm) {
+	TWI_t * twi = (TWI_t*)comm->dev->dev;
 
     // If address match. 
-	if ( (twi->dev->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->dev->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
+	if ( (twi->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
-		uint8_t addr = twi->dev->SLAVE.DATA;
-		if ( addr & twi->addr ) {
-	
-			//just in case - but if it is not-null, then there's an
-			//in complete transaction. it's probably garbage, so drop it.
-			//@TODO acquire may fail.
-			if ( twi->rx.frame == NULL ) 
-				twi->rx.frame = (comm_frame_t*)chunkpool_acquire(twi->pool);
-			
-			twi->rx.frame->size = 0;
-	
-			twi->dev->SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;
-			twi->dev->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+		uint8_t addr = twi->SLAVE.DATA;
+		if ( addr & comm->addr ) {
+			comm_begin_rx(comm);
+
+			twi->SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;
+			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 
 		} else {
 			//is this right?
-			twi->dev->SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
+			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
 
 	// data interrupt 
-	} else if (twi->dev->SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
+	} else if (twi->SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
 		// slave write 
-		if (twi->dev->SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
+		if (twi->SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 
 		//slave read(master write)
 		} else {
 			
 			//if it exceeds MTU, it gets dropped when the next start is received.
-			if ( twi->rx.frame->size < twi->mtu )
-				twi->rx.frame->data[twi->rx.frame->size++] = twi->dev->SLAVE.DATA;
+			if ( comm->rx.frame->size < comm->mtu )
+				comm->rx.frame->data[comm->rx.frame->size++] = twi->SLAVE.DATA;
 				
 			//@TODO SMART MODE
-			twi->dev->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
+			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
 		}
-	} else if ( twi->dev->SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
-		queue_offer(twi->rx.queue, (void*)twi->rx.frame);	
-		twi->rx.frame = NULL;
-
-    	twi->dev->SLAVE.CTRLA &= ~(TWI_SLAVE_PIEN_bm | TWI_SLAVE_DIEN_bm);
-    	twi->dev->SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
+	} else if ( twi->SLAVE.STATUS & TWI_SLAVE_APIF_bm ) {
+		comm_end_rx(comm);
+    	twi->SLAVE.CTRLA &= ~(TWI_SLAVE_PIEN_bm | TWI_SLAVE_DIEN_bm);
+    	twi->SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
 	}
 
 	// If unexpected state.
