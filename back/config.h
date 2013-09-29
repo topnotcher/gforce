@@ -11,13 +11,13 @@
 #define LED_SPI SPIC
 #define LED_SPI_vect SPIC_INT_vect
 
-#define MPC_TWI_ADDR 0b0100
 #define MPC_TWI_ADDRMASK 0x0F
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
+#define MPC_ADDR 0b0100
 
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm

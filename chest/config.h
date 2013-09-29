@@ -21,13 +21,13 @@
  * Configuration for the master<>board MPC bus.
  */
 
-#define MPC_TWI_ADDR 0x01
 #define MPC_TWI_ADDRMASK 0x0F
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
+#define MPC_ADDR 0x01
 
 /********************************************
  * Configuration for the vibrator

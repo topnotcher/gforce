@@ -38,13 +38,13 @@ inline void mpc_init(void) {
 
 	comm_dev_t * twi;
 
-	uint8_t mpc_twi_addr;
+	uint8_t mpc_addr;
 	uint8_t mask;
 
 	#ifdef MPC_TWI_ADDR_EEPROM_ADDR
-		mpc_twi_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
+		mpc_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
 	#else
-		mpc_twi_addr = ((uint8_t)MPC_TWI_ADDR)<<1;
+		mpc_addr = ((uint8_t)MPC_ADDR)<<1;
 	#endif
 
 	#ifdef MPC_TWI_ADDRMASK
@@ -54,8 +54,8 @@ inline void mpc_init(void) {
 	#endif
 
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	twi = twi_init(&MPC_TWI, mpc_twi_addr, mask, MPC_TWI_BAUD);
-	comm = comm_init(twi, mpc_twi_addr, MPC_PKT_MAX_SIZE, chunkpool);
+	twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
+	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
 }
 
 /**
