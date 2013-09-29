@@ -82,7 +82,7 @@ int main(void) {
 		ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
-				mpc_send(0x40, 'I', irpkt.data, irpkt.size);
+				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
 		}
 	}
 

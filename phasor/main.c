@@ -62,7 +62,7 @@ int main(void) {
 	
 		if ( trigger_pressed() ) 
 			//T = trigger pressed
-			phasor_comm_send('T', NULL, 0);
+			phasor_comm_send('T', 0, NULL);
 
 		mpc_pkt * pkt = phasor_comm_recv();
 
@@ -86,7 +86,7 @@ int main(void) {
 		ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
-				phasor_comm_send('I', irpkt.data, irpkt.size);
+				phasor_comm_send('I', irpkt.size, irpkt.data);
 		}
 
 
