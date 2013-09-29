@@ -22,6 +22,6 @@ void mpc_rx_process(void);
 
 void mpc_tx_process(void);
 
-void mpc_register_cmd(uint8_t cmd, void (*cb)(const mpc_pkt * const));
+void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const));
 
 #endif

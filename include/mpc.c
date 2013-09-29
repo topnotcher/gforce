@@ -10,7 +10,6 @@
 #include <util.h>
 
 #include "comm.h"
-#include "game.h"
 #include "twi.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
@@ -22,7 +21,7 @@ static chunkpool_t * chunkpool;
 #define N_MPC_CMDS 10
 typedef struct {
 	uint8_t cmd;
-	void (* cb)(mpc_pkt *);
+	void (* cb)(const mpc_pkt * const);
 } cmd_callback_s;
 
 static cmd_callback_s cmds[N_MPC_CMDS]; 
@@ -63,7 +62,7 @@ inline void mpc_init(void) {
  * @TODO this will silently fail on table full
  *
  */
-void mpc_register_cmd(uint8_t cmd, void (*cb)(mpc_pkt *)) {
+void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const)) {
 	for ( uint8_t i = 0; i < N_MPC_CMDS; ++i ) {
 		if ( cmds[i].cb == NULL ) {
 			cmds[i].cmd = cmd;
