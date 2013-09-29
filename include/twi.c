@@ -4,6 +4,13 @@
 #include "twi.h"
 #include <stddef.h>
 
+/**
+ * This implements a lower-level TWI driver for use with the higher 
+ * level comm driver (comm_driver_t and comm_dev_t.  This driver does
+ * not implement reading from a slave; instead, it assumes a multi-master
+ * bus and requires that the slaves act as masters to send data.
+ */
+
 static void begin_tx(comm_driver_t * comm);
 
 comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud ) {
@@ -86,8 +93,6 @@ void twi_master_isr(comm_driver_t * comm) {
 		comm_end_tx(comm);
 	}
 }
-
-
 
 void twi_slave_isr(comm_driver_t * comm) {
 	TWI_t * twi = (TWI_t*)comm->dev->dev;
