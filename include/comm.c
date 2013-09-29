@@ -4,6 +4,25 @@
 #include "queue.h"
 #include <malloc.h>
 
+/**
+ * The comm driver represents a generalized device 
+ * for sending and receiving packets (comm_frame_t).
+ *
+ * This was primarly an effort to combine the similarities 
+ * between all of my comm code into one place. Formerly,
+ * all of the individual device drivers implemented similar
+ * code to send full packets, and to group received bytes
+ * into packets. 
+ *
+ * The driver below this (comm_dev_t) *IS* expected to be
+ * able to detect the beginning and end of a packet, and notify
+ * this driver when it does. All of the per-packet buffers and queues
+ * are maintained in this driver.
+ *
+ * On the *TX* side, the driver is expected to have some concept of 
+ * sending a "group" of bytes.
+ */
+
 comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool )  {
 
 	comm_driver_t * comm;
