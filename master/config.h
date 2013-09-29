@@ -7,6 +7,7 @@
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 
+#define MPC_QUEUE_SIZE 8
 
 /**************************************
  * Phasor Communication Configuration

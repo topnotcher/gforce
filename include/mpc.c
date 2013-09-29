@@ -53,7 +53,7 @@ inline void mpc_init(void) {
 		mask = 0;
 	#endif
 
-	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), 8);
+	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	twi = twi_init(&MPC_TWI, mpc_twi_addr, mask, MPC_TWI_BAUD);
 	comm = comm_init(twi, mpc_twi_addr, MPC_PKT_MAX_SIZE, chunkpool);
 }
