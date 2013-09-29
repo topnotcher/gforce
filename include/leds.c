@@ -13,6 +13,7 @@
 #include "colors.h"
 
 #include <scheduler.h>
+#include <mpc.h>
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
@@ -80,6 +81,9 @@ static inline void sclk_trigger(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
 static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
+
+static void set_seq_cmd(const mpc_pkt * const pkt); 
+static void lights_off_cmd(const mpc_pkt * const pkt);
 
 const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
 
@@ -316,7 +320,17 @@ void led_write(void) {
 
 	led_write_byte();
 }
-void led_set_seq(uint8_t * data, uint8_t len) {
+
+static void set_seq_cmd(const mpc_pkt * const pkt) {
+	led_set_seq(pkt->data, pkt->len);
+	set_lights(1);
+}
+
+static void lights_off_cmd(const mpc_pkt * const pkt) {
+	set_lights(0);
+}
+
+void led_set_seq(const uint8_t * const data, const uint8_t len) {
 	if ( state.status != idle && state.status != stop )
 		set_lights(0);
 
@@ -341,6 +355,9 @@ void led_init(void) {
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	//state.seq = NULL/*&seq_active*/;
 	state.seq_data = led_sequence_raw;
+
+	mpc_register_cmd('A', set_seq_cmd);
+	mpc_register_cmd('B', lights_off_cmd);
 
 	//the state is set in its own initializer way up there^
 	led_write();
