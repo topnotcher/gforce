@@ -15,8 +15,6 @@
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
-#include "display.h"
-
 static comm_driver_t * comm;
 static chunkpool_t * chunkpool;
 
