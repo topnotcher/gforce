@@ -7,7 +7,6 @@
 static void begin_tx(comm_driver_t * comm);
 
 comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud ) {
-
 	comm_dev_t * comm;
 	comm = smalloc(sizeof *comm);
 	
@@ -37,7 +36,8 @@ comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, cons
 }
 
 /**
- * task to initiate TWI transfers.
+ * callback for comm - called when the comm state has been 
+ * fully initialized to begin a new transfer
  */
 static void begin_tx(comm_driver_t * comm) {
 	((TWI_t*)(comm->dev->dev))->MASTER.ADDR = comm_tx_daddr(comm)<<1 /*| 0*/;
@@ -80,8 +80,8 @@ void twi_master_isr(comm_driver_t * comm) {
 				comm_end_tx(comm);
 			}
 		}
-	//IDFK??
 	} else {
+		//IDFK?? - unexpected type of interrupt.
 		twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
 		comm_end_tx(comm);
 	}
@@ -92,7 +92,6 @@ void twi_master_isr(comm_driver_t * comm) {
 void twi_slave_isr(comm_driver_t * comm) {
 	TWI_t * twi = (TWI_t*)comm->dev->dev;
 
-    // If address match. 
 	if ( (twi->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
 		uint8_t addr = twi->SLAVE.DATA;
@@ -101,21 +100,16 @@ void twi_slave_isr(comm_driver_t * comm) {
 
 			twi->SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;
 			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
-
 		} else {
 			//is this right?
 			twi->SLAVE.CTRLB = TWI_SLAVE_CMD_COMPTRANS_gc;
 		}
-
-	// data interrupt 
 	} else if (twi->SLAVE.STATUS & TWI_SLAVE_DIF_bm) {
 		// slave write 
 		if (twi->SLAVE.STATUS & TWI_SLAVE_DIR_bm) {
 
 		//slave read(master write)
 		} else {
-			
-			//if it exceeds MTU, it gets dropped when the next start is received.
 			if ( !comm_rx_full(comm) )
 				comm_rx_byte(comm,twi->SLAVE.DATA);
 				
@@ -126,11 +120,7 @@ void twi_slave_isr(comm_driver_t * comm) {
 		comm_end_rx(comm);
     	twi->SLAVE.CTRLA &= ~(TWI_SLAVE_PIEN_bm | TWI_SLAVE_DIEN_bm);
     	twi->SLAVE.STATUS |= TWI_SLAVE_APIF_bm;
-	}
-
-	// If unexpected state.
-	else {
-		//todo?
-		//TWI_SlaveTransactionFinished(twi, TWIS_RESULT_FAIL);
+	} else {
+		//Some kind of unexpected interrupt
 	}
 }

@@ -27,7 +27,8 @@ comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t m
 }
 
 /**
- * note: this assumes that * frame must have been allocated by the chunk pool allocator
+ * note: this assumes that * frame must have been 
+ * allocated by the chunk pool allocator
  */
 void comm_send(comm_driver_t * comm, comm_frame_t * frame) {
 	//@todo reture failure?
@@ -36,7 +37,7 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame) {
 }
 
 /**
- * task to initiate transfers
+ * task to initiate transfers. Intended to be run in the main loop.
  */
 void comm_tx(comm_driver_t * comm) {
 	comm_frame_t * frame;
@@ -57,6 +58,10 @@ comm_frame_t * comm_rx(comm_driver_t * comm) {
 	return queue_poll(comm->rx.queue);
 }
 
+/**
+ * Called by the lower-level device driver when 
+ * all bytes of the transfer have been sent out.
+ */
 void comm_end_tx(comm_driver_t * comm) {
 	if (comm->tx.frame != NULL) {
 		chunkpool_decref(comm->tx.frame);
@@ -66,18 +71,28 @@ void comm_end_tx(comm_driver_t * comm) {
 	comm->tx.state = COMM_TX_STATE_IDLE;
 }
 
+/**
+ * Called by the lower-level device driver when 
+ * the beginning of a new incoming frame is detected. 
+ */
 void comm_begin_rx(comm_driver_t * comm) {
-	//just in case - but if it is not-null, then there's an
-	//in complete transaction. it's probably garbage, so drop it.
-	//@TODO acquire may fail.
+	/**
+	 * In the case where the frame is non-NULL, there is a 
+	 * partially-received frame still in the buffer.  Chances are
+	 * that if the end wasn't detected, something went wrong, so 
+	 * we might as well just drop the whole frame.
+	 */
 	if ( comm->rx.frame == NULL ) 
 		comm->rx.frame = (comm_frame_t*)chunkpool_acquire(comm->pool);
 				
 	comm->rx.frame->size = 0;
 }
 
+/**
+ * Called by the lower-level device driver when 
+ * the end of an incoming frame is detected. 
+ */
 void comm_end_rx(comm_driver_t * comm) {
 	queue_offer(comm->rx.queue, (void*)comm->rx.frame);	
 	comm->rx.frame = NULL;
 }
-

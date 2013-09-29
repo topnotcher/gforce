@@ -62,10 +62,38 @@ void comm_begin_rx(comm_driver_t * comm);
 void comm_end_rx(comm_driver_t * comm);
 void comm_send(comm_driver_t * comm, comm_frame_t * frame);
 
+/**
+ * Called by the lower-level device driver to determine
+ * if there are more bytes left to send in the current transfer
+ */
 #define comm_tx_has_more(comm) ((comm)->tx.byte < (comm)->tx.frame->size)
+
+/**
+ * Called bythe lower-level driver to retreive the next
+ * byte in the current transfer.
+ */
 #define comm_tx_next(comm) ((comm)->tx.frame->data[(comm)->tx.byte++])
+
+/**
+ * Called by the lower-level driver to determine the destination
+ * address of the current transfer.
+ */
 #define comm_tx_daddr(comm) ((comm)->tx.frame->daddr)
+
+/**
+ * Called by the lower level driver to restart the current transfer
+ * e.g. in case of a receoverable error, try resending the frame
+ */
 #define comm_tx_rewind(comm) ((comm)->tx.byte = 0)
+
+/**
+ * Called by the lower level driver when a byte is received
+ */
 #define comm_rx_byte(comm,byte) (((comm)->rx.frame->data[(comm)->rx.frame->size++]) = (byte))
+
+/**
+ * Called by the lower level driver to check if the RX buffer is full
+ */
 #define comm_rx_full(comm) ((comm)->rx.frame->size >= (comm)->mtu)
+
 #endif
