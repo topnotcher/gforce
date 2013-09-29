@@ -12,8 +12,8 @@
 /**
  * G4 common includes.
  */
-#include <leds.h>
 #include <mpc.h>
+#include <leds.h>
 #include <buzz.h>
 #include <irrx.h>
 
@@ -52,42 +52,24 @@ int main(void) {
 
 	//safe to pass PTR because we never leave main()
 	scheduler_init();
-	led_init();
 	mpc_init();
+	led_init();
 	buzz_init();
 	irrx_init(); 
 
-//set_lights(1);
 	while(1) {
-
-		mpc_pkt * pkt = mpc_recv();
-
-		if ( pkt != NULL ) {
-			if ( pkt->cmd == 'A' ) {
-				//@TODO 
-//				led_sequence * seq  = (led_sequence*)malloc(pkt->len);
-				led_set_seq(pkt->data, pkt->len);
-				set_lights(1);
-			} else if ( pkt->cmd == 'B' ) {
-				set_lights(0);
-			}
-
-//			free(pkt);
-		}
+		mpc_tx_process();
+		mpc_rx_process();
 
 		leds_run();
 
-
+		//this interface is broken and stupid.
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
-
-		if ( irpkt.size != 0 ) {
+		if ( irpkt.size != 0 ) 
 				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
-		}
 	}
-
 
 
 	return 0;
 }
-

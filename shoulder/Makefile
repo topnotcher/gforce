@@ -36,13 +36,13 @@ EXTRAINCDIRS = ../include
 #    -pedantic/?
 CFLAGS = -g -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
--Wall -Wstrict-prototypes -Werror \
+-Wall -Wstrict-prototypes -Werror -Wno-unused-parameter \
 -finline-functions -finline-functions-called-once -finline-limit=1000 -finline-small-functions\
 -Wno-missing-braces -Wextra -Wno-missing-field-initializers -Wformat=2 \
 -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
 -Wbad-function-cast -Wstrict-overflow=5 -Wstrict-prototypes -Winline \
 -Wundef -Wnested-externs -Wcast-qual -Wshadow -Wunreachable-code \
--Wlogical-op -Wfloat-equal -Wstrict-aliasing=2 -Wredundant-decls \
+-Wlogical-op -Wfloat-equal -Wstrict-aliasing=1 -Wredundant-decls \
 -Wold-style-definition \
 -DF_CPU=$(F_CPU) \
 -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
