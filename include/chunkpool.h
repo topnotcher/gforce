@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 #ifndef CHUNKALLOC_H
 #define CHUNKALLOC_H
 
