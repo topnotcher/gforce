@@ -98,7 +98,7 @@ void uart_tx(uart_driver_t * driver, const uint8_t cmd, const uint8_t size, uint
 
 	pkt->len = size;
 	pkt->cmd = cmd;
-	pkt->saddr = MPC_TWI_ADDR<<1; //@TODO
+	pkt->saddr = MPC_ADDR<<1; //@TODO
 	pkt->chksum = MPC_CRC_SHIFT;
 
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
