@@ -36,8 +36,7 @@ void ( *countdown_cb )(void);
 static inline void handle_shot(const uint8_t, command_t const * const);
 
 inline void game_init(void) {
-	//cmd_register(0x38, 11, &start_game_cmd);
-	//cmd_register(0x08, 0, &stop_game_cmd);
+	mpc_register_cmd('I', process_ir_pkt);
 }
 
 void game_countdown(void) {
@@ -192,7 +191,7 @@ void do_deac(void) {
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
-inline void process_ir_pkt(mpc_pkt const * const pkt) {
+void process_ir_pkt(mpc_pkt const * const pkt) {
 
 	command_t const * const  cmd = (command_t*)pkt->data;
 

@@ -18,6 +18,15 @@
 static comm_driver_t * comm;
 static chunkpool_t * chunkpool;
 
+//@TODO hard-coded # of elementsghey
+#define N_MPC_CMDS 10
+typedef struct {
+	uint8_t cmd;
+	void (* cb)(mpc_pkt *);
+} cmd_callback_s;
+
+static cmd_callback_s cmds[N_MPC_CMDS]; 
+
 /**
  * The shoulders need to differentiate left/right.
  */
@@ -50,6 +59,18 @@ inline void mpc_init(void) {
 
 }
 
+/**
+ * @TODO this will silently fail on table full
+ *
+ */
+void mpc_register_cmd(uint8_t cmd, void (*cb)(mpc_pkt *)) {
+	for ( uint8_t i = 0; i < N_MPC_CMDS; ++i ) {
+		if ( cmds[i].cb == NULL ) {
+			cmds[i].cmd = cmd;
+			cmds[i].cb = cb;
+		}
+	}
+}
 
 /**
  * Process queued bytes into packtes.
@@ -75,8 +96,10 @@ void mpc_rx_process(void) {
 	if ( crc != pkt->crc ) return;
 #endif
 
-	if ( pkt->cmd == 'I' )
-		process_ir_pkt(pkt);
+	for ( uint8_t i = 0; i < N_MPC_CMDS; ++i ) {
+		if ( cmds[i].cmd == pkt->cmd )
+			cmds[i].cb(pkt);
+	}
 
 	chunkpool_decref(frame);
 }

@@ -56,6 +56,7 @@ int main(void) {
 	xbee_init();
 	phasor_comm_init();
 	mpc_init();
+	game_init();
 	display_init();
 
 	//clear shit by default.
