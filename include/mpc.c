@@ -25,6 +25,7 @@ typedef struct {
 } cmd_callback_s;
 
 static cmd_callback_s cmds[N_MPC_CMDS]; 
+static uint8_t next_mpc_cmd = 0;
 
 /**
  * The shoulders need to differentiate left/right.
@@ -55,7 +56,6 @@ inline void mpc_init(void) {
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), 8);
 	twi = twi_init(&MPC_TWI, mpc_twi_addr, mask, MPC_TWI_BAUD);
 	comm = comm_init(twi, mpc_twi_addr, MPC_PKT_MAX_SIZE, chunkpool);
-
 }
 
 /**
@@ -63,12 +63,9 @@ inline void mpc_init(void) {
  *
  */
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const)) {
-	for ( uint8_t i = 0; i < N_MPC_CMDS; ++i ) {
-		if ( cmds[i].cb == NULL ) {
-			cmds[i].cmd = cmd;
-			cmds[i].cb = cb;
-		}
-	}
+	cmds[next_mpc_cmd].cmd = cmd;
+	cmds[next_mpc_cmd].cb = cb;
+	next_mpc_cmd++;
 }
 
 /**
@@ -95,9 +92,11 @@ void mpc_rx_process(void) {
 	if ( crc != pkt->crc ) return;
 #endif
 
-	for ( uint8_t i = 0; i < N_MPC_CMDS; ++i ) {
-		if ( cmds[i].cmd == pkt->cmd )
+	for ( uint8_t i = 0; i < next_mpc_cmd; ++i ) {
+		if ( cmds[i].cmd == pkt->cmd ) {
 			cmds[i].cb(pkt);
+			break;
+		}
 	}
 
 	chunkpool_decref(frame);
