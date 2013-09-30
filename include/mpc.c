@@ -103,7 +103,11 @@ void mpc_rx_process(void) {
 			crc = mpc_crc( crc, frame->data[i] );
 	}
 
-	if ( crc != pkt->chksum ) return;
+	if ( crc != pkt->chksum ) {
+		chunkpool_decref(frame);
+		return;
+		//	goto: cleanup;
+	}
 #endif
 
 	for ( uint8_t i = 0; i < next_mpc_cmd; ++i ) {
@@ -113,6 +117,7 @@ void mpc_rx_process(void) {
 		}
 	}
 
+	//cleanup:
 	chunkpool_decref(frame);
 }
 
