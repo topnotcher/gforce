@@ -2,7 +2,12 @@
 #include <comm.h>
 #include "serialcomm.h"
 
-#define SERIAL_FRAME_HDR_SIZE 1
+//header: [start][dest addr][pktlen][check]
+#define SERIAL_FRAME_START 0xFF
+#define SERIAL_FRAME_HDR_SIZE 4
+#define SERIAL_FRAME_HDR_LEN_OFFSET 2
+#define SERIAL_FRAME_HDR_DADDR_OFFSET 1
+#define SERIAL_FRAME_HDR_CHK_OFFSET 3
 typedef struct {
 	void (*tx_begin)(void);
 	void (*tx_end)(void);
@@ -37,8 +42,8 @@ comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*
 	serialcomm->tx_end = tx_end;
 	serialcomm->data = data;
 	serialcomm->tx_state = SERIAL_TX_IDLE;
-	serialcomm->tx_hdr[0] = 0xFF;
-
+	serialcomm->tx_hdr[0] = SERIAL_FRAME_START;
+	
 	return commdev;	
 }
 
@@ -46,6 +51,10 @@ static void begin_tx(comm_driver_t * comm) {
 	serialcomm_t * dev = comm->dev->dev;
 	dev->tx_hdr_byte = 0;
 	dev->tx_state = SERIAL_TX_START;
+	dev->tx_hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = comm->addr;
+	dev->tx_hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_frame_len(comm);
+	//1 bit is masked out to ensure that the check will never be 0xFF = start byte
+	dev->tx_hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm->addr ^ comm_tx_frame_len(comm))&0xFE;
 	dev->tx_begin();
 }
 
@@ -54,7 +63,6 @@ void serialcomm_tx_isr(comm_driver_t * comm) {
 
 	if ( dev->tx_state == SERIAL_TX_START ) { 
 		*(dev->data) = dev->tx_hdr[dev->tx_hdr_byte++];
-		
 		if ( dev->tx_hdr_byte == SERIAL_FRAME_HDR_SIZE )
 			dev->tx_state = SERIAL_TX_TRANSMIT;
 	} else if ( dev->tx_state == SERIAL_TX_TRANSMIT ) {
