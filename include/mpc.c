@@ -19,6 +19,7 @@ static comm_driver_t * comm;
 #ifdef PHASOR_COMM_USART
 #define PHASOR_COMM 1
 #include <phasor_comm.h>
+#include "serialcomm.h"
 static comm_driver_t * phasor_comm;
 #endif
 
