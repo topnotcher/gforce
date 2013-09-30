@@ -8,16 +8,19 @@
 #include "config.h"
 #include <mpc.h>
 #include <util.h>
-#include <phasor_comm.h>
 
 #include "comm.h"
 #include "twi.h"
-#include "serialcomm.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
 static comm_driver_t * comm;
+
+#ifdef PHASOR_COMM_USART
+#define PHASOR_COMM 1
+#include <phasor_comm.h>
 static comm_driver_t * phasor_comm;
+#endif
 
 static chunkpool_t * chunkpool;
 
@@ -40,8 +43,6 @@ static uint8_t next_mpc_cmd = 0;
 
 inline void mpc_init(void) {
 
-	comm_dev_t * twi;
-
 	uint8_t mpc_addr;
 	uint8_t mask;
 
@@ -58,9 +59,16 @@ inline void mpc_init(void) {
 	#endif
 
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
+
+	#ifdef MPC_TWI
+	comm_dev_t * twi;
 	twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
 	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
+	#endif
+
+	#ifdef PHASOR_COMM
 	phasor_comm = phasor_comm_init(chunkpool);
+	#endif
 }
 
 /**
@@ -94,7 +102,7 @@ void mpc_rx_process(void) {
 			crc = mpc_crc( crc, frame->data[i] );
 	}
 
-	if ( crc != pkt->crc ) return;
+	if ( crc != pkt->chksum ) return;
 #endif
 
 	for ( uint8_t i = 0; i < next_mpc_cmd; ++i ) {
@@ -142,17 +150,28 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	}
 	
 
+	#ifdef MPC_TWI
 	if ( addr & (MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) )
 		comm_send(comm, frame);
+	#endif
 	
+	#ifdef PHASOR_COMM
 	if ( addr & MPC_PHASOR_ADDR )
 		comm_send(phasor_comm,frame);
+	#endif
+
 	chunkpool_decref(frame);
 }
 
 void mpc_tx_process(void) {
+
+	#ifdef MPC_TWI
 	comm_tx(comm);
+	#endif
+
+	#ifdef PHASOR_COMM
 	comm_tx(phasor_comm);
+	#endif
 }
 
 #ifdef PHASOR_COMM_TXC_ISR
