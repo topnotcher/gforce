@@ -1,6 +1,6 @@
 #include <malloc.h>
 #include <comm.h>
-#include "serialdev.h"
+#include "serialcomm.h"
 
 #define SERIAL_FRAME_HDR_SIZE 1
 typedef struct {
@@ -18,39 +18,39 @@ typedef struct {
 	uint8_t tx_hdr[SERIAL_FRAME_HDR_SIZE];
 	uint8_t tx_hdr_byte;
 
-} serialdev_t;
+} serialcomm_t;
 
 
 static void begin_tx(comm_driver_t * comm);
 
-comm_dev_t * serialdev_init(register8_t * data, void (*tx_begin)(void), void (*tx_end)(void)) {
+comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*tx_end)(void)) {
 	comm_dev_t * commdev;
-	serialdev_t * serialdev;
+	serialcomm_t * serialcomm;
 
 	commdev = smalloc(sizeof(*commdev));
-	serialdev = smalloc(sizeof(*serialdev));
+	serialcomm = smalloc(sizeof(*serialcomm));
 
-	commdev->dev = serialdev;
+	commdev->dev = serialcomm;
 	commdev->begin_tx = begin_tx;
 
-	serialdev->tx_begin = tx_begin;
-	serialdev->tx_end = tx_end;
-	serialdev->data = data;
-	serialdev->tx_state = SERIAL_TX_IDLE;
-	serialdev->tx_hdr[0] = 0xFF;
+	serialcomm->tx_begin = tx_begin;
+	serialcomm->tx_end = tx_end;
+	serialcomm->data = data;
+	serialcomm->tx_state = SERIAL_TX_IDLE;
+	serialcomm->tx_hdr[0] = 0xFF;
 
 	return commdev;	
 }
 
 static void begin_tx(comm_driver_t * comm) {
-	serialdev_t * dev = comm->dev->dev;
+	serialcomm_t * dev = comm->dev->dev;
 	dev->tx_hdr_byte = 0;
 	dev->tx_state = SERIAL_TX_START;
 	dev->tx_begin();
 }
 
-void serialdev_tx_isr(comm_driver_t * comm) {
-	serialdev_t * dev = comm->dev->dev;
+void serialcomm_tx_isr(comm_driver_t * comm) {
+	serialcomm_t * dev = comm->dev->dev;
 
 	if ( dev->tx_state == SERIAL_TX_START ) { 
 		*(dev->data) = dev->tx_hdr[dev->tx_hdr_byte++];

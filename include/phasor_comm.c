@@ -4,7 +4,7 @@
 
 #include <malloc.h>
 #include <comm.h>
-#include <serialdev.h>
+#include <serialcomm.h>
 #include <util.h>
 #include <mpc.h>
 #include <chunkpool.h>
@@ -43,7 +43,7 @@ inline void phasor_comm_init(void) {
 	
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), 3);
 
-	commdev = serialdev_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable);
+	commdev = serialcomm_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable);
 	comm_driver = comm_init( commdev, MPC_ADDR, MPC_PKT_MAX_SIZE, chunkpool );
 }
 
@@ -99,7 +99,7 @@ static void tx_interrupt_disable(void) {
 }
 
 PHASOR_COMM_TXC_ISR {
-	serialdev_tx_isr(comm_driver);
+	serialcomm_tx_isr(comm_driver);
 }
 
 //PHASOR_COMM_RXC_ISR {
