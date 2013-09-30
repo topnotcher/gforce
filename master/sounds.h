@@ -1,12 +1,7 @@
 #include <stdint.h>
-#include "ports.h"
 
 #ifndef SOUNDS_H
 #define SOUNDS_H
-
-#define SOUND_PORTID D
-#define SOUND_PORT PORT_ID(SOUND_PORTID)
-#define SOUND_DDR DDR_ID(SOUND_PORTID)
 
 
 #define SOUND_OUTPUT_PIN 4
