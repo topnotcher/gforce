@@ -8,13 +8,17 @@
 #include "config.h"
 #include <mpc.h>
 #include <util.h>
+#include <phasor_comm.h>
 
 #include "comm.h"
 #include "twi.h"
+#include "serialcomm.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
 static comm_driver_t * comm;
+static comm_driver_t * phasor_comm;
+
 static chunkpool_t * chunkpool;
 
 //@TODO hard-coded # of elementsghey
@@ -42,9 +46,9 @@ inline void mpc_init(void) {
 	uint8_t mask;
 
 	#ifdef MPC_TWI_ADDR_EEPROM_ADDR
-		mpc_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)<<1;
+		mpc_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR);
 	#else
-		mpc_addr = ((uint8_t)MPC_ADDR)<<1;
+		mpc_addr = ((uint8_t)MPC_ADDR);
 	#endif
 
 	#ifdef MPC_TWI_ADDRMASK
@@ -56,6 +60,7 @@ inline void mpc_init(void) {
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
 	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
+	phasor_comm = phasor_comm_init(chunkpool);
 }
 
 /**
@@ -125,25 +130,36 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	pkt->saddr = comm->addr;
 	pkt->chksum = MPC_CRC_SHIFT;
 
-#ifndef MPC_DISABLE_CRC
+//#ifndef MPC_DISABLE_CRC
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
 		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t*)pkt)[i]);
-#endif
+//#endif
 	for ( uint8_t i = 0; i < len; ++i ) {
 			pkt->data[i] = data[i];
-#ifndef MPC_DISABLE_CRC
+//#ifndef MPC_DISABLE_CRC
 			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
-#endif
+//#endif
 	}
 	
-	//@TODO FIX THIS
-	comm_send(comm, frame);
+
+	if ( addr & (MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) )
+		comm_send(comm, frame);
+	
+	if ( addr & MPC_PHASOR_ADDR )
+		comm_send(phasor_comm,frame);
 	chunkpool_decref(frame);
 }
 
 void mpc_tx_process(void) {
 	comm_tx(comm);
+	comm_tx(phasor_comm);
 }
+
+#ifdef PHASOR_COMM_TXC_ISR
+PHASOR_COMM_TXC_ISR {
+	serialcomm_tx_isr(phasor_comm);
+}
+#endif
 
 #ifdef MPC_TWI_MASTER_ISR
 MPC_TWI_MASTER_ISR {

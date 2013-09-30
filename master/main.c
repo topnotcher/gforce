@@ -54,7 +54,6 @@ int main(void) {
 	scheduler_init();
 	sound_init();
 	xbee_init();
-	phasor_comm_init();
 	mpc_init();
 	game_init();
 	display_init();
@@ -77,9 +76,7 @@ int main(void) {
 		process_ib_pkt(xbee_recv());
 //		process_ib_pkt(mpc_recv());
 		mpc_tx_process();
-		phasor_tx_process();
 		mpc_rx_process();
-		process_ib_pkt(phasor_comm_recv());
 
 	}
 
@@ -93,9 +90,9 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	
 	if ( pkt->cmd == 'I' )
 		process_ir_pkt(pkt);
-	else if ( pkt->cmd == 'T' ) {
-		uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
-		phasor_comm_send('T', 18,data);
-	}
+//	else if ( pkt->cmd == 'T' ) {
+//		uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+//		phasor_comm_send('T', 18,data);
+//	}
 
 }

@@ -13,6 +13,8 @@
 #include "lights.h"
 #include "xbee.h"
 
+#include <g4config.h>
+
 //volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
 
@@ -121,8 +123,9 @@ void stun_timer(void) {
 
 	--game_countdown_time;
 
-	if ( game_countdown_time == (game_settings.stun_time>>1) ) 
-		mpc_send_cmd(0b0101,'B');
+	//fuck shit remove this.
+	if ( game_countdown_time == (game_settings.stun_time>>1) )
+		lights_halfstun();
 	
 	else if ( game_countdown_time == 0 ) {
 		lights_unstun();
@@ -140,19 +143,19 @@ static inline void handle_shot(const uint8_t saddr, command_t const * const cmd)
 
 	char * sensor;
 	switch(saddr) {
-	case 2:
+	case MPC_CHEST_ADDR:
 		sensor = "Tagged: CH";
 		break;
-	case 4:
+	case MPC_LS_ADDR:
 		sensor = "Tagged: LS";
 		break;
-	case 8:
+	case MPC_BACK_ADDR:
 		sensor = "Tagged: BA";
 		break;
-	case 16: 
+	case MPC_RS_ADDR: 
 		sensor = "Tagged: RS";
 		break;
-	case 32:
+	case MPC_PHASOR_ADDR:
 		sensor = "Tagged: PH";
 		break;
 	default:

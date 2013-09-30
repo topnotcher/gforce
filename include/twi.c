@@ -23,7 +23,7 @@ comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, cons
 	 * Slave initialization
 	 */
 	dev->SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
-	dev->SLAVE.ADDR = addr;
+	dev->SLAVE.ADDR = addr<<1;
 
 	if (mask)
 		dev->SLAVE.ADDRMASK = mask << 1;
@@ -100,7 +100,7 @@ void twi_slave_isr(comm_driver_t * comm) {
 	if ( (twi->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 
 		uint8_t addr = twi->SLAVE.DATA;
-		if ( addr & comm->addr ) {
+		if ( addr & (comm->addr<<1) ) {
 			comm_begin_rx(comm);
 
 			twi->SLAVE.CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;

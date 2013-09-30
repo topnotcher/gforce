@@ -11,7 +11,7 @@
 /**
  * MPC (general) configuration
  */
-#define MPC_ADDR 0x40
+#define MPC_ADDR MPC_MASTER_ADDR
 #define MPC_QUEUE_SIZE 8
 
 /**************************************

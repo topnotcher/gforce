@@ -21,4 +21,10 @@
 #define PHASOR_COMM_BSCALE_VALUE 0
 
 
+#define MPC_CHEST_ADDR 0x01
+#define MPC_LS_ADDR 0x02
+#define MPC_BACK_ADDR 0x04
+#define MPC_RS_ADDR 0x08
+#define MPC_PHASOR_ADDR 0x10
+#define MPC_MASTER_ADDR 0x40
 #endif
