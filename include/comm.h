@@ -69,6 +69,14 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame);
 #define comm_tx_has_more(comm) ((comm)->tx.byte < (comm)->tx.frame->size)
 
 /**
+ * Called by the lower-level device driver to determine
+ * the size of the frame currently being sent
+ */
+#define comm_tx_frame_len(comm) ((comm)->tx.frame->size)
+
+
+
+/**
  * Called bythe lower-level driver to retreive the next
  * byte in the current transfer.
  */
