@@ -157,12 +157,12 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	
 
 	#ifdef MPC_TWI
-	if ( addr & (MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) )
+	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) )
 		comm_send(comm, frame);
 	#endif
 	
 	#ifdef PHASOR_COMM
-	if ( addr & MPC_PHASOR_ADDR )
+	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) )
 		comm_send(phasor_comm,frame);
 	#endif
 
