@@ -191,7 +191,7 @@ MPC_TWI_MASTER_ISR {
 	twi_master_isr(comm);
 }
 #endif
-#ifdef MPS_TWI_SLAVE_ISR
+#ifdef MPC_TWI_SLAVE_ISR
 MPC_TWI_SLAVE_ISR {
 	twi_slave_isr(comm);
 }
