@@ -15,7 +15,6 @@
 #include "trigger.h"
 
 #include <mpc.h>
-#include <phasor_comm.h>
 #include <scheduler.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
@@ -51,7 +50,7 @@ int main(void) {
 	irtx_init();
 	trigger_init();
 	irrx_init();
-	phasor_comm_init();
+	mpc_init();
 	scheduler_init();
 	sei();
 
@@ -60,37 +59,30 @@ int main(void) {
 	
 	while(1) {
 	
-		if ( trigger_pressed() ) 
+	/*	if ( trigger_pressed() ) 
 			//T = trigger pressed
 			phasor_comm_send('T', 0, NULL);
 
-		mpc_pkt * pkt = phasor_comm_recv();
-
-		if ( pkt != NULL ) {
-			if ( pkt->cmd == 'A' ) {
-
-				led_set_seq(pkt->data, pkt->len);
-				set_lights(1);
-			} else if ( pkt->cmd == 'B' ) {
-				set_lights(0);
-			//T = transmit IR
 			} else if ( pkt->cmd == 'T' ) {
 				uint8_t * foo = (uint8_t*)pkt->data;
 				irtx_send((irtx_pkt*)foo);
 			}
 
-		}
+	*/
 
+		mpc_tx_process();
+		mpc_rx_process();
 
+		leds_run();
+
+		//this interface is broken and stupid.
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
 
-		if ( irpkt.size != 0 ) {
-				phasor_comm_send('I', irpkt.size, irpkt.data);
-		}
+		if ( irpkt.size != 0 ) 
+				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
 
 
-		leds_run();
 	}
 
 	return 0;

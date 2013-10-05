@@ -63,6 +63,7 @@
 #define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
 #define MPC_ADDR 0x10
+#define MPC_QUEUE_SIZE 4
 
 #define MALLOC_HEAP_SIZE 512
 
