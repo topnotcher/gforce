@@ -358,8 +358,8 @@ static inline void mpc_master_run(void) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if ( queue_empty(&tx_state.queue.hdr) || tx_state.status != TX_STATUS_IDLE ) 
 			okay = 0; 
-
-		tx_state.status = TX_STATUS_BUSY;
+		else 
+			tx_state.status = TX_STATUS_BUSY;
 	}
 	
 	if (!okay) return;
