@@ -21,7 +21,7 @@
  * Configuration for the master<>board MPC bus.
  */
 
-#define MPC_TWI_ADDRMASK 0x0F
+#define MPC_TWI_ADDRMASK 0x1F
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
