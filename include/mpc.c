@@ -45,7 +45,6 @@ static uint8_t next_mpc_cmd = 0;
 inline void mpc_init(void) {
 
 	uint8_t mpc_addr;
-	uint8_t mask;
 
 	#ifdef MPC_TWI_ADDR_EEPROM_ADDR
 		mpc_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR);
@@ -53,22 +52,24 @@ inline void mpc_init(void) {
 		mpc_addr = ((uint8_t)MPC_ADDR);
 	#endif
 
-	#ifdef MPC_TWI_ADDRMASK
-		mask = MPC_TWI_ADDRMASK;
-	#else
-		mask = 0;
-	#endif
-
 	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 
 	#ifdef MPC_TWI
-	comm_dev_t * twi;
-	twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
-	#endif
+		uint8_t mask;
+
+		#ifdef MPC_TWI_ADDRMASK
+			mask = MPC_TWI_ADDRMASK;
+		#else
+			mask = 0;
+		#endif
+
+		comm_dev_t * twi;
+		twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
+		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
+	#endif 
 
 	#ifdef PHASOR_COMM
-	phasor_comm = phasor_comm_init(chunkpool);
+		phasor_comm = phasor_comm_init(chunkpool,mpc_addr);
 	#endif
 }
 

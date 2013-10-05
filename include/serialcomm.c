@@ -23,12 +23,13 @@ typedef struct {
 	uint8_t tx_hdr[SERIAL_FRAME_HDR_SIZE];
 	uint8_t tx_hdr_byte;
 
+	uint8_t addr;
 } serialcomm_t;
 
 
 static void begin_tx(comm_driver_t * comm);
 
-comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*tx_end)(void)) {
+comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*tx_end)(void), uint8_t addr) {
 	comm_dev_t * commdev;
 	serialcomm_t * serialcomm;
 
@@ -43,8 +44,9 @@ comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*
 	serialcomm->data = data;
 	serialcomm->tx_state = SERIAL_TX_IDLE;
 	serialcomm->tx_hdr[0] = SERIAL_FRAME_START;
-	
-	return commdev;	
+	serialcomm->addr = addr;
+
+	return commdev;
 }
 
 static void begin_tx(comm_driver_t * comm) {
