@@ -86,14 +86,25 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const)) {
 /**
  * Process queued bytes into packtes.
  */
+static void mpc_rx_frame(comm_frame_t * frame);
 
 void mpc_rx_process(void) {
-	
 	comm_frame_t * frame;
-	mpc_pkt * pkt;
 
-	if ( (frame = comm_rx(comm)) == NULL ) 
-		return;
+	#ifdef MPC_TWI
+	if ( (frame = comm_rx(comm)) != NULL ) 
+		mpc_rx_frame(frame);
+	#endif
+
+	#ifdef PHASOR_COMM
+	if ( (frame = comm_rx(phasor_comm)) != NULL ) 
+		mpc_rx_frame(frame);
+	#endif
+
+}
+
+static void mpc_rx_frame(comm_frame_t * frame) {
+	mpc_pkt * pkt;
 	
 	pkt = (mpc_pkt*)frame->data;
 
@@ -184,6 +195,12 @@ void mpc_tx_process(void) {
 #ifdef PHASOR_COMM_TXC_ISR
 PHASOR_COMM_TXC_ISR {
 	serialcomm_tx_isr(phasor_comm);
+}
+#endif
+
+#ifdef PHASOR_COMM_RXC_ISR
+PHASOR_COMM_RXC_ISR {
+	serialcomm_rx_isr(phasor_comm);
 }
 #endif
 

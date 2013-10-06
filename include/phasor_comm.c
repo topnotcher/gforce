@@ -37,7 +37,7 @@ comm_driver_t * phasor_comm_init(chunkpool_t * chunkpool, uint8_t mpc_addr) {
 	PHASOR_COMM_USART_PORT.DIRSET = _TXPIN_bm;
 	
 	commdev = serialcomm_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, mpc_addr);
-	return comm_init( commdev, MPC_ADDR, MPC_PKT_MAX_SIZE, chunkpool );
+	return comm_init( commdev, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool );
 }
 
 
@@ -48,7 +48,3 @@ static void tx_interrupt_enable(void) {
 static void tx_interrupt_disable(void) {
 	PHASOR_COMM_USART.CTRLA &= ~USART_DREINTLVL_MED_gc;
 }
-
-//PHASOR_COMM_RXC_ISR {
-//	uart_rx_byte(comm_uart_driver);
-//}
