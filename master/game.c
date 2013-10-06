@@ -121,6 +121,12 @@ void stop_game(void) {
 
 void stun_timer(void) {
 
+
+	if (!game_state.playing) {
+		scheduler_unregister(stun_timer);
+		return;
+	}
+
 	--game_countdown_time;
 
 	//fuck shit remove this.
