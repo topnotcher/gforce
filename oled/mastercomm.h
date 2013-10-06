@@ -4,7 +4,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-void comm_init(void);
-mpc_pkt * comm_recv(void);
+void mastercomm_init(void);
+mpc_pkt * mastercomm_recv(void);
 
 #endif

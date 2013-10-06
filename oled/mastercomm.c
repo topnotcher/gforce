@@ -6,7 +6,7 @@
 #include <uart.h>
 
 #include "display.h"
-#include "comm.h"
+#include "mastercomm.h"
 
 #define COMM_SPI SPID
 #define COMM_PORT PORTD
@@ -28,7 +28,7 @@ uart_driver_t * comm_uart_driver;
 
 void dummy(void);
 
-inline void comm_init(void) {
+inline void mastercomm_init(void) {
 	
 	//xmegaA, pp226.
 	COMM_PORT.DIRCLR = _SCLK_bm | _SS_bm | _SIN_bm;
@@ -47,7 +47,7 @@ inline void comm_init(void) {
 
 void dummy(void) {}
 
-inline mpc_pkt * comm_recv(void) {
+inline mpc_pkt * mastercomm_recv(void) {
 	return uart_rx(comm_uart_driver);
 }
 

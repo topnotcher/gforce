@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "display.h"
-#include "comm.h"
+#include "mastercomm.h"
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
@@ -43,7 +43,7 @@ int main(void) {
 
 	
 	display_init();
-	comm_init();
+	mastercomm_init();
 
 	wdt_enable(9);
 
@@ -52,7 +52,7 @@ int main(void) {
 	while(1) {
 		wdt_reset();
 
-		mpc_pkt * pkt = comm_recv();
+		mpc_pkt * pkt = mastercomm_recv();
 //		display_tick();
 
 		if (pkt == NULL) continue;

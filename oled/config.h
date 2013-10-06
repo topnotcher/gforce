@@ -1,1 +1,1 @@
-#define MPC_TWI_ADDR 32
+#define MPC_ADDR 0
