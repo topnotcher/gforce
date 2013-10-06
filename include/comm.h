@@ -104,4 +104,9 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame);
  */
 #define comm_rx_full(comm) ((comm)->rx.frame->size >= (comm)->mtu)
 
+/**
+ * Called by the lower level driver to get the numer of bytes received in the current frame
+ */
+#define comm_rx_size(comm)  ((comm)->rx.frame->size)
+ 
 #endif
