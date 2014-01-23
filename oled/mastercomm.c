@@ -3,7 +3,11 @@
 #include <stdint.h>
 
 #include <util.h>
-#include <uart.h>
+
+#include <comm.h>
+#include <serialcomm.h>
+#include <chunkpool.h>
+#include <displaycomm.h>
 
 #include "display.h"
 #include "mastercomm.h"
@@ -22,9 +26,7 @@
 #define _SOUT_bm G4_PIN(COMM_PIN_SOUT)
 #define _SS_bm G4_PIN(COMM_PIN_SS)
 
-#define RX_BUFF_SIZE 40
-
-uart_driver_t * comm_uart_driver;
+static comm_driver_t * comm;
 
 void dummy(void);
 
@@ -41,16 +43,30 @@ inline void mastercomm_init(void) {
 	COMM_SPI.CTRL = SPI_ENABLE_bm; /*SPI_MASTER_bm=0*/
 	COMM_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
-	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy,dummy, RX_BUFF_SIZE);
+//	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy,dummy, RX_BUFF_SIZE);
+
+	chunkpool_t * chunkpool = chunkpool_create(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
+	comm_dev_t * commdev = serialcomm_init(&COMM_SPI.DATA, dummy, dummy, 1 /*dummy address*/);
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool );
 
 }
 
 void dummy(void) {}
 
-inline mpc_pkt * mastercomm_recv(void) {
-	return uart_rx(comm_uart_driver);
+inline display_pkt * mastercomm_recv(void) {
+	comm_frame_t * frame;
+
+	//this is backwards. Shouldn't be decrementing the refcnt so early
+	//but it should work almost all of the time, and I'm being lazy at the moment.	
+	if ( (frame = comm_rx(comm)) != NULL ) {
+
+		chunkpool_decref(frame);
+		return (display_pkt*)frame->data;
+	}
+
+	return NULL;
 }
 
 ISR(COMM_SPI_vect) {
-	uart_rx_byte(comm_uart_driver);
+	serialcomm_rx_isr(comm);
 }

@@ -77,6 +77,7 @@ int main(void) {
 //		process_ib_pkt(mpc_recv());
 		mpc_tx_process();
 		mpc_rx_process();
+		display_tx();
 
 	}
 

@@ -1,10 +1,14 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <util.h>
-#include <uart.h>
 #include <string.h>
+#include <comm.h>
+#include <serialcomm.h>
+#include <chunkpool.h>
+#include <displaycomm.h>
 
 #include "display.h"
 
@@ -19,7 +23,8 @@
 #define _SOUT_bm G4_PIN(DISPLAY_PIN_SOUT)
 #define _SS_bm G4_PIN(DISPLAY_PIN_SS)
 
-static uart_driver_t * display_uart_driver;
+static comm_driver_t * comm;
+static chunkpool_t * chunkpool;
 
 static void tx_begin(void);
 static void tx_end(void);
@@ -35,14 +40,20 @@ inline void display_init(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
 	//note passing 0 for rxbuff size - RX is not used!
-	display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 0);
+	//display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 0);
+
+	chunkpool = chunkpool_create(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
+
+	comm_dev_t * commdev;
+	commdev = serialcomm_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 1 /*dummy address*/);
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool );
 }
 
 static void tx_begin(void) {
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	DISPLAY_PORT.OUTCLR = _SS_bm;
 	//because with SPI the ISR only triggers whena  byte finishes transferring
-	usart_tx_process(display_uart_driver);
+	serialcomm_tx_isr(comm);
 }
 
 static void tx_end(void) {
@@ -50,14 +61,33 @@ static void tx_end(void) {
 	DISPLAY_PORT.OUTSET = _SS_bm;
 }
 
-inline void display_send(const uint8_t cmd, uint8_t * data, const uint8_t size) {
-	uart_tx(display_uart_driver, cmd, size, data);
+void display_tx(void) { 
+	comm_tx(comm);
+}
+
+inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) {
+	comm_frame_t * frame;
+	display_pkt * pkt;
+
+	frame = (comm_frame_t*)chunkpool_acquire(chunkpool);
+	frame->daddr = 0 /*dummy*/;
+	frame->size = sizeof(*pkt)+size;
+
+	pkt = (display_pkt*)frame->data;
+
+	pkt->cmd = cmd;
+	pkt->size = size; 
+
+	memcpy(pkt->data, data, pkt->size);
+
+	comm_send(comm,frame);
+	chunkpool_decref(frame);
 }
 
 inline void display_write(char * str) {
-	display_send(0,(uint8_t*)str,strlen(str)+1);
+	display_send(0,strlen(str)+1,(uint8_t*)str);
 }
 
 ISR(DISPLAY_SPI_vect) {
-	usart_tx_process(display_uart_driver);
+	serialcomm_tx_isr(comm);
 }
