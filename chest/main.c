@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <g4config.h>
 #include "config.h"
 
 
@@ -82,7 +83,7 @@ int main(void) {
 		ir_rx(&irpkt);
 
 		if ( irpkt.size != 0 ) {
-				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
+				mpc_send(MPC_MASTER_ADDR, 'I', irpkt.size, irpkt.data);
 		}
 	}
 
