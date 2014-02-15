@@ -211,8 +211,8 @@ void process_ir_pkt(mpc_pkt const * const pkt) {
 		stop_game_cmd(cmd);
 
 	} else if ( cmd->cmd == 0x0c ) {
-		handle_shot(pkt->saddr, cmd);
-	}
+		handle_shot(pkt->saddr, cmd);	
 
-	xbee_send('S',sizeof(*pkt)+pkt->len, (uint8_t*)pkt);
+		xbee_send('S',sizeof(*pkt)+pkt->len, (uint8_t*)pkt);
+	}
 }
