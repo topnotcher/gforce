@@ -28,7 +28,7 @@ int main(int argc, char**argv) {
 	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
-	uint8_t ping_data[] = { MPC_BACK_ADDR };
+	uint8_t ping_data[] = { MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
 	uint8_t ping_data_len = 1;
 
 	if ( argc < 2 ) {
@@ -42,8 +42,9 @@ int main(int argc, char**argv) {
 		sendtogf('I',start_data,start_data_len);
 	else if (!strcmp(argv[1],"shot"))
 		sendtogf('I',shot_data,shot_data_len);
-	else if (!strcmp(argv[1], "ping"))
+	else if (!strcmp(argv[1], "ping")) {
 		sendtogf('P',ping_data, ping_data_len);
+	}
 
 	return 0;
 }
@@ -109,11 +110,36 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		if ( size <= 0 ) continue;
 
 		mpc_pkt * pkt = (mpc_pkt*)(data+1);
+		
+		if ( pkt->cmd == 'R' ) {
+			mpc_pkt * reply = (mpc_pkt*)pkt->data;
+			char * board;
+			switch(reply->saddr) {
+			case MPC_CHEST_ADDR:
+				board = "chest";
+				break;
+			case MPC_LS_ADDR:
+				board = "left shoulder";
+				break;
+			case MPC_BACK_ADDR:
+				board = "back";
+				break;
+			case MPC_RS_ADDR:
+				board = "right shoulder";
+				break;
+			default:
+				board = "???";
+				break;
+			}
+			
+			printf("PING: reply from [0x%02x] %s\n",reply->saddr, board);
 
-		printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
-		for (int i = 0; i < pkt->len; ++i)
-			printf("0x%02x, ", pkt->data[i]);
-		printf("\n");
+		} else { 
+			printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
+			for (int i = 0; i < pkt->len; ++i)
+				printf("0x%02x, ", pkt->data[i]);
+			printf("\n");
+		} 
 	}
 	
 }
