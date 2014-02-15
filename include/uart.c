@@ -9,11 +9,11 @@
 #include <util.h>
 #include <ringbuf.h>
 #include <mpc.h>
-
+#define UART_TX_QUEUE_SIZE 10
 #include <uart.h>
 
 #include <malloc.h>
-
+#include <util/delay.h>
 #define uart_crc(crc,data) _crc_ibutton_update(crc,data)
 
 //return true if more processing is required before returning a packet.
@@ -122,9 +122,9 @@ inline void usart_tx_process(uart_driver_t * driver) {
 	//first byte of transfer
 start:
 	if ( driver->tx.state == TX_STATE_START ) { 
-		*(driver->data) = 0xFF;
 		driver->tx.state = TX_STATE_TRANSMIT;
 		driver->tx.bytes = 0;
+		*(driver->data) = 0xFF;
 		return;
 	//not completely sent.
 	}
@@ -147,6 +147,7 @@ start:
 			driver->tx.state = TX_STATE_IDLE;
 		} else {
 			driver->tx.state = TX_STATE_START;
+			_delay_ms(7);
 			//@TODO with USART, this is DRE int = we should send a byte NOW.
 			//with SPI,
 			goto start;
