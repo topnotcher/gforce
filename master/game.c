@@ -50,7 +50,7 @@ void game_countdown(void) {
 	} else {
 		data[7] = 0x30 + game_countdown_time;
 	}
-	display_send(0,data,9);
+	display_send(0,9,data);
 }
 
 void start_game_cmd(command_t const * const cmd) {
@@ -121,6 +121,12 @@ void stop_game(void) {
 
 void stun_timer(void) {
 
+
+	if (!game_state.playing) {
+		scheduler_unregister(stun_timer);
+		return;
+	}
+
 	--game_countdown_time;
 
 	//fuck shit remove this.
@@ -132,7 +138,7 @@ void stun_timer(void) {
 		game_state.stunned = 0;
 		game_state.active = 1;
 		scheduler_unregister(&stun_timer);
-		display_send(0,(uint8_t*)" ",2);
+		display_send(0,2,(uint8_t*)" ");
 	}
 }
 
