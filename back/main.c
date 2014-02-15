@@ -57,6 +57,11 @@ int main(void) {
 	buzz_init();
 	irrx_init(); 
 
+	//set ~CE low to enable charging
+	PORTD.DIRSET = PIN5_bm;
+	PORTD.OUTCLR = PIN5_bm;
+
+//set_lights(1);
 	while(1) {
 		mpc_tx_process();
 		mpc_rx_process();
