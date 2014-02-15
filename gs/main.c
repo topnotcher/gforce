@@ -14,6 +14,7 @@
 uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data);
 
 int sendtogf(uint8_t * data, uint8_t size);
+static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
 
 
 int main(int argc, char**argv) {
@@ -90,10 +91,28 @@ int sendtogf(uint8_t * data, uint8_t data_len) {
 	sendto(sock, (uint8_t*)pkt-1,sizeof(*pkt)+pkt->len+1, 0, (struct sockaddr *)
                &addr, sizeof(addr));
 
+
+	gf_recv(sock, &addr);
+
 	return 0;
 
 }
+static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
+	const uint8_t max_size = 64;
+	uint8_t data[max_size];
+	uint8_t size;
+	socklen_t * fromsize = (socklen_t*)sizeof(*xbee_addr);
+	while (1) {
+		size = recvfrom(sock,data,max_size,0,(struct sockaddr*)xbee_addr, fromsize);
+		
+		if ( size <= 0 ) continue;
 
+		mpc_pkt * pkt = (mpc_pkt*)data;
+
+		printf("%c: [%2x] %d\n", pkt->cmd, pkt->saddr, pkt->len);
+	}
+	
+}
 uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data) {
     uint8_t i;
 
