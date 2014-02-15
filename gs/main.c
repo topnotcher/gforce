@@ -27,6 +27,8 @@ int main(int argc, char**argv) {
 	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
+	uint8_t ping_data[] = { MPC_CHEST_ADDR };
+	uint8_t ping_data_len = 1;
 
 	if ( argc < 2 ) {
 		fprintf(stderr, "Usage: %s start|stop|shot\n",argv[0]);
@@ -39,6 +41,8 @@ int main(int argc, char**argv) {
 		sendtogf(start_data,start_data_len);
 	else if (!strcmp(argv[1],"shot"))
 		sendtogf(shot_data,shot_data_len);
+	else if (!strcmp(argv[1], "ping"))
+		sendtogf(ping_data, ping_data_len);
 
 	return 0;
 }

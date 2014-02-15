@@ -29,6 +29,7 @@
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
 static inline void process_ib_pkt(mpc_pkt const * const pkt);
+static void xbee_relay_mpc(const mpc_pkt * const pkt);
 
 
 int main(void) {
@@ -71,6 +72,10 @@ int main(void) {
 	display_write("");
 	wdt_enable(9);
 
+	//ping hack: master receives a ping reply
+	//send it to the xbee. 
+	mpc_register_cmd('R', xbee_relay_mpc);
+
 	while (1) {
 		wdt_reset();
 		process_ib_pkt(xbee_recv());
@@ -89,11 +94,24 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 
 	if ( pkt == NULL ) return;
 	
-	if ( pkt->cmd == 'I' )
+	if ( pkt->cmd == 'I' ) {
 		process_ir_pkt(pkt);
+
+	//hackish thing.
+	//receive a "ping" from the xbee means 
+	//send a ping to the board specified by byte 0
+	//of the data. That board should then reply...
+	} else if ( pkt->cmd == 'P' ) {
+		mpc_send_cmd(pkt->data[0], 'P');
+	}
+				
 //	else if ( pkt->cmd == 'T' ) {
 //		uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
 //		phasor_comm_send('T', 18,data);
 //	}
 
+}
+
+static void xbee_relay_mpc(const mpc_pkt * const pkt) {
+	xbee_send(pkt->cmd,pkt->len,(uint8_t*)pkt->data);
 }
