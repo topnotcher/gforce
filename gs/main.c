@@ -15,7 +15,7 @@ uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data);
 
 int sendtogf(uint8_t cmd,uint8_t * data, uint8_t size);
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
-
+char * mpc_board_name(const uint8_t board_id);
 
 int main(int argc, char**argv) {
 
@@ -113,25 +113,8 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		
 		if ( pkt->cmd == 'R' ) {
 			mpc_pkt * reply = (mpc_pkt*)pkt->data;
-			char * board;
-			switch(reply->saddr) {
-			case MPC_CHEST_ADDR:
-				board = "chest";
-				break;
-			case MPC_LS_ADDR:
-				board = "left shoulder";
-				break;
-			case MPC_BACK_ADDR:
-				board = "back";
-				break;
-			case MPC_RS_ADDR:
-				board = "right shoulder";
-				break;
-			default:
-				board = "???";
-				break;
-			}
-			
+			char * board = mpc_board_name(reply->saddr);
+					
 			printf("PING: reply from [0x%02x] %s\n",reply->saddr, board);
 
 		} else { 
@@ -155,4 +138,23 @@ uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data) {
 	}
 
 	return crc;
+}
+
+char * mpc_board_name(const uint8_t board_id) {
+	switch(board_id) {
+		case MPC_CHEST_ADDR:
+			return "chest";
+		case MPC_LS_ADDR:
+			return "left shoulder";
+		case MPC_BACK_ADDR:
+			return "back";
+		case MPC_RS_ADDR:
+			return "right shoulder";
+		case MPC_MASTER_ADDR:
+			return "master";
+		case MPC_PHASOR_ADDR:
+			return "phasor";
+		default:
+			return "???";
+	}
 }
