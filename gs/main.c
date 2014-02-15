@@ -15,7 +15,7 @@ uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data);
 
 int sendtogf(uint8_t cmd,uint8_t * data, uint8_t size);
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
-
+char * mpc_board_name(const uint8_t board_id);
 
 int main(int argc, char**argv) {
 
@@ -28,7 +28,7 @@ int main(int argc, char**argv) {
 	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
-	uint8_t ping_data[] = { MPC_CHEST_ADDR };
+	uint8_t ping_data[] = { MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
 	uint8_t ping_data_len = 1;
 
 	if ( argc < 2 ) {
@@ -42,8 +42,9 @@ int main(int argc, char**argv) {
 		sendtogf('I',start_data,start_data_len);
 	else if (!strcmp(argv[1],"shot"))
 		sendtogf('I',shot_data,shot_data_len);
-	else if (!strcmp(argv[1], "ping"))
+	else if (!strcmp(argv[1], "ping")) {
 		sendtogf('P',ping_data, ping_data_len);
+	}
 
 	return 0;
 }
@@ -109,8 +110,21 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		if ( size <= 0 ) continue;
 
 		mpc_pkt * pkt = (mpc_pkt*)(data+1);
-
-		printf("%c: [%2x] %d\n", pkt->cmd, pkt->saddr, pkt->len);
+		//@TODO compute checksum.	
+		if ( pkt->cmd == 'R' ) {
+			mpc_pkt * reply = (mpc_pkt*)pkt->data;
+			char * board = mpc_board_name(reply->saddr);
+			printf("PING: reply from [0x%02x] %s\n",reply->saddr, board);
+		} else if ( pkt->cmd == 'S' ) {
+			mpc_pkt * shot_data = (mpc_pkt*)pkt->data;	
+			char * board = mpc_board_name(shot_data->saddr);
+			printf("SHOT: %s\n",board);
+		} else { 
+			printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
+			for (int i = 0; i < pkt->len; ++i)
+				printf("0x%02x, ", pkt->data[i]);
+			printf("\n");
+		} 
 	}
 	
 }
@@ -126,4 +140,23 @@ uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data) {
 	}
 
 	return crc;
+}
+
+char * mpc_board_name(const uint8_t board_id) {
+	switch(board_id) {
+		case MPC_CHEST_ADDR:
+			return "chest";
+		case MPC_LS_ADDR:
+			return "left shoulder";
+		case MPC_BACK_ADDR:
+			return "back";
+		case MPC_RS_ADDR:
+			return "right shoulder";
+		case MPC_MASTER_ADDR:
+			return "master";
+		case MPC_PHASOR_ADDR:
+			return "phasor";
+		default:
+			return "???";
+	}
 }
