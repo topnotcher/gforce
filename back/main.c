@@ -83,7 +83,5 @@ int main(void) {
 	return 0;
 }
 static void mpc_reply_ping(const mpc_pkt * const pkt) {
-	//super cheap hack to visually indicate reply
-	set_lights(0);
-	mpc_send_cmd('R', pkt->saddr);
+	mpc_send_cmd(pkt->saddr, 'R');
 }
