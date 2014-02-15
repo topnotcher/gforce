@@ -107,7 +107,7 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		
 		if ( size <= 0 ) continue;
 
-		mpc_pkt * pkt = (mpc_pkt*)data;
+		mpc_pkt * pkt = (mpc_pkt*)(data+1);
 
 		printf("%c: [%2x] %d\n", pkt->cmd, pkt->saddr, pkt->len);
 	}
