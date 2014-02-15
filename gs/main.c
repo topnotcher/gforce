@@ -13,7 +13,7 @@
 
 uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data);
 
-int sendtogf(uint8_t * data, uint8_t size);
+int sendtogf(uint8_t cmd,uint8_t * data, uint8_t size);
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
 
 
@@ -37,18 +37,19 @@ int main(int argc, char**argv) {
 	}
 
 	if (!strcmp(argv[1],"stop")) 
-		sendtogf(end_data,end_data_len);
+		sendtogf('I',end_data,end_data_len);
 	else if (!strcmp(argv[1], "start"))
-		sendtogf(start_data,start_data_len);
+		sendtogf('I',start_data,start_data_len);
 	else if (!strcmp(argv[1],"shot"))
-		sendtogf(shot_data,shot_data_len);
+		sendtogf('I',shot_data,shot_data_len);
 	else if (!strcmp(argv[1], "ping"))
-		sendtogf(ping_data, ping_data_len);
+		sendtogf('P',ping_data, ping_data_len);
 
 	return 0;
 }
 
-int sendtogf(uint8_t * data, uint8_t data_len) {
+
+int sendtogf(uint8_t cmd, uint8_t * data, uint8_t data_len) {
 	int sock;
 	struct sockaddr_in addr;
 	
@@ -73,7 +74,7 @@ int sendtogf(uint8_t * data, uint8_t data_len) {
 
 	mpc_pkt * pkt;
 	pkt = malloc(sizeof(*pkt)+data_len+1)+1;
-	pkt->cmd = 'I';
+	pkt->cmd = cmd;
 	pkt->saddr = 4;
 	pkt->len = data_len;
 	pkt->chksum = MPC_CRC_SHIFT;
