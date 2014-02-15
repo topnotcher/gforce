@@ -24,6 +24,8 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+static void mpc_reply_ping(const mpc_pkt * const pkt);
+
 extern uint8_t led_sequence_raw[];
 
 int main(void) {
@@ -61,6 +63,8 @@ int main(void) {
 	PORTD.DIRSET = PIN5_bm;
 	PORTD.OUTCLR = PIN5_bm;
 
+	mpc_register_cmd('P', mpc_reply_ping);
+
 //set_lights(1);
 	while(1) {
 		mpc_tx_process();
@@ -77,4 +81,9 @@ int main(void) {
 
 
 	return 0;
+}
+static void mpc_reply_ping(const mpc_pkt * const pkt) {
+	//super cheap hack to visually indicate reply
+	set_lights(0);
+	mpc_send_cmd('R', pkt->saddr);
 }

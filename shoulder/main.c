@@ -23,7 +23,7 @@
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
-
+static void mpc_reply_ping(const mpc_pkt * const pkt);
 extern uint8_t led_sequence_raw[];
 
 int main(void) {
@@ -45,8 +45,7 @@ int main(void) {
 	CCP = 0xD8; 
 
 	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
-	CLK_CTRL = 0x04;
-
+	CLK_CTRL = 0x04; 
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 	sei();
 
@@ -56,6 +55,8 @@ int main(void) {
 	led_init();
 	buzz_init();
 	irrx_init(); 
+
+	mpc_register_cmd('P', mpc_reply_ping);
 
 	while(1) {
 		mpc_tx_process();
@@ -72,4 +73,10 @@ int main(void) {
 
 
 	return 0;
+}
+
+static void mpc_reply_ping(const mpc_pkt * const pkt) {
+	//super cheap hack to visually indicate reply
+	set_lights(0);
+	mpc_send_cmd('R', pkt->saddr);
 }

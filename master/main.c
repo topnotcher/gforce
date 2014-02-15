@@ -102,7 +102,10 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	//send a ping to the board specified by byte 0
 	//of the data. That board should then reply...
 	} else if ( pkt->cmd == 'P' ) {
-		mpc_send_cmd(pkt->data[0], 'P');
+		mpc_send_cmd(0xff/*pkt->data[0]*/, 'P');
+		//send a reply from the master indicating that the ping request
+		//was received and forwarded.
+		xbee_send('R',0, NULL); 
 	}
 				
 //	else if ( pkt->cmd == 'T' ) {
