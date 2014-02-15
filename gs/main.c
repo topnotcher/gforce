@@ -110,13 +110,15 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		if ( size <= 0 ) continue;
 
 		mpc_pkt * pkt = (mpc_pkt*)(data+1);
-		
+		//@TODO compute checksum.	
 		if ( pkt->cmd == 'R' ) {
 			mpc_pkt * reply = (mpc_pkt*)pkt->data;
 			char * board = mpc_board_name(reply->saddr);
-					
 			printf("PING: reply from [0x%02x] %s\n",reply->saddr, board);
-
+		} else if ( pkt->cmd == 'S' ) {
+			mpc_pkt * shot_data = (mpc_pkt*)pkt->data;	
+			char * board = mpc_board_name(shot_data->saddr);
+			printf("SHOT: %s\n",board);
 		} else { 
 			printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
 			for (int i = 0; i < pkt->len; ++i)
