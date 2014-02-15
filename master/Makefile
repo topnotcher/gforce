@@ -131,15 +131,11 @@ AVRDUDE_FLAGS = -p $(MCU) -c $(AVRDUDE_PROGRAMMER) -P $(AVRDUDE_PORT)
 SHELL = sh
 
 
+CC = avr-gcc
 
-
-AVRBIN=$(HOME)/progs/avr8-gnu-toolchain-linux_x86_64/bin/
-
-CC = $(AVRBIN)/avr-gcc
-
-OBJCOPY = $(AVRBIN)/avr-objcopy
-OBJDUMP = $(AVRBIN)/avr-objdump
-SIZE = $(AVRBIN)/avr-size
+OBJCOPY = avr-objcopy
+OBJDUMP = avr-objdump
+SIZE = avr-size
 
 # Programming support using avrdude.
 AVRDUDE = avrdude
