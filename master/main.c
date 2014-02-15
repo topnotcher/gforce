@@ -6,6 +6,7 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
+#include <g4config.h>
 #include <scheduler.h>
 //#include "lcd.h"
 #include "lights.h"
@@ -102,10 +103,7 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	//send a ping to the board specified by byte 0
 	//of the data. That board should then reply...
 	} else if ( pkt->cmd == 'P' ) {
-		mpc_send_cmd(0xff/*pkt->data[0]*/, 'P');
-		//send a reply from the master indicating that the ping request
-		//was received and forwarded.
-		xbee_send('R',0, NULL); 
+		mpc_send_cmd(pkt->data[0], 'P');
 	}
 				
 //	else if ( pkt->cmd == 'T' ) {
@@ -116,5 +114,5 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 }
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt) {
-	xbee_send(pkt->cmd,pkt->len,(uint8_t*)pkt->data);
+	xbee_send(pkt->cmd,pkt->len+sizeof(*pkt),(uint8_t*)pkt);
 }
