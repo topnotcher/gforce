@@ -72,14 +72,16 @@ int main(void) {
 	_delay_ms(500);
 	display_write("");
 	//wdt_enable(9);
-	    uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
-		    CCP = CCP_IOREG_gc;
-			    WDT.CTRL = temp;
-
+	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
+	CCP = CCP_IOREG_gc;
+	WDT.CTRL = temp;
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee. 
 	mpc_register_cmd('R', xbee_relay_mpc);
+
+	//relay data for debugging
+	mpc_register_cmd('D', xbee_relay_mpc);
 
 	while (1) {
 	//	wdt_reset();
