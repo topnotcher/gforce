@@ -2,6 +2,7 @@
 #include "chunkpool.h"
 #include "comm.h"
 #include "twi.h"
+#include "twi_master.h"
 #include <stddef.h>
 
 /**
@@ -13,89 +14,58 @@
 
 static void begin_tx(comm_driver_t * comm);
 
-comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud ) {
+static void twim_txn_complete(void *, uint8_t);
+
+comm_dev_t * twi_init( TWI_t * twi, const uint8_t addr, const uint8_t mask, const uint8_t baud ) {
 	comm_dev_t * comm;
 	comm = smalloc(sizeof *comm);
+
+	mpc_twi_dev * mpctwi;
+	mpctwi = smalloc(sizeof *mpctwi);
+	mpctwi->twi = twi;
 	
-	comm->dev = dev;
+	comm->dev = mpctwi;
 
 	/**
 	 * Slave initialization
 	 */
-	dev->SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
-	dev->SLAVE.ADDR = addr<<1;
+	twi->SLAVE.CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
+	twi->SLAVE.ADDR = addr<<1;
 
 	if (mask)
-		dev->SLAVE.ADDRMASK = mask << 1;
+		twi->SLAVE.ADDRMASK = mask << 1;
 
 	/**
 	 * Master initialization
 	 */
-	dev->MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
+/*	dev->MASTER.CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm;
 	dev->MASTER.BAUD = baud;
 
 	//per AVR1308
 	dev->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-
+*/ 
 	comm->begin_tx = begin_tx;
+
+	mpctwi->twim = twi_master_init(&twi->MASTER,baud,comm, twim_txn_complete); 
 
 	return comm;
 }
 
+static void twim_txn_complete(void *ins, uint8_t status) {
+	comm_end_tx(((comm_dev_t *)ins)->comm);
+}
 /**
  * callback for comm - called when the comm state has been 
  * fully initialized to begin a new transfer
  */
+
 static void begin_tx(comm_driver_t * comm) {
-	((TWI_t*)(comm->dev->dev))->MASTER.ADDR = comm_tx_daddr(comm)<<1 /*| 0*/;
+	twi_master_write(((mpc_twi_dev*)comm->dev->dev)->twim, comm_tx_daddr(comm), comm->tx.frame->size, comm->tx.frame->data); 
 }
 
-void twi_master_isr(comm_driver_t * comm) {
-	TWI_t * twi = (TWI_t*)comm->dev->dev;
-
-	if ( (twi->MASTER.STATUS & TWI_MASTER_ARBLOST_bm) || (twi->MASTER.STATUS & TWI_MASTER_BUSERR_bm)) {
-		//per AVR1308 example code.
-		twi->MASTER.STATUS |= TWI_MASTER_ARBLOST_bm;
-
-		/**
-		 * According to xmegaA, the master should be smart enough to wait 
-		 * until bussstate == idle before it tries to restart the transaction.
-		 * So in theory, this works. If it doesn't work, chances are the tx.state
-		 * will stay BUSY indefinitely.
-		 */
-		comm_tx_rewind(comm);
-		twi->MASTER.ADDR = comm_tx_daddr(comm)<<1;
-
-	} else if ( twi->MASTER.STATUS & TWI_MASTER_WIF_bm ) {
-
-		//@TODO should this really drop the packet, or should it retry?
-		//when it is read as 0, most recent ack bit was NAK. 
-		if (twi->MASTER.STATUS & TWI_MASTER_RXACK_bm) {
-			//WHY IS THIS HERE???
-			//and why is the busstate manually set?
-			twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-			twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-			
-			comm_end_tx(comm);
-
-		} else {
-			if ( comm_tx_has_more(comm) ) {
-				twi->MASTER.DATA = comm_tx_next(comm);
-			} else {
-				twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-				twi->MASTER.STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-				comm_end_tx(comm);
-			}
-		}
-	} else {
-		//IDFK?? - unexpected type of interrupt.
-		twi->MASTER.CTRLC = TWI_MASTER_CMD_STOP_gc;
-		comm_end_tx(comm);
-	}
-}
 
 void twi_slave_isr(comm_driver_t * comm) {
-	TWI_t * twi = (TWI_t*)comm->dev->dev;
+	TWI_t * twi = (TWI_t*)((mpc_twi_dev*)comm->dev->dev)->twi;
 
 	if ( (twi->SLAVE.STATUS & TWI_SLAVE_APIF_bm) &&  (twi->SLAVE.STATUS & TWI_SLAVE_AP_bm) ) {
 

@@ -205,8 +205,9 @@ PHASOR_COMM_RXC_ISR {
 #endif
 
 #ifdef MPC_TWI_MASTER_ISR
+#include "twi_master.h"
 MPC_TWI_MASTER_ISR {
-	twi_master_isr(comm);
+	twi_master_isr(((mpc_twi_dev*)comm->dev->dev)->twim);
 }
 #endif
 #ifdef MPC_TWI_SLAVE_ISR
