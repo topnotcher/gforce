@@ -115,3 +115,10 @@ void comm_end_rx(comm_driver_t * comm) {
 	queue_offer(comm->rx.queue, (void*)comm->rx.frame);	
 	comm->rx.frame = NULL;
 }
+
+void comm_rx_end(comm_driver_t * comm, uint8_t bytes) {
+	comm->rx.frame->size = bytes;
+	queue_offer(comm->rx.queue, (void*)comm->rx.frame);	
+	comm->rx.frame = NULL;
+
+}

@@ -46,7 +46,7 @@ static void twim_txn_complete(void *ins, uint8_t status) {
  */
 
 static void begin_tx(comm_driver_t * comm) {
-	twi_master_write(((mpc_twi_dev*)comm->dev->dev)->twim, comm_tx_daddr(comm), comm->tx.frame->size, comm->tx.frame->data); 
+	twi_master_write(((mpc_twi_dev*)comm->dev->dev)->twim, comm_tx_daddr(comm), comm_tx_len(comm), comm_tx_data(comm)); 
 }
 
 static void twis_txn_begin(void * ins, uint8_t write, uint8_t ** buf, uint8_t * buf_size) {
@@ -57,17 +57,12 @@ static void twis_txn_begin(void * ins, uint8_t write, uint8_t ** buf, uint8_t * 
 	 */
 
 	if (write) {
-		/*@TODO*/
+		*buf = NULL;
+		/*UUSED*/
 	} else { 
 		comm_begin_rx(comm);
-
-		if (comm->rx.frame == NULL) {
-			*buf = NULL;
-			*buf_size = 0;
-		} else {
-			*buf = comm->rx.frame->data;
-			*buf_size = comm->mtu;
-		}
+		*buf = comm_rx_buf(comm);
+		*buf_size = comm_rx_max_size(comm); 
 	}
 }
 
@@ -75,11 +70,9 @@ static void twis_txn_end(void * ins, uint8_t write, uint8_t * buf, uint8_t bytes
 	comm_driver_t * comm = ((comm_dev_t*)ins)->comm;
 
 	if (write) {
-		/*@TODO*/
+		/*UNUSED*/
 	} else {
-		comm->rx.frame->size = bytes;
-		//rx.frame->data should already be set to buf
-		comm_end_rx(comm);
+		comm_rx_end(comm,bytes);
 	}
 }
 

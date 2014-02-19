@@ -1,6 +1,6 @@
 #include <malloc.h>
 #include <stddef.h>
-
+#include <comm.h>
 #include <twi_slave.h>
 
 twi_slave_t * twi_slave_init(
@@ -44,7 +44,7 @@ void twi_slave_isr(twi_slave_t * dev) {
 
 			dev->begin_txn(dev->ins, write, &dev->buf, &dev->buf_size);
 			
-			if (dev->buf_size > 0) {
+			if (dev->buf) {
 				dev->bytes = 0;
 				twi->CTRLA |= TWI_SLAVE_DIEN_bm | TWI_SLAVE_PIEN_bm;
 				twi->CTRLB = TWI_SLAVE_CMD_RESPONSE_gc;
@@ -66,7 +66,7 @@ void twi_slave_isr(twi_slave_t * dev) {
 		//slave read(master write)
 		} else {
 			//@TODO handle overflow with error
-			if (dev->bytes < dev->buf_size)
+			if (dev->bytes < dev->buf_size) 
 				dev->buf[dev->bytes++] = twi->DATA;	
 		}
 		//@TODO SMART MODE
