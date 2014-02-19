@@ -59,9 +59,15 @@ static void twis_txn_begin(void * ins, uint8_t write, uint8_t ** buf, uint8_t * 
 	if (write) {
 		/*@TODO*/
 	} else { 
-		comm_begin_rx(comm);	
-		*buf = comm->rx.frame->data;
-		*buf_size = (comm->rx.frame == NULL) ? 0 : comm->mtu;
+		comm_begin_rx(comm);
+
+		if (comm->rx.frame == NULL) {
+			*buf = NULL;
+			*buf_size = 0;
+		} else {
+			*buf = comm->rx.frame->data;
+			*buf_size = comm->mtu;
+		}
 	}
 }
 
