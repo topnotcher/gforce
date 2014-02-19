@@ -10,7 +10,7 @@
 #include <util.h>
 
 #include "comm.h"
-#include "twi.h"
+#include "mpctwi.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
@@ -64,7 +64,7 @@ inline void mpc_init(void) {
 		#endif
 
 		comm_dev_t * twi;
-		twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
+		twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
 		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
 	#endif 
 

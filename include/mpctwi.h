@@ -13,9 +13,7 @@
 #ifndef TWI_H
 #define TWI_H
 
-comm_dev_t * twi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud );
-
-comm_frame_t * twi_rx(comm_driver_t * comm);
+comm_dev_t * mpctwi_init( TWI_t * dev, const uint8_t addr, const uint8_t mask, const uint8_t baud );
 
 typedef struct {
 	TWI_t * twi;
