@@ -1,6 +1,9 @@
 #include <malloc.h>
 #include <twi_master.h>
 
+static void twi_master_read_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf);
+
+
 twi_master_t * twi_master_init(
 			TWI_MASTER_t * twi, 
 			const uint8_t baud, 
@@ -27,6 +30,10 @@ twi_master_t * twi_master_init(
 }
 
 void twi_master_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
+	twi_master_read_write(dev,addr,len,buf);	
+}
+
+static void twi_master_read_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
 	dev->buf = buf;
 	dev->bytes = 0;
 	dev->buf_size = len;
@@ -38,18 +45,10 @@ void twi_master_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * b
 	dev->twi->ADDR = addr<<1;
 }
 
+
 void twi_master_read(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
-	dev->buf = buf;
-	dev->bytes = 0;
-	dev->buf_size = len;
-
-	dev->addr = addr<<1|1;
-	/**
-	 * @TODO check if it is busy here?
-	 */
-	dev->twi->ADDR = addr<<1|1;
+	twi_master_read_write(dev,addr,len,buf);
 }
-
 	
 void twi_master_isr(twi_master_t * dev) {
 	TWI_MASTER_t * twi = (TWI_MASTER_t*)dev->twi;
