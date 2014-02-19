@@ -20,6 +20,8 @@
 #include <scheduler.h>
 
 
+#include "charger.h"
+
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
@@ -59,14 +61,16 @@ int main(void) {
 	buzz_init();
 	irrx_init(); 
 
-	//set ~CE low to enable charging
-	PORTD.DIRSET = PIN5_bm;
-	PORTD.OUTCLR = PIN5_bm;
-
 	mpc_register_cmd('P', mpc_reply_ping);
 
+	static uint8_t init = 0;
 //set_lights(1);
 	while(1) {
+		if (init == 0) {
+			charger_init();
+			init = 1;
+		}
+
 		mpc_tx_process();
 		mpc_rx_process();
 
