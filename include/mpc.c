@@ -211,7 +211,8 @@ MPC_TWI_MASTER_ISR {
 }
 #endif
 #ifdef MPC_TWI_SLAVE_ISR
+#include "twi_slave.h"
 MPC_TWI_SLAVE_ISR {
-	twi_slave_isr(comm);
+	twi_slave_isr(((mpc_twi_dev*)comm->dev->dev)->twis);
 }
 #endif
