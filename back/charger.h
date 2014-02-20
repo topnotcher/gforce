@@ -1,3 +1,5 @@
+#include <avr/io.h>
+
 #ifndef CHARGER_H
 #define CHARGER_H
 
@@ -16,8 +18,9 @@
 #define BQ24193_FAULT_REG               0x09
 #define BQ24193_REVISION_REG            0x0a
 
-
+#define BQ24193_EN_HIZ_gc _BV(7)
 
 void charger_init(void);
-
+void charger_read_reg(uint8_t reg);
+void charger_write_reg(uint8_t reg);
 #endif
