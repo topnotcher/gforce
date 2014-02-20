@@ -2,7 +2,6 @@
 #include <malloc.h>
 #include <twi_master.h>
 
-static void twi_master_read_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf);
 static inline void twi_master_write_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
 static inline void twi_master_read_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
 
@@ -32,24 +31,29 @@ twi_master_t * twi_master_init(
 }
 
 void twi_master_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
-	twi_master_read_write(dev,addr,len,buf);	
+	twi_master_write_read(dev,addr,len,buf,0,NULL);	
 }
+   
+void twi_master_write_read(twi_master_t * dev, uint8_t addr, uint8_t txbytes, uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) {
 
-static void twi_master_read_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
-	dev->buf = buf;
+	dev->txbuf = txbuf;
+	dev->txbytes = txbytes;
+
+	dev->rxbuf = rxbuf;
+	dev->rxbytes = rxbytes;
+
 	dev->bytes = 0;
-	dev->buf_size = len;
-
 	dev->addr = addr<<1;
+
 	/**
 	 * @TODO check if it is busy here?
 	 */
-	dev->twi->ADDR = addr<<1;
+	dev->twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
 }
 
 
 void twi_master_read(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
-	twi_master_read_write(dev,addr,len,buf);
+	twi_master_write_read(dev,addr,0,NULL,len,buf);
 }
 	
 void twi_master_isr(twi_master_t * dev) {
@@ -66,7 +70,7 @@ void twi_master_isr(twi_master_t * dev) {
 		 * will stay BUSY indefinitely.
 		 */
 		dev->bytes = 0;
-		twi->ADDR = dev->addr;
+		twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
 
 	} else if ( twi->STATUS & TWI_MASTER_WIF_bm ) {
 		twi_master_write_handler(dev);
@@ -82,12 +86,12 @@ void twi_master_isr(twi_master_t * dev) {
 static inline void twi_master_read_handler(twi_master_t * dev) {
 	TWI_MASTER_t * twi = (TWI_MASTER_t*)dev->twi;
 
-	if (dev->bytes < dev->buf_size) {
-			dev->buf[dev->bytes++] = twi->DATA;
+	if (dev->bytes < dev->rxbytes) {
+			dev->rxbuf[dev->bytes++] = twi->DATA;
 		twi->CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
 	} else {
-		twi->CTRLC = TWI_MASTER_ACKACT_bm | TWI_MASTER_CMD_STOP_gc;
 		dev->txn_complete(dev->ins, 0);
+		twi->CTRLC = TWI_MASTER_ACKACT_bm | TWI_MASTER_CMD_STOP_gc;
 	}
 }
 
@@ -97,19 +101,26 @@ static inline void twi_master_write_handler(twi_master_t * dev) {
 	//@TODO should this really drop the packet, or should it retry?
 	//when it is read as 0, most recent ack bit was NAK. 
 	if (twi->STATUS & TWI_MASTER_RXACK_bm) {
+		dev->txn_complete(dev->ins,0);
+
 		//WHY IS THIS HERE???
 		//and why is the busstate manually set?
 		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
 		twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-	
-		dev->txn_complete(dev->ins,0);
 	} else {
-		if ( dev->bytes < dev->buf_size ) {
-			twi->DATA = dev->buf[dev->bytes++];
+		if ( dev->bytes < dev->txbytes ) {
+			twi->DATA = dev->txbuf[dev->bytes++];
 		} else {
 			twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
 			twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-			dev->txn_complete(dev->ins, 0);
+			
+			//send repeated start if bytes to read
+			if (dev->rxbytes) {
+				dev->bytes = 0;
+				twi->ADDR = dev->addr | 1;
+			} else {
+				dev->txn_complete(dev->ins, 0);
+			}
 		}
 	}
 }
