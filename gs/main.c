@@ -12,6 +12,7 @@
 #define XBEE_PORT 9750
 
 uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data);
+int mpc_pkt_crc_ok(mpc_pkt * pkt);
 
 int sendtogf(uint8_t cmd,uint8_t * data, uint8_t size);
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
@@ -28,7 +29,7 @@ int main(int argc, char**argv) {
 	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
-	uint8_t ping_data[] = { MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
+	uint8_t ping_data[] = { MPC_PHASOR_ADDR | MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
 	uint8_t ping_data_len = 1;
 
 	if ( argc < 2 ) {
@@ -114,7 +115,8 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 		if ( pkt->cmd == 'R' ) {
 			mpc_pkt * reply = (mpc_pkt*)pkt->data;
 			char * board = mpc_board_name(reply->saddr);
-			printf("PING: reply from [0x%02x] %s\n",reply->saddr, board);
+			char crcok = mpc_pkt_crc_ok(reply) ? '*' : '!';
+			printf("PING: reply from [0x%02x:%c] %s\n",reply->saddr, crcok, board);
 		} else if ( pkt->cmd == 'S' ) {
 			mpc_pkt * shot_data = (mpc_pkt*)pkt->data;	
 			char * board = mpc_board_name(shot_data->saddr);
@@ -140,6 +142,19 @@ uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data) {
 	}
 
 	return crc;
+}
+
+int mpc_pkt_crc_ok(mpc_pkt * pkt) {
+	uint8_t chksum = MPC_CRC_SHIFT;
+
+	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
+		chksum = _crc_ibutton_update(chksum, ((uint8_t*)pkt)[i]);
+
+	for ( uint8_t i = 0; i < pkt->len; ++i ) {
+		chksum = _crc_ibutton_update(chksum, pkt->data[i]);
+	}
+
+	return chksum == pkt->chksum;
 }
 
 char * mpc_board_name(const uint8_t board_id) {
