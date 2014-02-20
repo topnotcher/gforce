@@ -35,6 +35,9 @@ comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t m
 	comm->mtu = mtu;
 	comm->pool = pool;
 
+	/**
+	 * @TODO hard-coded queue sizes
+	 */
 	comm->rx.queue = queue_create(4);
 	comm->rx.frame = NULL;
 
