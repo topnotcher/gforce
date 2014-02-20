@@ -46,9 +46,9 @@ void charger_init(void) {
 		while (state.busy);
 	}
 	
-	uint8_t read_regs[3] = {BQ24193_SYS_STAT_REG, BQ24193_FAULT_REG, BQ24193_REVISION_REG};
+	uint8_t read_regs[4] = {BQ24193_SYS_STAT_REG, BQ24193_FAULT_REG, BQ24193_FAULT_REG, BQ24193_REVISION_REG};
 
-	for (uint8_t i = 0; i < 3; ++i) {
+	for (uint8_t i = 0; i < 4; ++i) {
 		charger_read_reg(read_regs[i]);
 		while(state.busy);
 	}
