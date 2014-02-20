@@ -24,8 +24,7 @@ static struct {
 	uint8_t reg;
 	enum {
 		OP_WRITE,
-		OP_READ_WRITE,
-		OP_READ_READ,
+		OP_READ,
 	} op;
 	volatile uint8_t busy;
 	uint8_t txbuf[2];
@@ -59,9 +58,9 @@ void charger_init(void) {
 
 void charger_read_reg(uint8_t reg) {
 	state.reg = reg;
-	state.op = OP_READ_WRITE;
+	state.op = OP_READ;
 	state.busy = 1;
-	twi_master_write(twim, CHG_SLAVE_ADDR, 1, &state.reg);
+	twi_master_write_read(twim, CHG_SLAVE_ADDR, 1, &state.reg, 1, &registers[reg]);
 }
 
 void charger_write_reg(uint8_t reg) {
@@ -74,24 +73,7 @@ void charger_write_reg(uint8_t reg) {
 }
 
 static void txn_complete(void * derp, uint8_t status) {
-	uint8_t reg = state.reg;
-	uint8_t op = state.op;
-	
-	switch(op) {
-	case OP_WRITE:
-		state.busy = 0;
-		break;
-	case OP_READ_WRITE:
-		state.op = OP_READ_READ;
-		twi_master_read(twim, CHG_SLAVE_ADDR, 1, &registers[reg]);
-		break;
-	case OP_READ_READ:
-		state.busy = 0;
-		break;
-	default:
-		state.busy = 0;
-		break;
-	}
+	state.busy = 0;
 }
 
 ISR(TWIE_TWIM_vect) {
