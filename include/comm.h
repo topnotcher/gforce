@@ -60,6 +60,7 @@ comm_frame_t * comm_rx(comm_driver_t * comm);
 void comm_end_tx(comm_driver_t * comm);
 void comm_begin_rx(comm_driver_t * comm);
 void comm_end_rx(comm_driver_t * comm);
+void comm_rx_end(comm_driver_t * comm, uint8_t bytes);
 void comm_send(comm_driver_t * comm, comm_frame_t * frame);
 
 /**
@@ -72,9 +73,9 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame);
  * Called by the lower-level device driver to determine
  * the size of the frame currently being sent
  */
-#define comm_tx_frame_len(comm) ((comm)->tx.frame->size)
+#define comm_tx_len(comm) ((comm)->tx.frame->size)
 
-
+#define comm_tx_data(comm) ((comm)->tx.frame->data)
 
 /**
  * Called bythe lower-level driver to retreive the next
@@ -108,5 +109,8 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame);
  * Called by the lower level driver to get the numer of bytes received in the current frame
  */
 #define comm_rx_size(comm)  ((comm)->rx.frame->size)
- 
+
+#define comm_rx_buf(comm) ((comm)->rx.frame->data)
+
+#define comm_rx_max_size(comm) ((comm)->mtu)
 #endif

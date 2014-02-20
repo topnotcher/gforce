@@ -75,9 +75,9 @@ static void begin_tx(comm_driver_t * comm) {
 	dev->tx_hdr_byte = 0;
 	dev->tx_state = SERIAL_TX_START;
 	dev->tx_hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = comm_tx_daddr(comm);
-	dev->tx_hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_frame_len(comm);
+	dev->tx_hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_len(comm);
 	//1 bit is masked out to ensure that the check will never be 0xFF = start byte
-	dev->tx_hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm_tx_daddr(comm) ^ comm_tx_frame_len(comm))&0xFE;
+	dev->tx_hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm_tx_daddr(comm) ^ comm_tx_len(comm))&0xFE;
 	dev->tx_begin();
 }
 
