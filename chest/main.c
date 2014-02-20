@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "g4config.h"
 #include "config.h"
 
 
@@ -24,6 +25,7 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 static void mpc_reply_ping(const mpc_pkt * const pkt);
+static void mpc_echo_ir(const mpc_pkt * const pkt);
 extern uint8_t led_sequence_raw[];
 
 int main(void) {
@@ -57,6 +59,7 @@ int main(void) {
 	irrx_init(); 
 
 	mpc_register_cmd('P', mpc_reply_ping);
+	mpc_register_cmd('I', mpc_echo_ir);
 
 	while(1) {
 		mpc_tx_process();
@@ -68,7 +71,7 @@ int main(void) {
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
 		if ( irpkt.size != 0 ) 
-				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
+			mpc_send(MPC_MASTER_ADDR, 'I', irpkt.size, irpkt.data);
 	}
 
 
@@ -77,4 +80,13 @@ int main(void) {
 
 static void mpc_reply_ping(const mpc_pkt * const pkt) {
 	mpc_send_cmd( pkt->saddr, 'R');
+}
+
+static void mpc_echo_ir(const mpc_pkt * const pkt) {
+	uint8_t data[pkt->len];
+	for (uint8_t i = 0; i < pkt->len; ++i)
+		data[i] = pkt->data[i];
+//void mpc_send(const uint8_t addr, const  uint8_t * const data) {
+	mpc_send(pkt->saddr, 'I', pkt->len, data);
+	//mpc_send(pkt->saddr, 'I', 4, data);
 }

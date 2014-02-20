@@ -21,6 +21,7 @@
 
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+static void mpc_reply_ping(const mpc_pkt * const pkt); 
 
 int main(void) {
 
@@ -54,8 +55,7 @@ int main(void) {
 	scheduler_init();
 	sei();
 
-
-
+	mpc_register_cmd('P', mpc_reply_ping);
 	
 	while(1) {
 	
@@ -87,3 +87,9 @@ int main(void) {
 
 	return 0;
 }
+
+static void mpc_reply_ping(const mpc_pkt * const pkt) {
+	mpc_send_cmd( pkt->saddr, 'R');
+}
+
+

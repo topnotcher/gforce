@@ -34,6 +34,7 @@ EXTRAINCDIRS = ../include
 #  -Wa,...:   tell GCC to pass this to the assembler.
 #    -ahlms:  create assembler listing
 #    -pedantic/?
+#-Wcast-qual
 CFLAGS = -g -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
 -Wall -Wstrict-prototypes -Werror -Wno-unused-parameter \
@@ -41,7 +42,7 @@ CFLAGS = -g -O$(OPT) \
 -Wno-missing-braces -Wextra -Wno-missing-field-initializers -Wformat=2 \
 -Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
 -Wbad-function-cast -Wstrict-overflow=5 -Wstrict-prototypes -Winline \
--Wundef -Wnested-externs -Wcast-qual -Wshadow -Wunreachable-code \
+-Wundef -Wnested-externs -Wshadow -Wunreachable-code \
 -Wlogical-op -Wfloat-equal -Wstrict-aliasing=1 -Wredundant-decls \
 -Wold-style-definition \
 -DF_CPU=$(F_CPU) \

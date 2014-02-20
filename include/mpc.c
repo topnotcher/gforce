@@ -10,7 +10,7 @@
 #include <util.h>
 
 #include "comm.h"
-#include "twi.h"
+#include "mpctwi.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
@@ -64,7 +64,7 @@ inline void mpc_init(void) {
 		#endif
 
 		comm_dev_t * twi;
-		twi = twi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
+		twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
 		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
 	#endif 
 
@@ -166,18 +166,19 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
 //#endif
 	}
-	
 
-	#ifdef MPC_TWI
-	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) )
-		comm_send(comm, frame);
-	#endif
-	
 	#ifdef PHASOR_COMM
 	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) )
 		comm_send(phasor_comm,frame);
 	#endif
 
+	#ifdef MPC_TWI
+	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
+		frame->daddr &= (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR);
+		comm_send(comm, frame);
+	}
+	#endif
+	
 	chunkpool_decref(frame);
 }
 
@@ -205,12 +206,14 @@ PHASOR_COMM_RXC_ISR {
 #endif
 
 #ifdef MPC_TWI_MASTER_ISR
+#include "twi_master.h"
 MPC_TWI_MASTER_ISR {
-	twi_master_isr(comm);
+	twi_master_isr(((mpc_twi_dev*)comm->dev->dev)->twim);
 }
 #endif
 #ifdef MPC_TWI_SLAVE_ISR
+#include "twi_slave.h"
 MPC_TWI_SLAVE_ISR {
-	twi_slave_isr(comm);
+	twi_slave_isr(((mpc_twi_dev*)comm->dev->dev)->twis);
 }
 #endif

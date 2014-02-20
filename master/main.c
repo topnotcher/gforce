@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <avr/wdt.h>
+//#include <avr/wdt.h>
 
 #include <g4config.h>
 #include <scheduler.h>
@@ -71,14 +71,20 @@ int main(void) {
 
 	_delay_ms(500);
 	display_write("");
-	wdt_enable(9);
+	//wdt_enable(9);
+	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
+	CCP = CCP_IOREG_gc;
+	WDT.CTRL = temp;
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee. 
 	mpc_register_cmd('R', xbee_relay_mpc);
 
+	//relay data for debugging
+	mpc_register_cmd('D', xbee_relay_mpc);
+
 	while (1) {
-		wdt_reset();
+	//	wdt_reset();
 		process_ib_pkt(xbee_recv());
 //		process_ib_pkt(mpc_recv());
 		mpc_tx_process();
@@ -96,7 +102,9 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	if ( pkt == NULL ) return;
 	
 	if ( pkt->cmd == 'I' ) {
-		process_ir_pkt(pkt);
+		//simulate IR by "bouncing" it off of chest
+		mpc_send(MPC_CHEST_ADDR,'I', pkt->len, (uint8_t*)pkt->data);
+		//process_ir_pkt(pkt);
 
 	//hackish thing.
 	//receive a "ping" from the xbee means 
