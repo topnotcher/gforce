@@ -118,6 +118,8 @@ void comm_begin_rx(comm_driver_t * comm) {
 void comm_end_rx(comm_driver_t * comm) {
 	queue_offer(comm->rx.queue, (void*)comm->rx.frame);	
 	comm->rx.frame = NULL;
+	if (comm->end_rx)
+		comm->end_rx(comm);
 }
 
 void comm_rx_end(comm_driver_t * comm, uint8_t bytes) {
