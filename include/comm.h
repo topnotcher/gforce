@@ -14,10 +14,13 @@ typedef struct {
 
 //forward definition.
 struct comm_dev_struct; 
+struct comm_driver_struct;
 
-typedef struct {
+typedef struct comm_driver_struct {
 
 	struct comm_dev_struct * dev;
+	
+	void (*end_rx)(struct comm_driver_struct *);
 
 	chunkpool_t * pool;
 
@@ -51,10 +54,9 @@ typedef struct comm_dev_struct {
 	comm_driver_t * comm;
 
 	void (* begin_tx)(comm_driver_t *);
-
 } comm_dev_t;
 
-comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool );
+comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool, void (*end_rx)(comm_driver_t*) );
 void comm_tx(comm_driver_t * comm);
 comm_frame_t * comm_rx(comm_driver_t * comm);
 void comm_end_tx(comm_driver_t * comm);

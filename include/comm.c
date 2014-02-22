@@ -23,7 +23,7 @@
  * sending a "group" of bytes.
  */
 
-comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool )  {
+comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool, void (*end_rx)(comm_driver_t*) ) {
 
 	comm_driver_t * comm;
 	comm = smalloc(sizeof *comm);
@@ -34,6 +34,7 @@ comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t m
 	comm->addr = addr;
 	comm->mtu = mtu;
 	comm->pool = pool;
+	comm->end_rx = end_rx;
 
 	/**
 	 * @TODO hard-coded queue sizes
@@ -123,5 +124,6 @@ void comm_rx_end(comm_driver_t * comm, uint8_t bytes) {
 	comm->rx.frame->size = bytes;
 	queue_offer(comm->rx.queue, (void*)comm->rx.frame);	
 	comm->rx.frame = NULL;
-
+	if (comm->end_rx)
+		comm->end_rx(comm);
 }

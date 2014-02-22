@@ -89,9 +89,6 @@ int main(void) {
 		eventq_run();
 	//	wdt_reset();
 		process_ib_pkt(xbee_recv());
-//		process_ib_pkt(mpc_recv());
-//		mpc_tx_process();
-		mpc_rx_process();
 		display_tx();
 
 	}

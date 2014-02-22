@@ -15,6 +15,8 @@
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
+static void mpc_rx_event(comm_driver_t *);
+
 static comm_driver_t * comm;
 
 #ifdef PHASOR_COMM_USART
@@ -66,11 +68,11 @@ inline void mpc_init(void) {
 
 		comm_dev_t * twi;
 		twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool);
+		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool, mpc_rx_event);
 	#endif 
 
 	#ifdef PHASOR_COMM
-		phasor_comm = phasor_comm_init(chunkpool,mpc_addr);
+		phasor_comm = phasor_comm_init(chunkpool,mpc_addr, mpc_rx_event);
 	#endif
 }
 
@@ -88,6 +90,10 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const)) {
  * Process queued bytes into packtes.
  */
 static void mpc_rx_frame(comm_frame_t * frame);
+
+static void mpc_rx_event(comm_driver_t * evtcomm) {
+	eventq_offer(mpc_rx_process);
+}
 
 void mpc_rx_process(void) {
 	comm_frame_t * frame;
