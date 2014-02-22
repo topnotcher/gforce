@@ -20,6 +20,7 @@
 #include <colors.h>
 //#include <leds.h>
 #include "game.h"
+#include "eventq.h"
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -59,6 +60,7 @@ int main(void) {
 	mpc_init();
 	game_init();
 	display_init();
+	eventq_init();
 
 	//clear shit by default.
 	lights_off();
@@ -84,10 +86,11 @@ int main(void) {
 	mpc_register_cmd('D', xbee_relay_mpc);
 
 	while (1) {
+		eventq_run();
 	//	wdt_reset();
 		process_ib_pkt(xbee_recv());
 //		process_ib_pkt(mpc_recv());
-		mpc_tx_process();
+//		mpc_tx_process();
 		mpc_rx_process();
 		display_tx();
 

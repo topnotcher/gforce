@@ -11,6 +11,7 @@
 
 #include "comm.h"
 #include "mpctwi.h"
+#include "eventq.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
@@ -168,14 +169,17 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	}
 
 	#ifdef PHASOR_COMM
-	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) )
+	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) ) {
 		comm_send(phasor_comm,frame);
+		eventq_offer(mpc_tx_process);
+	}
 	#endif
 
 	#ifdef MPC_TWI
 	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
 		frame->daddr &= (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR);
 		comm_send(comm, frame);
+		eventq_offer(mpc_tx_process);
 	}
 	#endif
 	
