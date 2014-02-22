@@ -1,13 +1,13 @@
-#include <eventq.h>
+#include <tasks.h>
 #include <queue.h>
 
 static queue_t * event_queue;
 
-void eventq_init(void) {
+void tasks_init(void) {
 	event_queue = queue_create(10);
 }
 
-void eventq_run(void) {
+void tasks_run(void) {
 	void (*cb)(void) = queue_poll(event_queue);
 
 	if (cb == (void*)0)
@@ -16,6 +16,6 @@ void eventq_run(void) {
 	cb();
 }
 
-void eventq_offer(void (*cb)(void)) {
+void task_schedule(void (*cb)(void)) {
 	queue_offer(event_queue, cb);
 }

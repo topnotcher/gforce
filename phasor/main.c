@@ -13,7 +13,7 @@
 #include "irtx.h"
 #include <irrx.h>
 #include "trigger.h"
-#include <eventq.h>
+#include <tasks.h>
 #include <mpc.h>
 #include <scheduler.h>
 
@@ -53,13 +53,13 @@ int main(void) {
 	irrx_init();
 	mpc_init();
 	scheduler_init();
-	eventq_init();
+	tasks_init();
 	sei();
 
 	mpc_register_cmd('P', mpc_reply_ping);
 	
 	while(1) {
-	eventq_run();	
+		tasks_run();	
 	/*	if ( trigger_pressed() ) 
 			//T = trigger pressed
 			phasor_comm_send('T', 0, NULL);

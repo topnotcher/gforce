@@ -18,7 +18,7 @@
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
-#include <eventq.h>
+#include <tasks.h>
 
 //#include <leds.h>
 #include "game.h"
@@ -61,7 +61,7 @@ int main(void) {
 	mpc_init();
 	game_init();
 	display_init();
-	eventq_init();
+	tasks_init();
 
 	//clear shit by default.
 	lights_off();
@@ -87,7 +87,7 @@ int main(void) {
 	mpc_register_cmd('D', xbee_relay_mpc);
 
 	while (1) {
-		eventq_run();
+		tasks_run();
 	//	wdt_reset();
 		process_ib_pkt(xbee_recv());
 		display_tx();

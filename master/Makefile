@@ -5,7 +5,7 @@ F_CPU = 32000000
 C_DEFS=W_SOUNDS=0 DEBUG=0
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c scheduler.c sounds.c util.c xbee.c mpc.c ringbuf.c uart.c display.c game.c lights.c malloc.c chunkpool.c queue.c comm.c serialcomm.c phasor_comm.c twi_slave.c twi_master.c mpctwi.c eventq.c
+SRC = main.c scheduler.c sounds.c util.c xbee.c mpc.c ringbuf.c uart.c display.c game.c lights.c malloc.c chunkpool.c queue.c comm.c serialcomm.c phasor_comm.c twi_slave.c twi_master.c mpctwi.c tasks.c
 
 #these are not ready for this hardware
 # ir_sensor.c lcd.c game.c

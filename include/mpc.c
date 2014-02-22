@@ -11,7 +11,7 @@
 
 #include "comm.h"
 #include "mpctwi.h"
-#include "eventq.h"
+#include "tasks.h"
 
 #define mpc_crc(crc,data) _crc_ibutton_update(crc,data)
 
@@ -94,7 +94,7 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const)) {
 static void mpc_rx_frame(comm_frame_t * frame);
 
 static void mpc_rx_event(comm_driver_t * evtcomm) {
-	eventq_offer(mpc_rx_process);
+	task_schedule(mpc_rx_process);
 }
 
 void mpc_rx_process(void) {
@@ -185,14 +185,14 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	#ifdef PHASOR_COMM
 	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) ) {
 		comm_send(phasor_comm,frame);
-		eventq_offer(mpc_tx_process);
+		task_schedule(mpc_tx_process);
 	}
 	#endif
 
 	#ifdef MPC_TWI
 	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
 		comm_send(comm, frame);
-		eventq_offer(mpc_tx_process);
+		task_schedule(mpc_tx_process);
 	}
 	#endif
 	
