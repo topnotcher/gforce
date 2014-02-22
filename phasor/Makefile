@@ -99,7 +99,7 @@ LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 #
 #
 
-AVRDUDE_PROGRAMMER = avrispmkii
+AVRDUDE_PROGRAMMER = jtag3pdi
 
 AVRDUDE_PORT = usb
 
