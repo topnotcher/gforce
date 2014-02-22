@@ -14,6 +14,7 @@
 
 #include <scheduler.h>
 #include <mpc.h>
+#include <eventq.h>
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
@@ -169,6 +170,7 @@ inline void set_lights(uint8_t status) {
 		scheduler_unregister(led_timer_tick);
 
 	state.status = status ? start : stop;
+	eventq_offer(leds_run);
 }
 
 
@@ -369,9 +371,7 @@ static inline void led_timer_start(void) {
 
 void led_timer_tick(void) {
 	state.ticks = 0;
-//	if ( --state.ticks == 0 )
-//		TCC0.INTCTRLB &= ~TC_CCAINTLVL_MED_gc;
-
+	eventq_offer(leds_run);
 }
 
 static inline void led_write_byte(void) {

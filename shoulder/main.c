@@ -16,7 +16,7 @@
 #include <leds.h>
 #include <buzz.h>
 #include <irrx.h>
-
+#include <eventq.h>
 #include <scheduler.h>
 
 
@@ -55,15 +55,13 @@ int main(void) {
 	led_init();
 	buzz_init();
 	irrx_init(); 
+	eventq_init();
 
 	mpc_register_cmd('P', mpc_reply_ping);
 
 	while(1) {
-		mpc_tx_process();
-		mpc_rx_process();
-
-		leds_run();
-
+		eventq_run();
+		
 		//this interface is broken and stupid.
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
