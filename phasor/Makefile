@@ -16,7 +16,7 @@ TARGET = $(TMP)/main
 
 # Optimization level, can be [0, 1, 2, 3, s]. 0 turns off optimization.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
-OPT = 2
+OPT = 1
 
 EXTRAINCDIRS = ../include
 # List Assembler source files here.
@@ -34,7 +34,7 @@ EXTRAINCDIRS = ../include
 #  -Wa,...:   tell GCC to pass this to the assembler.
 #    -ahlms:  create assembler listing
 #    -pedantic/?
-CFLAGS = -g -O$(OPT) \
+CFLAGS = -g2 -O$(OPT) \
 -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums \
 -Wall -Wstrict-prototypes -Werror -Wno-unused-parameter \
 -finline-functions -finline-functions-called-once -finline-limit=1000 -finline-small-functions\

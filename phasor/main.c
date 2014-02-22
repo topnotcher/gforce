@@ -13,7 +13,7 @@
 #include "irtx.h"
 #include <irrx.h>
 #include "trigger.h"
-
+#include <eventq.h>
 #include <mpc.h>
 #include <scheduler.h>
 
@@ -53,12 +53,13 @@ int main(void) {
 	irrx_init();
 	mpc_init();
 	scheduler_init();
+	eventq_init();
 	sei();
 
 	mpc_register_cmd('P', mpc_reply_ping);
 	
 	while(1) {
-	
+	eventq_run();	
 	/*	if ( trigger_pressed() ) 
 			//T = trigger pressed
 			phasor_comm_send('T', 0, NULL);
@@ -69,12 +70,6 @@ int main(void) {
 			}
 
 	*/
-
-		mpc_tx_process();
-		mpc_rx_process();
-
-		leds_run();
-
 		//this interface is broken and stupid.
 		ir_pkt_t irpkt;
 		ir_rx(&irpkt);
