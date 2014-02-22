@@ -12,6 +12,7 @@ typedef struct {
 
 typedef struct {
 	uint8_t size;
+	uint8_t buffsize;
 	chunkpool_chunk_t chunks[]; 
 } chunkpool_t;
 
