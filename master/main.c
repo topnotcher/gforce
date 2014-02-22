@@ -18,9 +18,10 @@
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
+#include <eventq.h>
+
 //#include <leds.h>
 #include "game.h"
-#include "eventq.h"
 
 #ifndef DEBUG
 #define DEBUG 1
