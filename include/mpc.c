@@ -17,7 +17,9 @@
 
 static void mpc_rx_event(comm_driver_t *);
 
+#ifdef MPC_TWI
 static comm_driver_t * comm;
+#endif
 
 #ifdef PHASOR_COMM_USART
 #define PHASOR_COMM 1
@@ -159,8 +161,14 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	pkt->len = len;
 	pkt->cmd = cmd;
-	//@TODO
-	pkt->saddr = comm->addr;
+
+	#ifdef MPC_TWI
+		pkt->saddr = comm->addr;
+	#endif
+	#ifdef PHASOR_COMM
+		pkt->saddr = phasor_comm->addr;
+	#endif
+
 	pkt->chksum = MPC_CRC_SHIFT;
 
 //#ifndef MPC_DISABLE_CRC
@@ -183,7 +191,6 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	#ifdef MPC_TWI
 	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
-		frame->daddr &= (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR);
 		comm_send(comm, frame);
 		eventq_offer(mpc_tx_process);
 	}
