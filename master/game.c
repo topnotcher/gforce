@@ -191,12 +191,12 @@ void do_stun(void) {
 }
 
 void do_deac(void) {
-
+	game_state.active = 0;
 	lights_off();
 //	sound_play_effect(SOUND_POWER_DOWN);
 	
 	game_countdown_time = game_settings.deac_time;
-//	countdown_cb = &/player_activate;
+	countdown_cb = player_activate;
 	scheduler_register(&game_countdown, 1000, game_countdown_time);
 }
 
