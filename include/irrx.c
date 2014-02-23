@@ -119,7 +119,6 @@ void ir_rx(ir_pkt_t * pkt) {
 			return;
 	}
 
-	//@TODO max bytes to process in one run because we dont have preemptive multiprocessing!
 	uint8_t i = 0;
 	const uint8_t process_max = 10;
 	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
