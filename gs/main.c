@@ -138,8 +138,7 @@ static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 	const uint8_t max_size = 64;
 	uint8_t data[max_size];
 	int size;
-	socklen_t * fromsize = (socklen_t*)sizeof(*xbee_addr);
-	size = recvfrom(sock,data,max_size,0,(struct sockaddr*)xbee_addr, fromsize);
+	size = recvfrom(sock,data,max_size,0,NULL, 0);
 	
 	if ( size <= 0 ) return;
 
