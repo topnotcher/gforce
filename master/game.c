@@ -169,7 +169,7 @@ static inline void handle_shot(const uint8_t saddr, command_t const * const cmd)
 			break;
 	}
 
-	if ( saddr & (8 | 2) )
+	if ( saddr & (MPC_BACK_ADDR | MPC_CHEST_ADDR) )
 		do_deac();
 	else
 		do_stun();
