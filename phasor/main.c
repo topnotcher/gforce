@@ -21,12 +21,8 @@
 static void mpc_reply_ping(const mpc_pkt * const pkt); 
 
 int main(void) {
-
 	sysclk_set_internal_32mhz();
 
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
-
-	
 	led_init();
 	irtx_init();
 	trigger_init();
@@ -34,9 +30,10 @@ int main(void) {
 	mpc_init();
 	scheduler_init();
 	tasks_init();
-	sei();
-
 	mpc_register_cmd('P', mpc_reply_ping);
+
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
+	sei();
 	
 	while(1) {
 		tasks_run();	
@@ -66,5 +63,3 @@ int main(void) {
 static void mpc_reply_ping(const mpc_pkt * const pkt) {
 	mpc_send_cmd( pkt->saddr, 'R');
 }
-
-

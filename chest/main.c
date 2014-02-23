@@ -18,7 +18,6 @@
 #include <buzz.h>
 #include <irrx.h>
 #include <tasks.h>
-
 #include <util.h>
 #include <scheduler.h>
 
@@ -29,19 +28,17 @@ extern uint8_t led_sequence_raw[];
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
-	sei();
-
-	//safe to pass PTR because we never leave main()
 	scheduler_init();
 	mpc_init();
 	led_init();
 	buzz_init();
 	irrx_init(); 
 	tasks_init();
-
 	mpc_register_cmd('P', mpc_reply_ping);
 	mpc_register_cmd('I', mpc_echo_ir);
+
+	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
+	sei();
 
 	while(1) {
 		tasks_run();

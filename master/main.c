@@ -8,11 +8,8 @@
 
 #include <g4config.h>
 #include <scheduler.h>
-//#include "lcd.h"
 #include "lights.h"
-//#include "ir_sensor.h"
 #include "sounds.h"
-//#include "game.h"
 #include "xbee.h"
 #include "display.h"
 #include <phasor_comm.h>
@@ -21,7 +18,6 @@
 #include <tasks.h>
 #include <util.h>
 
-//#include <leds.h>
 #include "game.h"
 
 #ifndef DEBUG
@@ -46,14 +42,15 @@ int main(void) {
 	//clear shit by default.
 	lights_off();
 
-	display_write("Good Morning");
-	_delay_ms(500);
+//	display_write("Good Morning");
+//	_delay_ms(500);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 
 	_delay_ms(500);
 	display_write("");
+	
 	//wdt_enable(9);
 	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
 	CCP = CCP_IOREG_gc;

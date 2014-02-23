@@ -20,20 +20,13 @@
 #include <util.h>
 #include <scheduler.h>
 
-
 #include "charger.h"
 
 static void mpc_reply_ping(const mpc_pkt * const pkt);
 
-extern uint8_t led_sequence_raw[];
-
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
-	sei();
-
-	//safe to pass PTR because we never leave main()
 	scheduler_init();
 	mpc_init();
 	led_init();
@@ -43,6 +36,9 @@ int main(void) {
 	task_schedule(charger_init);
 	mpc_register_cmd('P', mpc_reply_ping);
 
+	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
+	sei();
+	
 	while(1) {
 		tasks_run();
 
