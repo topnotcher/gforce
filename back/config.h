@@ -11,7 +11,7 @@
 #define LED_SPI SPIC
 #define LED_SPI_vect SPIC_INT_vect
 
-#define MPC_TWI_ADDRMASK 0x1F
+#define MPC_TWI_ADDRMASK 0x3F
 
 #define MPC_TWI TWIC
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
