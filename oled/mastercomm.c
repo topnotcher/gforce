@@ -47,7 +47,7 @@ inline void mastercomm_init(void) {
 
 	chunkpool_t * chunkpool = chunkpool_create(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
 	comm_dev_t * commdev = serialcomm_init(&COMM_SPI.DATA, dummy, dummy, 1 /*dummy address*/);
-	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool );
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool ,NULL);
 
 }
 
