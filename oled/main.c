@@ -8,6 +8,7 @@
 #include <string.h>
 #include <util.h>
 #include <displaycomm.h>
+#include <scheduler.h>
 
 #include "display.h"
 #include "mastercomm.h"
@@ -25,34 +26,24 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
+	scheduler_init();
 	display_init();
 	mastercomm_init();
 
 	wdt_enable(9);
 
 	sei();
-
+	//display_putstring("derp");
 	while(1) {
 		wdt_reset();
 
 		display_pkt * pkt = mastercomm_recv();
-//		display_tick();
 
 		if (pkt == NULL) continue;
 
-		display_cmd(0x02); display_tick();
+		display_cmd(0x02); 
 		display_cmd(0x01); 
-		for (uint8_t i = 0; i < 15; ++i) {
-			display_tick();
-			_delay_ms(1);
-		}
-//		display_clear();
-//		display_tick();display_tick();
-		//_delay_ms(1);
 		display_putstring((char *)pkt->data);
-		
-		for (uint8_t i = 0; i < pkt->size; ++i)
-			display_tick();
 
 	}
 //	display_putstring("      eep!");

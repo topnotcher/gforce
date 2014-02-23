@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
+#include <scheduler.h>
 
 #include <util.h>
 #include "display.h"
@@ -20,9 +21,8 @@ static inline void lcd_clk(void);
 static inline void display_out_raw(char data);
 static inline bool lcd_busy(void);
 
-
 inline void display_init(void) {
-	LCD_CONTROL_PORT.DIRSET = _E_bm | _RS_bm | _RW_bm; 
+	LCD_CONTROL_PORT.DIRSET = _E_bm | _RS_bm | _RW_bm;
 	LCD_DATA_PORT.DIRSET = 0xFF;
 
 	//low by default.
@@ -84,8 +84,8 @@ static inline void display_out_raw(char data) {
 
 void display_out(char data, lcd_data_type type) {
 
-//	if ( lcd_queue.read == lcd_queue.write )
-//		scheduler_register(&display_tick, LCD_SCHEDULER_FREQ ,SCHEDULER_RUN_UNLIMITED);
+	if ( lcd_queue.read == lcd_queue.write )
+		scheduler_register(&display_tick, LCD_SCHEDULER_FREQ ,SCHEDULER_RUN_UNLIMITED);
 
 
 	lcd_queue.data[lcd_queue.write].data = data;
@@ -151,9 +151,9 @@ static inline bool lcd_busy(void) {
 
 void display_tick(void) {
 	// nothing to do here!
-//	if ( lcd_queue.read == (lcd_queue.write-1) ) {
-//		scheduler_unregister(&display_tick);
-//	}
+	if ( lcd_queue.read == (lcd_queue.write-1) ) {
+		scheduler_unregister(&display_tick);
+	}
 
 	if ( lcd_queue.read == lcd_queue.write )
 		return;
