@@ -4,6 +4,10 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #include "../include/mpc.h"
 #include "../include/util.h"
 #include "../include/g4config.h"
@@ -18,43 +22,27 @@ int sendtogf(uint8_t cmd,uint8_t * data, uint8_t size);
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr);
 char * mpc_board_name(const uint8_t board_id);
 
-int main(int argc, char**argv) {
+static char running = 1;
 
-	uint8_t start_data[] = {56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
-	int start_data_len = 15;
+static void handle_cmd(char * cmd);
 
-	uint8_t end_data[] = { 8, 127, 153, 250 };
-	int end_data_len = 4;
+// The function that'll get passed each line of input
+static void my_rlhandler(char* line);
+static void my_rlhandler(char* line) {
+	if (*line!=0) {
+		add_history(line);
 
-	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
-	int shot_data_len = 4;
-
-	uint8_t ping_data[] = { MPC_PHASOR_ADDR | MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
-	uint8_t ping_data_len = 1;
-
-	if ( argc < 2 ) {
-		fprintf(stderr, "Usage: %s start|stop|shot\n",argv[0]);
-		return 1;
+		handle_cmd(line);
 	}
+		free(line);
 
-	if (!strcmp(argv[1],"stop")) 
-		sendtogf('I',end_data,end_data_len);
-	else if (!strcmp(argv[1], "start"))
-		sendtogf('I',start_data,start_data_len);
-	else if (!strcmp(argv[1],"shot"))
-		sendtogf('I',shot_data,shot_data_len);
-	else if (!strcmp(argv[1], "ping")) {
-		sendtogf('P',ping_data, ping_data_len);
-	}
-
-	return 0;
 }
 
+static int sock;
+static struct sockaddr_in addr;
 
-int sendtogf(uint8_t cmd, uint8_t * data, uint8_t data_len) {
-	int sock;
-	struct sockaddr_in addr;
-	
+int main(int argc, char**argv) {
+
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = inet_addr(XBEE_IP);
@@ -72,8 +60,57 @@ int sendtogf(uint8_t cmd, uint8_t * data, uint8_t data_len) {
 	local.sin_family = AF_INET;
 	local.sin_port = htons(XBEE_PORT);
 	local.sin_addr.s_addr = inet_addr("192.168.2.100");
+	int flags = fcntl(sock, F_GETFL) | O_NONBLOCK;
+	fcntl(sock, F_SETFL, flags);
+	
 	bind(sock, (struct sockaddr *)&local, sizeof(local));
 
+
+
+	const char * const prompt = "gs> ";
+
+	rl_callback_handler_install(prompt, (rl_vcpfunc_t*)my_rlhandler);
+
+	running = 1;
+
+	while (running) {
+		usleep(10000);
+		rl_callback_read_char();
+
+		gf_recv(sock, &addr);
+	}
+
+	rl_callback_handler_remove();
+
+	return 0;
+}
+
+static void handle_cmd(char * cmd) {
+	uint8_t start_data[] = {56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	int start_data_len = 15;
+
+	uint8_t end_data[] = { 8, 127, 153, 250 };
+	int end_data_len = 4;
+
+	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
+	int shot_data_len = 4;
+
+	uint8_t ping_data[] = { MPC_PHASOR_ADDR | MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
+	uint8_t ping_data_len = 1;
+
+	if (!strcmp(cmd,"stop")) 
+		sendtogf('I',end_data,end_data_len);
+	else if (!strcmp(cmd, "start"))
+		sendtogf('I',start_data,start_data_len);
+	else if (!strcmp(cmd,"shot"))
+		sendtogf('I',shot_data,shot_data_len);
+	else if (!strcmp(cmd, "ping")) {
+		sendtogf('P',ping_data, ping_data_len);
+	}
+}
+
+
+int sendtogf(uint8_t cmd, uint8_t * data, uint8_t data_len) {
 	mpc_pkt * pkt;
 	pkt = malloc(sizeof(*pkt)+data_len+1)+1;
 	pkt->cmd = cmd;
@@ -94,40 +131,35 @@ int sendtogf(uint8_t cmd, uint8_t * data, uint8_t data_len) {
 	sendto(sock, (uint8_t*)pkt-1,sizeof(*pkt)+pkt->len+1, 0, (struct sockaddr *)
                &addr, sizeof(addr));
 
-
-	gf_recv(sock, &addr);
-
 	return 0;
 
 }
 static void gf_recv(int sock, struct sockaddr_in * xbee_addr) {
 	const uint8_t max_size = 64;
 	uint8_t data[max_size];
-	uint8_t size;
+	int size;
 	socklen_t * fromsize = (socklen_t*)sizeof(*xbee_addr);
-	while (1) {
-		size = recvfrom(sock,data,max_size,0,(struct sockaddr*)xbee_addr, fromsize);
-		
-		if ( size <= 0 ) continue;
+	size = recvfrom(sock,data,max_size,0,(struct sockaddr*)xbee_addr, fromsize);
+	
+	if ( size <= 0 ) return;
 
-		mpc_pkt * pkt = (mpc_pkt*)(data+1);
-		//@TODO compute checksum.	
-		if ( pkt->cmd == 'R' ) {
-			mpc_pkt * reply = (mpc_pkt*)pkt->data;
-			char * board = mpc_board_name(reply->saddr);
-			char crcok = mpc_pkt_crc_ok(reply) ? '*' : '!';
-			printf("PING: reply from [0x%02x:%c] %s\n",reply->saddr, crcok, board);
-		} else if ( pkt->cmd == 'S' ) {
-			mpc_pkt * shot_data = (mpc_pkt*)pkt->data;	
-			char * board = mpc_board_name(shot_data->saddr);
-			printf("SHOT: %s\n",board);
-		} else { 
-			printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
-			for (int i = 0; i < pkt->len; ++i)
-				printf("0x%02x, ", pkt->data[i]);
-			printf("\n");
-		} 
-	}
+	mpc_pkt * pkt = (mpc_pkt*)(data+1);
+	//@TODO compute checksum.	
+	if ( pkt->cmd == 'R' ) {
+		mpc_pkt * reply = (mpc_pkt*)pkt->data;
+		char * board = mpc_board_name(reply->saddr);
+		char crcok = mpc_pkt_crc_ok(reply) ? '*' : '!';
+		printf("PING: reply from [0x%02x:%c] %s\n",reply->saddr, crcok, board);
+	} else if ( pkt->cmd == 'S' ) {
+		mpc_pkt * shot_data = (mpc_pkt*)pkt->data;	
+		char * board = mpc_board_name(shot_data->saddr);
+		printf("SHOT: %s\n",board);
+	} else { 
+		printf("%c: [0x%02x](%d) ", pkt->cmd, pkt->saddr, pkt->len);
+		for (int i = 0; i < pkt->len; ++i)
+			printf("0x%02x, ", pkt->data[i]);
+		printf("\n");
+	} 
 	
 }
 uint8_t _crc_ibutton_update(uint8_t crc, uint8_t data) {
