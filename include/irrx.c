@@ -5,6 +5,8 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
+#include <tasks.h>
+#include <mpc.h>
 #include <util.h>
 #include "config.h"
 #include "g4config.h"
@@ -107,9 +109,11 @@ inline void irrx_init(void) {
 }
 
 /** @TODO WTF */
-void ir_rx(ir_pkt_t * pkt) {
+void ir_rx(void) {
+	ir_pkt_t pkt;
+
 	//tells the caller whether data was returned: default to no
-	pkt->size = 0;
+	pkt.size = 0;
 
 	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY ) {
 		//SHOULD do this upon processing, but... shit is failing!
@@ -132,8 +136,11 @@ void ir_rx(ir_pkt_t * pkt) {
 		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
 
 			//@TODO this is sooo fucked up
-			pkt->data = rx_state.pkts[ rx_state.read ].data;
-			pkt->size = rx_state.pkts[ rx_state.read ].size;
+			pkt.data = rx_state.pkts[ rx_state.read ].data;
+			pkt.size = rx_state.pkts[ rx_state.read ].size;
+
+			mpc_send(MPC_MASTER_ADDR, 'I', pkt.size, pkt.data);
+
 
 		} else {
 		}
@@ -142,6 +149,7 @@ void ir_rx(ir_pkt_t * pkt) {
 		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
 	}
+
 }
 
 static inline void process_rx_byte(void) {
@@ -210,10 +218,12 @@ ISR(IRRX_USART_RXC_vect) {
 			//buffer will receive no new bytes -> process remaining bytes then set to empty.
 			rx_state.pkts[ idx ].state = RX_STATE_PROCESS;
 
+			//this is somewhat of a hack maybe.
+			task_schedule(ir_rx);
+
 			if ( ++idx == N_BUFF-1 ) 
 				idx = 0;
-			
-
+		
 			rx_state.write = idx;
 			
 			/*if ( !rx_state.scheduled ) {
@@ -234,6 +244,9 @@ ISR(IRRX_USART_RXC_vect) {
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
 		rx_state.pkts[ rx_state.write ].timer = 0;
 		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
+		//this is somewhat of a hack maybe.
+		task_schedule(ir_rx);
+
 	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_READY ) {
 		rx_state.pkts[ rx_state.write ].state = RX_STATE_RECEIVE;
 		rx_state.pkts[ rx_state.write ].timer = 0;

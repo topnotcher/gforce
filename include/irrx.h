@@ -17,6 +17,6 @@ typedef struct {
 } ir_pkt_t;
 
 
-void ir_rx(ir_pkt_t * pkt);
+void ir_rx(void);
 
 #endif

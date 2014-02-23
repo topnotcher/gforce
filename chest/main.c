@@ -41,12 +41,6 @@ int main(void) {
 
 	while(1) {
 		tasks_run();
-
-		//this interface is broken and stupid.
-		ir_pkt_t irpkt;
-		ir_rx(&irpkt);
-		if ( irpkt.size != 0 ) 
-			mpc_send(MPC_MASTER_ADDR, 'I', irpkt.size, irpkt.data);
 	}
 
 

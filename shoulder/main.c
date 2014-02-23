@@ -38,13 +38,7 @@ int main(void) {
 	sei();
 
 	while(1) {
-		tasks_run();
-		
-		//this interface is broken and stupid.
-		ir_pkt_t irpkt;
-		ir_rx(&irpkt);
-		if ( irpkt.size != 0 ) 
-				mpc_send(0x40, 'I', irpkt.size, irpkt.data);
+		tasks_run();	
 	}
 
 
