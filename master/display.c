@@ -36,7 +36,7 @@ inline void display_init(void) {
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
-	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV4_gc;
+	DISPLAY_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV128_gc;
 	DISPLAY_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 
 	//note passing 0 for rxbuff size - RX is not used!
@@ -70,7 +70,7 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) 
 	display_pkt * pkt;
 
 	frame = (comm_frame_t*)chunkpool_acquire(chunkpool);
-	frame->daddr = 0 /*dummy*/;
+	frame->daddr = 1 /*dummy*/;
 	frame->size = sizeof(*pkt)+size;
 
 	pkt = (display_pkt*)frame->data;
