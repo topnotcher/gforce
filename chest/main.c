@@ -23,7 +23,6 @@
 
 static void mpc_reply_ping(const mpc_pkt * const pkt);
 static void mpc_echo_ir(const mpc_pkt * const pkt);
-extern uint8_t led_sequence_raw[];
 
 int main(void) {
 	sysclk_set_internal_32mhz();
