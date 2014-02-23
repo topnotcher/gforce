@@ -6,7 +6,7 @@
 #include <avr/wdt.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <util.h>
 #include <displaycomm.h>
 
 #include "display.h"
@@ -21,29 +21,10 @@ static inline void display_scroll(char * string);
 
 
 int main(void) {
-
-	// Enable 32 MHz Osc. 
-	CLKSYS_Enable( OSC_RC32MEN_bm ); 
-	// Wait for 32 MHz Osc. to stabilize 
-	while ( CLKSYS_IsReady( OSC_RC32MRDY_bm ) == 0 ); 
-	// was 8  PLL mult. factor ( 2MHz x8 ) and set clk source to PLL. 
-	OSC_PLLCTRL = 16;  
-
-	//enable PLL
-	OSC_CTRL = 0x10;
-
-	//wait for PLL clk to be ready
-	while( !( OSC_STATUS & 0x10 ) );
-
-	//Unlock seq. to access CLK_CTRL
-	CCP = 0xD8; 
-
-	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
-	CLK_CTRL = 0x04;
+	sysclk_set_internal_32mhz();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
-	
 	display_init();
 	mastercomm_init();
 

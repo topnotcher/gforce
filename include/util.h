@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <avr/io.h>
 
 #ifndef UTIL_H
 #define UTIL_H
@@ -12,7 +13,11 @@
 
 #define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
-void crc(uint8_t * const shift, uint8_t byte, const uint8_t poly);
+#define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
+#define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
+
+void crc(uint8_t * const shift, uint8_t byte, const uint8_t poly);
+void sysclk_set_internal_32mhz(void); 
 
 #endif
