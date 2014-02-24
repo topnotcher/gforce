@@ -8,7 +8,7 @@
 #include "scheduler.h"
 #include "display.h"
 //#include "lcd.h"
-//#include "sounds.h"
+#include "sounds.h"
 #include "game.h"
 #include "lights.h"
 #include "xbee.h"
@@ -93,7 +93,7 @@ void player_activate(void) {
 	if ( !game_state.playing )
 		return;
 
-//	sound_play_effect(SOUND_POWER_UP);
+	sound_play_effect(SOUND_POWER_UP);
 	game_state.active = 1;
 
 	lights_on();
@@ -107,7 +107,7 @@ void stop_game(void) {
 	if ( game_state.playing ) {
 		lights_off();
 
-//		sound_play_effect(SOUND_POWER_DOWN);
+		sound_play_effect(SOUND_POWER_DOWN);
 		scheduler_unregister(&game_tick);
 
 		display_write("            ");
@@ -193,7 +193,7 @@ void do_stun(void) {
 void do_deac(void) {
 	game_state.active = 0;
 	lights_off();
-//	sound_play_effect(SOUND_POWER_DOWN);
+	sound_play_effect(SOUND_POWER_DOWN);
 	
 	game_countdown_time = game_settings.deac_time;
 	countdown_cb = player_activate;

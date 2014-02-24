@@ -11,12 +11,21 @@
 #if W_SOUNDS == 1
 #include "g4_sounds.h"
 
+#define tick_enable() do { TCC0.CNT = 0; TCC0.INTCTRLB |= TC_CCAINTLVL_HI_gc; } while(0)
+#define tick_disable() TCC0.INTCTRLB &= ~TC_CCAINTLVL_HI_gc
+
 
 sound_player player;
 
 #endif
 
 inline void sound_init() {
+	
+	TCC0.CCA = 63;
+	TCC0.CTRLB |= TC0_CCAEN_bm;
+	
+	TCC0.CTRLA = TC_CLKSEL_DIV64_gc;
+
 
     DACB.CTRLA = (DAC_CH0EN_bm | DAC_ENABLE_bm);
     DACB.CTRLB = (DAC_CHSEL_SINGLE_gc);
@@ -40,8 +49,9 @@ inline void sound_play_init() {
 	DACB.CH0DATA = 0x7FF;
 
 	//change this to unmute
-	PORTB.OUTSET |= PIN1_bm;
-
+	PORTB.OUTSET = PIN1_bm;
+	
+	tick_enable();
 #endif
 }
 
@@ -49,7 +59,7 @@ inline void sound_play_deinit() {
 
 
 	//MUTE
-	PORTB.OUTCLR |= PIN1_bm;
+	PORTB.OUTCLR = PIN1_bm;
 
 	DACB.CH0DATA = 0x7ff;
 
@@ -77,14 +87,14 @@ void sound_play_effect(uint8_t effect) {
 			return;
 	}
 	sound_play_init();
-	scheduler_register(&sound_play_byte,SOUND_SCHEDULER_FREQ, SCHEDULER_RUN_UNLIMITED);
 #endif
 }
 
 inline void sound_stop(void) {
 #if W_SOUNDS == 1
+	tick_disable();
 	sound_play_deinit();
-	scheduler_unregister(&sound_play_byte);
+//	scheduler_unregister(&sound_play_byte);
 #endif
 }
 
@@ -92,8 +102,12 @@ void sound_play_byte() {
 #if W_SOUNDS == 1
 //PORTD.OUT ^= PIN5_bm;
 	DACB.CH0DATA = (uint16_t)pgm_read_byte(&player.effect[player.pos++]) * 16UL;
-
+	TCC0.CNT = 0;
 	if ( player.pos >= player.len )
 		sound_stop();
 #endif
+}
+
+ISR(TCC0_CCA_vect) {
+	sound_play_byte();
 }
