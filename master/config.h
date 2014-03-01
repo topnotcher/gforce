@@ -57,5 +57,11 @@
 
 
 
+/**
+ * ibutton
+ */
+#define DS2483_SLPZ_PORT PORTD
+#define DS2483_SLPZ_PIN 7
+#define DS2483_TWI TWIE
 
 #endif
