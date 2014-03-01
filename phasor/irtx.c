@@ -74,7 +74,7 @@ inline void irtx_init(void) {
 	sendq.cnt = 0;
 }
 
-void irtx_send(irtx_pkt * pkt) {
+void irtx_send(const irtx_pkt * const pkt) {
 
 	irtx_pkt * npkt;
 

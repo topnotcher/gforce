@@ -90,13 +90,7 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	//of the data. That board should then reply...
 	} else if ( pkt->cmd == 'P' ) {
 		mpc_send_cmd(pkt->data[0], 'P');
-	}
-				
-//	else if ( pkt->cmd == 'T' ) {
-//		uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
-//		phasor_comm_send('T', 18,data);
-//	}
-
+	}				
 }
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt) {

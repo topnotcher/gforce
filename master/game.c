@@ -36,9 +36,11 @@ static struct {
 void ( *countdown_cb )(void);
 
 static inline void handle_shot(const uint8_t, command_t const * const);
+static void process_trigger_pkt(const mpc_pkt * const pkt);
 
 inline void game_init(void) {
 	mpc_register_cmd('I', process_ir_pkt);
+	mpc_register_cmd('T', process_trigger_pkt);
 }
 
 void game_countdown(void) {
@@ -214,5 +216,13 @@ void process_ir_pkt(mpc_pkt const * const pkt) {
 		handle_shot(pkt->saddr, cmd);	
 
 		xbee_send('S',sizeof(*pkt)+pkt->len, (uint8_t*)pkt);
+	}
+}
+
+void process_trigger_pkt(const mpc_pkt * const pkt) {
+	static uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+	if (game_state.active) {
+		sound_play_effect(SOUND_LASER);
+		mpc_send(MPC_PHASOR_ADDR, 'T', 18, data);
 	}
 }

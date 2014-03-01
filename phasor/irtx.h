@@ -9,7 +9,7 @@ typedef struct {
 
 void irtx_init(void);
 
-void irtx_send(irtx_pkt *);
+void irtx_send(const irtx_pkt * const);
 void irtx_put(uint16_t data);
 
 
