@@ -23,6 +23,11 @@ inline void xbee_init(void) {
 	//Manual, page 237.
 	XBEE_PORT.OUTSET = _TXPIN_bm;
 	XBEE_PORT.DIRSET = _TXPIN_bm;
+	//xbeeensleep
+	XBEE_PORT.DIRSET = PIN7_bm;
+	//xbeesleep - status output on xbee
+	XBEE_PORT.DIRCLR = PIN5_bm;
+	XBEE_PORT.OUTCLR = PIN7_bm;
 
 	xbee_uart_driver = uart_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, XBEE_QUEUE_MAX);
 }
