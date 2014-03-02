@@ -12,6 +12,7 @@
 #include "sounds.h"
 #include "xbee.h"
 #include "display.h"
+#include "ibutton.h"
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
@@ -37,6 +38,7 @@ int main(void) {
 	mpc_init();
 	game_init();
 	display_init();
+	ibutton_init();
 	tasks_init();
 
 	//clear shit by default.
