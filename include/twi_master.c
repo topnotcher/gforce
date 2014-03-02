@@ -87,11 +87,13 @@ static inline void twi_master_read_handler(twi_master_t * dev) {
 	TWI_MASTER_t * twi = (TWI_MASTER_t*)dev->twi;
 
 	if (dev->bytes < dev->rxbytes) {
-			dev->rxbuf[dev->bytes++] = twi->DATA;
+		dev->rxbuf[dev->bytes++] = twi->DATA;
 		twi->CTRLC = TWI_MASTER_CMD_RECVTRANS_gc;
-	} else {
-		dev->txn_complete(dev->ins, 0);
+	}
+
+	if (dev->bytes >= dev->rxbytes) { 
 		twi->CTRLC = TWI_MASTER_ACKACT_bm | TWI_MASTER_CMD_STOP_gc;
+		dev->txn_complete(dev->ins, 0);
 	}
 }
 
