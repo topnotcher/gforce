@@ -52,7 +52,7 @@ int main(void) {
 
 	_delay_ms(500);
 	display_write("");
-	
+
 	//wdt_enable(9);
 	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
 	CCP = CCP_IOREG_gc;
@@ -92,7 +92,9 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	//of the data. That board should then reply...
 	} else if ( pkt->cmd == 'P' ) {
 		mpc_send_cmd(pkt->data[0], 'P');
-	}				
+	} else if (pkt->cmd == 'O') {
+		ibutton_detect_cycle();
+	}
 }
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt) {
