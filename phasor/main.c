@@ -9,16 +9,19 @@
 /**
  * G4 common includes.
  */
+#include <g4config.h>
 #include <leds.h>
-#include "irtx.h"
 #include <irrx.h>
-#include "trigger.h"
 #include <tasks.h>
 #include <mpc.h>
 #include <scheduler.h>
 #include <util.h>
 
+#include "irtx.h"
+#include "trigger.h"
+
 static void mpc_reply_ping(const mpc_pkt * const pkt); 
+static void ir_cmd_tx(const mpc_pkt *  const pkt);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -31,22 +34,16 @@ int main(void) {
 	scheduler_init();
 	tasks_init();
 	mpc_register_cmd('P', mpc_reply_ping);
+	mpc_register_cmd('T', ir_cmd_tx);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 	
 	while(1) {
 		tasks_run();	
-	/*	if ( trigger_pressed() ) 
+		if ( trigger_pressed() ) 
 			//T = trigger pressed
-			phasor_comm_send('T', 0, NULL);
-
-			} else if ( pkt->cmd == 'T' ) {
-				uint8_t * foo = (uint8_t*)pkt->data;
-				irtx_send((irtx_pkt*)foo);
-			}
-
-	*/
+			mpc_send_cmd(MPC_MASTER_ADDR, 'T');
 	}
 
 	return 0;
@@ -54,4 +51,7 @@ int main(void) {
 
 static void mpc_reply_ping(const mpc_pkt * const pkt) {
 	mpc_send_cmd( pkt->saddr, 'R');
+}
+static void ir_cmd_tx(const mpc_pkt * const pkt) {
+	irtx_send((const irtx_pkt*)pkt->data);
 }
