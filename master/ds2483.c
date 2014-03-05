@@ -37,7 +37,6 @@ static inline void ds2483_read(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) {
 	twi_master_read(dev->twim, DS2483_I2C_ADDR, len, buf);
 }
 
-
 static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes, uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) { 
 	twi_master_write_read(dev->twim, DS2483_I2C_ADDR, txbytes, txbuf, rxbytes, rxbuf);
 }
@@ -53,10 +52,20 @@ void ds2483_1w_write(ds2483_dev_t * dev, uint8_t data) {
 	ds2483_write(dev, 2, dev->cmd);
 }
 
+void ds2483_set_read_ptr(ds2483_dev_t * dev, uint8_t reg) {
+	dev->cmd[0] = DS2483_CMD_SET_READ_PTR;
+	dev->cmd[1] = reg;
+	ds2483_write(dev, 2, dev->cmd);
+}
+
+void ds2483_read_byte(ds2483_dev_t * dev) {
+	ds2483_read(dev, 1, (uint8_t*)&dev->result);
+}
+
 void ds2483_read_register(ds2483_dev_t * dev, uint8_t reg) {
 	dev->cmd[0] = DS2483_CMD_SET_READ_PTR;
 	dev->cmd[1] = reg;
-	ds2483_write_read(dev, 2, dev->cmd, 1, &dev->result);
+	ds2483_write_read(dev, 2, dev->cmd, 1, (uint8_t*)&dev->result);
 }
 
 uint8_t * ds2483_last_cmd(ds2483_dev_t* dev) {

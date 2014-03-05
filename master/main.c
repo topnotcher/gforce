@@ -54,7 +54,7 @@ int main(void) {
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
 
-	_delay_ms(500);
+//	_delay_ms(500);
 	display_write("");
 
 	//wdt_enable(9);
@@ -79,7 +79,7 @@ int main(void) {
 
 	ibtn_stack = (void*)(((uint8_t*)main_stack)-128); 
 	ibtn_stack = task_stack_init(ibtn_stack,ibutton_run);
-	ibutton_switchto();
+
 	while (1) {
 		tasks_run();
 	//	wdt_reset();
@@ -108,7 +108,7 @@ static inline void process_ib_pkt(mpc_pkt const * const pkt) {
 	} else if ( pkt->cmd == 'P' ) {
 		mpc_send_cmd(pkt->data[0], 'P');
 	} else if (pkt->cmd == 'O') {
-		ibutton_detect_cycle();
+		task_schedule(ibutton_switchto);
 	}
 }
 

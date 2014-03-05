@@ -4,7 +4,7 @@
 #define IBUTTON_CMD_READ_ROM 0x33
 
 void ibutton_init(void);
-void ibutton_detect_cycle(void);
+int8_t ibutton_detect_cycle(void);
 
 void ibutton_run(void);
 
