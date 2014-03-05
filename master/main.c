@@ -13,6 +13,7 @@
 #include "xbee.h"
 #include "display.h"
 #include "ibutton.h"
+#include "krn.h"
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
@@ -28,6 +29,9 @@
 static inline void process_ib_pkt(mpc_pkt const * const pkt);
 static void xbee_relay_mpc(const mpc_pkt * const pkt);
 
+void * volatile main_stack;
+void * volatile ibtn_stack;
+void * volatile cur_stack;
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -65,6 +69,17 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
+	//DERP
+	asm volatile(
+			"in r28, __SP_L__\n"\
+			"in r29, __SP_H__\n"\
+			"sts main_stack, r28\n"\
+			"sts main_stack+1, r29\n"\
+	);
+
+	ibtn_stack = (void*)(((uint8_t*)main_stack)-128); 
+	ibtn_stack = task_stack_init(ibtn_stack,ibutton_run);
+	ibutton_switchto();
 	while (1) {
 		tasks_run();
 	//	wdt_reset();

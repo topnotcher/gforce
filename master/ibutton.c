@@ -6,15 +6,40 @@
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
+#include "krn.h"
 
 static ds2483_dev_t * onewiredev;
 static void ibutton_txn_complete(ds2483_dev_t * dev, uint8_t status);
 static uint8_t i = 0;
 
+extern void * volatile main_stack; 
+extern void * volatile ibtn_stack; 
+
 void ibutton_init(void) {
 	onewiredev = ds2483_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, &DS2483_SLPZ_PORT,G4_PIN(DS2483_SLPZ_PIN), ibutton_txn_complete);
 }
 
+void ibutton_switchto(void) {
+	task_context_out();
+	main_stack = cur_stack;
+	cur_stack = ibtn_stack;
+	task_context_in();
+	asm volatile ("ret");
+}
+
+void ibutton_switchfrom(void) {
+	task_context_out();
+	ibtn_stack = cur_stack;
+	cur_stack = main_stack;
+	task_context_in();
+	asm volatile ("ret");
+}
+
+
+void ibutton_run(void) {
+	ibutton_switchfrom();
+	while(1);
+}
 void ibutton_detect_cycle(void) {
 	i = 0;
 	ds2483_rst(onewiredev);
