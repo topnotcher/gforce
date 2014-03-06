@@ -9,7 +9,7 @@
 
 #define CHG_SLAVE_ADDR 0x6B
 
-static void txn_complete(void *, uint8_t);
+static void txn_complete(void *, int8_t);
 
 static twi_master_t * twim;
 
@@ -72,7 +72,7 @@ void charger_write_reg(uint8_t reg) {
 	twi_master_write(twim, CHG_SLAVE_ADDR, 2, state.txbuf);
 }
 
-static void txn_complete(void * derp, uint8_t status) {
+static void txn_complete(void * derp, int8_t status) {
 	state.busy = 0;
 }
 

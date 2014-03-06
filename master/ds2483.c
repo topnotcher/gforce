@@ -10,7 +10,7 @@ static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes, uint8_
 static inline void ds2483_read(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) ATTR_ALWAYS_INLINE;
 static inline void ds2483_write(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) ATTR_ALWAYS_INLINE;
 
-static void ds2483_i2c_txn_complete(void *, uint8_t);
+static void ds2483_i2c_txn_complete(void *, int8_t);
 
 
 ds2483_dev_t * ds2483_init(TWI_MASTER_t * twim, uint8_t baud, PORT_t * slpz_port, uint8_t slpz_pin, void (*txn_cb)(ds2483_dev_t *,uint8_t)) {
@@ -76,7 +76,7 @@ uint8_t ds2483_last_data(ds2483_dev_t*dev) {
 	return dev->result;
 }
 
-static void ds2483_i2c_txn_complete(void * ins, uint8_t status) {
+static void ds2483_i2c_txn_complete(void * ins, int8_t status) {
 	ds2483_dev_t * dev = ins;
 
 	if (dev->txn_cb)

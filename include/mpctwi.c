@@ -15,7 +15,7 @@
 
 static void begin_tx(comm_driver_t * comm);
 
-static void twim_txn_complete(void *, uint8_t);
+static void twim_txn_complete(void *, int8_t);
 static void twis_txn_begin(void *, uint8_t, uint8_t **, uint8_t *);
 static void twis_txn_end(void *, uint8_t, uint8_t *, uint8_t);
 
@@ -36,7 +36,7 @@ comm_dev_t * mpctwi_init( TWI_t * twi, const uint8_t addr, const uint8_t mask, c
 	return comm;
 }
 
-static void twim_txn_complete(void *ins, uint8_t status) {
+static void twim_txn_complete(void *ins, int8_t status) {
 	comm_end_tx(((comm_dev_t *)ins)->comm);
 }
 

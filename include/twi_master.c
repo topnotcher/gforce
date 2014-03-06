@@ -4,6 +4,7 @@
 
 static inline void twi_master_write_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
 static inline void twi_master_read_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
+static inline void twi_master_txn_complete(twi_master_t * dev, int8_t status) ATTR_ALWAYS_INLINE;
 
 #ifndef TWI_MASTER_MAX_RETRIES
 	#define TWI_MASTER_MAX_RETRIES 3
@@ -11,11 +12,12 @@ static inline void twi_master_read_handler(twi_master_t * dev) ATTR_ALWAYS_INLIN
 
 #define twi_master_start_txn(dev) (dev)->twi->ADDR = (dev)->addr | ((dev)->txbytes ? 0 : 1)
 
+
 twi_master_t * twi_master_init(
 			TWI_MASTER_t * twi, 
 			const uint8_t baud, 
 			void * ins,
-			void (* txn_complete)(void *, uint8_t)
+			void (* txn_complete)(void *, int8_t)
 ) {
 	twi_master_t * dev;
 	dev = smalloc(sizeof *dev);
@@ -80,7 +82,7 @@ void twi_master_isr(twi_master_t * dev) {
 			dev->bytes = 0;
 			twi_master_start_txn(dev);
 		} else {
-			//@TODO	
+			twi_master_txn_complete(dev, -TWI_MASTER_STATUS_ABBR_LOST);
 		}
 	} else if ( twi->STATUS & TWI_MASTER_WIF_bm ) {
 		twi_master_write_handler(dev);
@@ -89,7 +91,7 @@ void twi_master_isr(twi_master_t * dev) {
 	} else {
 		//IDFK?? - unexpected type of interrupt.
 		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
-		dev->txn_complete(dev->ins,0); 
+		twi_master_txn_complete(dev, -TWI_MASTER_STATUS_UNKNOWN);
 	}
 }
 
@@ -103,7 +105,7 @@ static inline void twi_master_read_handler(twi_master_t * dev) {
 
 	if (dev->bytes >= dev->rxbytes) { 
 		twi->CTRLC = TWI_MASTER_ACKACT_bm | TWI_MASTER_CMD_STOP_gc;
-		dev->txn_complete(dev->ins, 0);
+		twi_master_txn_complete(dev, TWI_MASTER_STATUS_OK);
 	}
 }
 
@@ -120,7 +122,7 @@ static inline void twi_master_write_handler(twi_master_t * dev) {
 			twi_master_start_txn(dev);
 		} else {
 			twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
-			dev->txn_complete(dev->ins,0);
+			twi_master_txn_complete(dev, -TWI_MASTER_STATUS_SLAVE_NAK);
 		}
 	} else {
 		if ( dev->bytes < dev->txbytes ) {
@@ -134,8 +136,12 @@ static inline void twi_master_write_handler(twi_master_t * dev) {
 				dev->bytes = 0;
 				twi->ADDR = dev->addr | 1;
 			} else {
-				dev->txn_complete(dev->ins, 0);
+				twi_master_txn_complete(dev, TWI_MASTER_STATUS_OK);
 			}
 		}
 	}
+}
+
+static inline void twi_master_txn_complete(twi_master_t * dev, int8_t status) {
+	dev->txn_complete(dev->ins,status);
 }
