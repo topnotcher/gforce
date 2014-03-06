@@ -103,12 +103,14 @@ static inline void twi_master_write_handler(twi_master_t * dev) {
 	//@TODO should this really drop the packet, or should it retry?
 	//when it is read as 0, most recent ack bit was NAK. 
 	if (twi->STATUS & TWI_MASTER_RXACK_bm) {
-		dev->txn_complete(dev->ins,0);
+	//	dev->txn_complete(dev->ins,0);
 
 		//WHY IS THIS HERE???
 		//and why is the busstate manually set?
-		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
+//		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
 		twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+		dev->bytes = 0;
+		twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
 	} else {
 		if ( dev->bytes < dev->txbytes ) {
 			twi->DATA = dev->txbuf[dev->bytes++];
