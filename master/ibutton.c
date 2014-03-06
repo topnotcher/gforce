@@ -10,17 +10,19 @@
 #include "krn.h"
 #include <tasks.h>
 #include "display.h"
+#include <scheduler.h>
 
 static ds2483_dev_t * onewiredev;
 static void ibutton_txn_complete(ds2483_dev_t * dev, uint8_t status);
 static void ibutton_1w_wait(void);
-
+static void ibutton_scheduled_wake(void);
 extern void * volatile main_stack; 
 extern void * volatile ibtn_stack; 
 
 void ibutton_init(void) {
 	onewiredev = ds2483_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, &DS2483_SLPZ_PORT,G4_PIN(DS2483_SLPZ_PIN), ibutton_txn_complete);
 	ds2483_rst(onewiredev);
+	scheduler_register(ibutton_scheduled_wake,300, 1);
 }
 
 void ibutton_switchto(void) {
@@ -39,11 +41,16 @@ void ibutton_switchfrom(void) {
 	asm volatile ("ret");
 }
 
+static void ibutton_scheduled_wake(void) {
+	task_schedule(ibutton_switchto);
+}
+
 void ibutton_run(void) {
 	while(1) {
 		int8_t result = ibutton_detect_cycle();
 		if (result > 0)
 			display_write("Welcome");
+		scheduler_register(ibutton_scheduled_wake,300, 1);
 		ibutton_switchfrom();
 	}
 }
