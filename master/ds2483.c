@@ -98,14 +98,6 @@ uint8_t ds2483_read_register(ds2483_dev_t * dev, uint8_t reg) {
 	return dev->result;
 }
 
-uint8_t * ds2483_last_cmd(ds2483_dev_t* dev) {
-	return dev->cmd;
-}
-
-uint8_t ds2483_last_data(ds2483_dev_t*dev) {
-	return dev->result;
-}
-
 /**
  * Resets the DS2483
  */
