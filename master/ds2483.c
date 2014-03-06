@@ -42,7 +42,7 @@ static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes, uint8_
 }
 
 /**
- * Initiates reads on the one wire bus, and reads a single byte, 
+ * Initiates reads on the one wire bus, and reads a single byte,
  * which is stored in the read data register. The read data register
  * is then fetched and returned to the caller.
  *
@@ -75,10 +75,10 @@ void ds2483_set_read_ptr(ds2483_dev_t * dev, uint8_t reg) {
 	ds2483_write(dev, 2, dev->cmd);
 }
 
-/** 
+/**
  * Reads a single byte from the DS2483, read from the register
  * set by ds2483_set_read_ptr
- * 
+ *
  * @return the byte read
  */
 uint8_t ds2483_read_byte(ds2483_dev_t * dev) {
@@ -138,7 +138,7 @@ static uint8_t ds2483_1w_wait_idle(ds2483_dev_t * dev) {
 		asm volatile ( "nop");
 		asm volatile ( "nop");
 		asm volatile ( "nop");
-	} 
+	}
 
 	return result;
 }

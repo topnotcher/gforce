@@ -86,8 +86,8 @@ static void ibutton_scheduled_wake(void) {
 	task_schedule(ibutton_switchto);
 }
 
-extern void * volatile main_stack; 
-extern void * volatile ibtn_stack; 
+extern void * volatile main_stack;
+extern void * volatile ibtn_stack;
 
 /**
  * Triggers a context switch from the main process
@@ -101,7 +101,7 @@ void ibutton_switchto(void) {
 	asm volatile ("ret");
 }
 
-/** 
+/**
  * Triggers a context switch from the ibutton process
  * to the main process
  */

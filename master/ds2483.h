@@ -37,11 +37,11 @@ typedef struct ds2483_dev_struct {
 } ds2483_dev_t;
 
 
-ds2483_dev_t * ds2483_init(twi_master_t * twim, PORT_t * splz_port, uint8_t splz_pin); 
+ds2483_dev_t * ds2483_init(twi_master_t * twim, PORT_t * splz_port, uint8_t splz_pin);
 
-uint8_t ds2483_1w_rst(ds2483_dev_t * dev); 
-void ds2483_rst(ds2483_dev_t * dev); 
-uint8_t ds2483_read_register(ds2483_dev_t * dev, uint8_t reg); 
+uint8_t ds2483_1w_rst(ds2483_dev_t * dev);
+void ds2483_rst(ds2483_dev_t * dev);
+uint8_t ds2483_read_register(ds2483_dev_t * dev, uint8_t reg);
 uint8_t ds2483_read_byte(ds2483_dev_t * dev);
 void ds2483_set_read_ptr(ds2483_dev_t * dev, uint8_t reg);
 uint8_t ds2483_1w_read_byte(ds2483_dev_t * dev);
