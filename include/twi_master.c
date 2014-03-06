@@ -5,6 +5,12 @@
 static inline void twi_master_write_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
 static inline void twi_master_read_handler(twi_master_t * dev) ATTR_ALWAYS_INLINE;
 
+#ifndef TWI_MASTER_MAX_RETRIES
+	#define TWI_MASTER_MAX_RETRIES 3
+#endif
+
+#define twi_master_start_txn(dev) (dev)->twi->ADDR = (dev)->addr | ((dev)->txbytes ? 0 : 1)
+
 twi_master_t * twi_master_init(
 			TWI_MASTER_t * twi, 
 			const uint8_t baud, 
@@ -43,12 +49,13 @@ void twi_master_write_read(twi_master_t * dev, uint8_t addr, uint8_t txbytes, ui
 	dev->rxbytes = rxbytes;
 
 	dev->bytes = 0;
+	dev->retries = 0;
 	dev->addr = addr<<1;
 
 	/**
 	 * @TODO check if it is busy here?
 	 */
-	dev->twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
+	twi_master_start_txn(dev);
 }
 
 
@@ -69,9 +76,12 @@ void twi_master_isr(twi_master_t * dev) {
 		 * So in theory, this works. If it doesn't work, chances are the tx.state
 		 * will stay BUSY indefinitely.
 		 */
-		dev->bytes = 0;
-		twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
-
+		if (dev->retries++ < TWI_MASTER_MAX_RETRIES) {
+			dev->bytes = 0;
+			twi_master_start_txn(dev);
+		} else {
+			//@TODO	
+		}
 	} else if ( twi->STATUS & TWI_MASTER_WIF_bm ) {
 		twi_master_write_handler(dev);
 	} else if (twi->STATUS & TWI_MASTER_RIF_bm) {
@@ -79,7 +89,7 @@ void twi_master_isr(twi_master_t * dev) {
 	} else {
 		//IDFK?? - unexpected type of interrupt.
 		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
-		dev->txn_complete(dev->ins,0);
+		dev->txn_complete(dev->ins,0); 
 	}
 }
 
@@ -100,17 +110,18 @@ static inline void twi_master_read_handler(twi_master_t * dev) {
 static inline void twi_master_write_handler(twi_master_t * dev) {
 	TWI_MASTER_t * twi = (TWI_MASTER_t*)dev->twi;
 
-	//@TODO should this really drop the packet, or should it retry?
 	//when it is read as 0, most recent ack bit was NAK. 
 	if (twi->STATUS & TWI_MASTER_RXACK_bm) {
-	//	dev->txn_complete(dev->ins,0);
-
-		//WHY IS THIS HERE???
+		//WHY IS THIS HERE??? <-- what you on about?
 		//and why is the busstate manually set?
-//		twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
 		twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
-		dev->bytes = 0;
-		twi->ADDR = dev->addr | (dev->txbytes ? 0 : 1);
+		if (dev->retries++ < TWI_MASTER_MAX_RETRIES) {
+			dev->bytes = 0;
+			twi_master_start_txn(dev);
+		} else {
+			twi->CTRLC = TWI_MASTER_CMD_STOP_gc;
+			dev->txn_complete(dev->ins,0);
+		}
 	} else {
 		if ( dev->bytes < dev->txbytes ) {
 			twi->DATA = dev->txbuf[dev->bytes++];
