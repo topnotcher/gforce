@@ -14,7 +14,8 @@ typedef struct {
 	uint8_t rxbytes;
 
 	uint8_t bytes;
-	
+	uint8_t retries;
+
 	/*currently addressed slave*/
 	uint8_t addr;
 } twi_master_t;
