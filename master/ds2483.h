@@ -34,20 +34,18 @@ typedef struct ds2483_dev_struct {
 	uint8_t slpz_pin;
 	uint8_t cmd[2];
 	volatile uint8_t result;
-	void (*txn_cb)(struct ds2483_dev_struct *, uint8_t);
 } ds2483_dev_t;
 
 
-ds2483_dev_t * ds2483_init(TWI_MASTER_t * twim, uint8_t baud, PORT_t * splz_port, uint8_t splz_pin, void (*txn_cb)(ds2483_dev_t *, uint8_t)); 
+ds2483_dev_t * ds2483_init(twi_master_t * twim, PORT_t * splz_port, uint8_t splz_pin); 
 
-void ds2483_1w_rst(ds2483_dev_t * dev); 
+uint8_t ds2483_1w_rst(ds2483_dev_t * dev); 
 void ds2483_rst(ds2483_dev_t * dev); 
-void ds2483_read_register(ds2483_dev_t * dev, uint8_t reg); 
-void ds2483_read_byte(ds2483_dev_t * dev);
+uint8_t ds2483_read_register(ds2483_dev_t * dev, uint8_t reg); 
+uint8_t ds2483_read_byte(ds2483_dev_t * dev);
 void ds2483_set_read_ptr(ds2483_dev_t * dev, uint8_t reg);
-void ds2483_1w_read(ds2483_dev_t * dev);
+uint8_t ds2483_1w_read_byte(ds2483_dev_t * dev);
 void ds2483_1w_write(ds2483_dev_t * dev, uint8_t data);
-
 #define DS2483_INTERRUPT_HANDLER(ISR, dev) ISR { twi_master_isr(dev->twim); }
 
 #endif

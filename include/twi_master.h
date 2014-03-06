@@ -10,7 +10,8 @@
 typedef struct {
 	TWI_MASTER_t * twi;
 	void (* txn_complete)(void * ins, int8_t status);
-
+	void (*block)(void);
+	void (*resume)(void);
 	void * ins;
 	uint8_t * txbuf;
 	uint8_t txbytes;
@@ -37,4 +38,5 @@ void twi_master_isr(twi_master_t * dev);
 void twi_master_write_read(twi_master_t * dev, uint8_t addr, uint8_t txbytes, uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf);
 void twi_master_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf); 
 void twi_master_read(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf); 
+void twi_master_set_blocking(twi_master_t * twim,void (*block)(void), void (*resume)(void));
 #endif

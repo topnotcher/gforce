@@ -38,6 +38,11 @@ twi_master_t * twi_master_init(
 	return dev;
 }
 
+void twi_master_set_blocking(twi_master_t * dev, void (*block)(void), void (*resume)(void)) {
+	dev->block = block;
+	dev->resume = resume;
+}
+
 void twi_master_write(twi_master_t * dev, uint8_t addr, uint8_t len, uint8_t * buf) {
 	twi_master_write_read(dev,addr,len,buf,0,NULL);	
 }
@@ -58,6 +63,8 @@ void twi_master_write_read(twi_master_t * dev, uint8_t addr, uint8_t txbytes, ui
 	 * @TODO check if it is busy here?
 	 */
 	twi_master_start_txn(dev);
+	if (dev->block)
+		dev->block();
 }
 
 
@@ -143,5 +150,8 @@ static inline void twi_master_write_handler(twi_master_t * dev) {
 }
 
 static inline void twi_master_txn_complete(twi_master_t * dev, int8_t status) {
-	dev->txn_complete(dev->ins,status);
+	if (dev->block)
+		dev->resume();
+	else 
+		dev->txn_complete(dev->ins,status);
 }
