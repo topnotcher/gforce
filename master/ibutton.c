@@ -95,6 +95,9 @@ static void ibutton_1w_wait(void) {
 	do {
 		ds2483_read_byte(onewiredev);
 		ibutton_switchfrom();
+		/** 
+		 * I can't explain this: Shit doesn't work without a nop here
+		 */
 		asm volatile ( "nop"); 
 		asm volatile ( "nop"); 
 	} while (tries++ < IBUTTON_1W_WAIT_TIMEOUT && (onewiredev->result & DS2483_STATUS_1WB) );
