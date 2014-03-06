@@ -67,6 +67,7 @@ int8_t ibutton_detect_cycle(void) {
 
 	ds2483_1w_write(onewiredev, IBUTTON_CMD_READ_ROM);
 	ibutton_switchfrom();
+	ibutton_1w_wait();
 	uint8_t crc = 0;
 	//now 8 one wire reads to get ze bytes
 	for (uint8_t i = 0; i < 8; ++i) {
