@@ -127,17 +127,12 @@ static uint8_t ds2483_1w_wait_idle(ds2483_dev_t * dev) {
 
 	uint8_t result = ds2483_read_register(dev, DS2483_REGISTER_STATUS);
 	while (tries++ < DS2483_1W_WAIT_TIMEOUT && (result & DS2483_STATUS_1WB)) {
-		/* first call set the read pointer: now we can just issue the read*/
-		result = ds2483_read_byte(dev);
-
 		/**
-		 * @TODO I can't explain this: Shit doesn't work without a nop here
+		 * @TODO I should just be able to ds2483_read_byte(dev) here...
+		 * For some reason that isn't working. Seems like timing: adding a 1ms
+		 * delay in DOES work. WHY WHY WHY???
 		 */
-		asm volatile ( "nop");
-		asm volatile ( "nop");
-		asm volatile ( "nop");
-		asm volatile ( "nop");
-		asm volatile ( "nop");
+		result = ds2483_read_register(dev, DS2483_REGISTER_STATUS);
 	}
 
 	return result;
