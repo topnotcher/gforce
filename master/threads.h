@@ -1,11 +1,32 @@
 #ifndef THREADS_H
 #define THREADS_H
 
+#define THREADS_CONTEXT_SIZE 38
+#define THREADS_STACK_SIZE 64
+
 extern void * volatile main_stack;
+extern void * volatile top_of_stack;
 extern void * volatile ibtn_stack;
 extern void * volatile cur_stack;
 
+/**
+ * Sets the stack pointer to the top of the "main" thread of coroutines.
+ * (since main is never "started" as a task...)
+ */
+#define threads_init_stack()\
+	asm volatile(\
+		"in r28, __SP_L__\n"\
+		"in r29, __SP_H__\n"\
+		"sts top_of_stack, r28\n"\
+		"sts top_of_stack+1, r29\n"\
+	);\
+	top_of_stack -= (THREADS_STACK_SIZE+THREADS_CONTEXT_SIZE)
+
+
+
+void * thread_create(void (*task)(void)); 
 void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
+
 #define thread_context_in()                                \
     asm volatile (  "lds    r26, cur_stack        \n\t"    \
                     "lds    r27, cur_stack + 1    \n\t"    \

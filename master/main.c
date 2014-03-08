@@ -65,16 +65,8 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
-	//DERP
-	asm volatile(
-			"in r28, __SP_L__\n"\
-			"in r29, __SP_H__\n"\
-			"sts main_stack, r28\n"\
-			"sts main_stack+1, r29\n"\
-	);
-
-	ibtn_stack = (void*)(((uint8_t*)main_stack)-128); 
-	ibtn_stack = thread_stack_init(ibtn_stack,ibutton_run);
+	threads_init_stack();
+	ibtn_stack = thread_create(ibutton_run);
 
 	while (1) {
 		tasks_run();

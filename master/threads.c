@@ -1,10 +1,22 @@
 #include <stdint.h>
+#include <util/atomic.h>
 #include "threads.h"
 
 void * volatile main_stack;
 void * volatile ibtn_stack;
 void * volatile cur_stack;
+void * volatile top_of_stack;
 
+void * thread_create(void (*task)(void)) {
+	void * new_thread_stack;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		//new thread goes on the current top of stack
+		new_thread_stack = thread_stack_init(top_of_stack, task);
+		top_of_stack = (void*)((uint16_t)new_thread_stack - (uint16_t)THREADS_STACK_SIZE); 
+	}
+
+	return new_thread_stack; 
+}
 
 void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	*stack = 0x11; //38
