@@ -1,5 +1,11 @@
 #include <stdint.h>
 #include "threads.h"
+
+void * volatile main_stack;
+void * volatile ibtn_stack;
+void * volatile cur_stack;
+
+
 void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	*stack = 0x11; //38
 	stack--;

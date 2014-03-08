@@ -1,7 +1,11 @@
 #ifndef THREADS_H
 #define THREADS_H
+
+extern void * volatile main_stack;
+extern void * volatile ibtn_stack;
+extern void * volatile cur_stack;
+
 void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
-extern void * volatile cur_stack; 
 #define thread_context_in()                                \
     asm volatile (  "lds    r26, cur_stack        \n\t"    \
                     "lds    r27, cur_stack + 1    \n\t"    \

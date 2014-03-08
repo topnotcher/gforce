@@ -29,10 +29,6 @@
 static inline void process_ib_pkt(mpc_pkt const * const pkt);
 static void xbee_relay_mpc(const mpc_pkt * const pkt);
 
-void * volatile main_stack;
-void * volatile ibtn_stack;
-void * volatile cur_stack;
-
 int main(void) {
 	sysclk_set_internal_32mhz();
 
