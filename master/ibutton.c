@@ -9,7 +9,7 @@
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
-#include "krn.h"
+#include "threads.h"
 #include <tasks.h>
 #include "display.h"
 #include <scheduler.h>

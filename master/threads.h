@@ -1,5 +1,5 @@
-#ifndef KRN_H
-#define KRN_H
+#ifndef THREADS_H
+#define THREADS_H
 void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
 extern void * volatile cur_stack; 
 #define thread_context_in()                                \

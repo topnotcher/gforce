@@ -13,7 +13,7 @@
 #include "xbee.h"
 #include "display.h"
 #include "ibutton.h"
-#include "krn.h"
+#include "threads.h"
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>

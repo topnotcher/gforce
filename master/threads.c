@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "krn.h"
+#include "threads.h"
 void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	*stack = 0x11; //38
 	stack--;
