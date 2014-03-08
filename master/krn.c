@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "krn.h"
-void * task_stack_init(uint8_t * stack, void (*task)(void) ) {
+void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	*stack = 0x11; //38
 	stack--;
 	*stack = 0x22; //37

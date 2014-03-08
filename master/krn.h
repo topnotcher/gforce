@@ -1,8 +1,8 @@
 #ifndef KRN_H
 #define KRN_H
-void * task_stack_init(uint8_t * stack, void (*task)(void)); 
+void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
 extern void * volatile cur_stack; 
-#define task_context_in()                                \
+#define thread_context_in()                                \
     asm volatile (  "lds    r26, cur_stack        \n\t"    \
                     "lds    r27, cur_stack + 1    \n\t"    \
                     "out    __SP_L__, r26            \n\t"    \
@@ -42,7 +42,7 @@ extern void * volatile cur_stack;
                     "out    __SREG__, r0             \n\t"    \
                     "pop    r0                       \n\t"    \
                 );
-#define task_context_out()                                   \
+#define thread_context_out()                                   \
     asm volatile (  "push    r0                     \n\t"    \
                     "in      r0, __SREG__           \n\t"    \
                     "cli                            \n\t"    \

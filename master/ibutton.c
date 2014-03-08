@@ -94,10 +94,10 @@ extern void * volatile ibtn_stack;
  * to the ibutton process
  */
 void ibutton_switchto(void) {
-	task_context_out();
+	thread_context_out();
 	main_stack = cur_stack;
 	cur_stack = ibtn_stack;
-	task_context_in();
+	thread_context_in();
 	asm volatile ("ret");
 }
 
@@ -106,10 +106,10 @@ void ibutton_switchto(void) {
  * to the main process
  */
 void ibutton_switchfrom(void) {
-	task_context_out();
+	thread_context_out();
 	ibtn_stack = cur_stack;
 	cur_stack = main_stack;
-	task_context_in();
+	thread_context_in();
 	asm volatile ("ret");
 }
 

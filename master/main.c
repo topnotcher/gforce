@@ -78,7 +78,7 @@ int main(void) {
 	);
 
 	ibtn_stack = (void*)(((uint8_t*)main_stack)-128); 
-	ibtn_stack = task_stack_init(ibtn_stack,ibutton_run);
+	ibtn_stack = thread_stack_init(ibtn_stack,ibutton_run);
 
 	while (1) {
 		tasks_run();
