@@ -17,7 +17,9 @@ static uint8_t registers[11] = {
 	/*@TODO make this nicer*/
 	[BQ24193_INPUT_SRC_REG] = 0x30,
 	[BQ24193_PWR_ON_REG] = 0x5F,
-	[BQ24193_TIME_CTRL_REG] = 0x0A,	
+	[BQ24193_TIME_CTRL_REG] = _BV(7) | _BV(3) | _BV(2)  /*0x0A*/,
+	[BQ24193_VOLT_CTRL_REG] = _BV(7)|_BV(5)|_BV(4) | _BV(1),
+
 };
 
 static struct {
@@ -39,9 +41,9 @@ void charger_init(void) {
 	/* @TODO define this baud rate somewhere*/
 	twim = twi_master_init(&TWIE.MASTER, /*155*/ 35, (void*)0, txn_complete);
 
-	uint8_t init_regs[3] = {BQ24193_INPUT_SRC_REG, BQ24193_PWR_ON_REG, BQ24193_TIME_CTRL_REG};
+	uint8_t init_regs[4] = {BQ24193_INPUT_SRC_REG, BQ24193_PWR_ON_REG, BQ24193_TIME_CTRL_REG,BQ24193_VOLT_CTRL_REG};
 
-	for (uint8_t i = 0; i < 3; ++i) {
+	for (uint8_t i = 0; i < 4; ++i) {
 		charger_write_reg(init_regs[i]);
 		while (state.busy);
 	}
