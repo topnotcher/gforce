@@ -142,6 +142,28 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 
 }}
 
+static inline void scheduler_reorder_tasks(uint8_t reorder) {
+	task_ticks_t min = task_list->task.ticks;
+	task_node * cur = task_list->next;
+	task_node * prev = task_list;
+
+	while (cur != NULL && reorder--) {
+		if (cur->task.ticks < min) {
+			min = cur->task.ticks;
+
+			task_node * tmp = cur;
+			prev->next = cur->next;
+			cur = prev->next;
+			tmp->next = task_list;
+			task_list = tmp;
+
+		} else {
+			prev = cur;
+			cur = cur->next;
+		}
+	}
+}
+
 SCHEDULER_RUN {
 
 	task_node * node = task_list;
@@ -174,27 +196,8 @@ SCHEDULER_RUN {
 		// become out of order when something run and is NOT unregistered.  In
 		// this case, the item that was run would have been on top (could have
 		// been top N items?)
-		if (reorder) {
-			task_ticks_t min = task_list->task.ticks;
-			cur = task_list->next;
-			task_node * prev = task_list;
-		
-			while (cur != NULL && reorder--) {
-				if (cur->task.ticks < min) {
-					min = cur->task.ticks;
-
-					task_node * tmp = cur;
-					prev->next = cur->next;
-					cur = prev->next;
-					tmp->next = task_list;
-					task_list = tmp;
-	
-				} else {
-					prev = cur;
-					cur = cur->next;
-				}
-			}
-		}
+		if (reorder)
+			scheduler_reorder_tasks(reorder);
 
 		set_ticks();
 	}
