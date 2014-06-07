@@ -162,8 +162,7 @@ SCHEDULER_RUN {
 		// end up being a dangling pointer (causes AVR restart?)
 		cur = node->next;
 
-		if ( (node->task.ticks -= ticks) == 0 ) {
-
+		if (node->task.ticks <= ticks) {
 			node->task.task();
 
 			if ( node->task.lifetime != SCHEDULER_RUN_UNLIMITED && --node->task.lifetime == 0 ) {
@@ -173,7 +172,8 @@ SCHEDULER_RUN {
 				reorder++;
 				node->task.ticks = node->task.freq;
 			}
-
+		} else {
+			node->task.ticks -= ticks;
 		}
 	}
 
