@@ -99,7 +99,11 @@ static inline void set_ticks(void) {
 	ticks = task_list->task.ticks;
 }
 
-void scheduler_unregister(void (*task_cb)(void)) {
+/**
+ * Entire function wrapped in ATOMIC_BLOCK: must avoid any interrupts modifying
+ * the task list while iterating.
+ */
+void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 	task_node * node = task_list;
 
@@ -108,9 +112,12 @@ void scheduler_unregister(void (*task_cb)(void)) {
 			scheduler_remove_node(node);
 		node = node->next;
 	}
-}
+}}
 
-static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+/**
+ * Only call from an atomic block.
+ */
+static void scheduler_remove_node(task_node * rm_node) {
 
 	if (task_list == NULL) return;
 
@@ -140,7 +147,7 @@ static void scheduler_remove_node(task_node * rm_node) { ATOMIC_BLOCK(ATOMIC_RES
 		}
 	}
 
-}}
+}
 
 static inline void scheduler_reorder_tasks(uint8_t reorder) {
 	task_ticks_t min = task_list->task.ticks;
