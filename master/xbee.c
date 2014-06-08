@@ -135,6 +135,10 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 		mem_usage_t usage = mem_usage();
 
 		xbee_send('M', sizeof(usage), (uint8_t*)&usage);
+
+	} else if (pkt->cmd == 'b') {
+		mpc_send(MPC_CHEST_ADDR | MPC_PHASOR_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
+
 	}
 }
 

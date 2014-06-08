@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <g4config.h>
 #include "config.h"
 #include <util.h>
 
@@ -45,9 +46,11 @@ typedef enum {
 	stop
 } led_status;
 
-//DERPDERP
-#define LED_HEADER 0x94, 0x5F, 0xFF, 0xFF
+//last byte = global brightness.
+//9F-BF seems to be a good range. 8F is too low
+#define LED_HEADER 0x94, 0x5F, 0xFF, 0x9F
 #define LED_HEADER_BYTES 4
+#define LED_HEADER_BRIGHTNESS 3
 #define LED_TOTAL_BYTES 28
 
 typedef struct {
@@ -83,7 +86,7 @@ typedef struct {
 
 //max sequence size = 58 right now @TODO.
 static uint8_t led_sequence_raw[58];
-
+static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static inline void sclk_trigger(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
@@ -114,6 +117,28 @@ led_state state = {
 		{LED_HEADER, 0}
 	}
 };
+
+void led_brightness_adjust(int8_t dir) {
+	uint8_t level = state.bytes[0][LED_HEADER_BRIGHTNESS];
+	const uint8_t min = 0x8F; 
+	const uint8_t max = 0xFF;
+	const uint8_t step = 7;
+
+	if (dir == 1) {
+		if (level >= (max - step))
+			level = max;
+		else 
+			level += step;
+	} else if (dir == -1) {
+		if (level <= (min + step))
+			level = min;
+		else 
+			level -= step;
+	}
+
+	state.bytes[0][LED_HEADER_BRIGHTNESS] = level;
+	state.bytes[1][LED_HEADER_BRIGHTNESS] = level;
+}
 
 inline void set_lights(uint8_t status) {
 
@@ -317,11 +342,16 @@ void led_init(void) {
 
 	mpc_register_cmd('A', set_seq_cmd);
 	mpc_register_cmd('B', lights_off_cmd);
+	mpc_register_cmd('b', led_set_brightness);
 
 	xTaskCreate(leds_task, "leds", 70, NULL, tskIDLE_PRIORITY + 1, &leds_task_handle);
 
 	//the state is set in its own initializer way up there^
 	led_write();
+}
+
+static void led_set_brightness(const mpc_pkt *const pkt) {
+	led_brightness_adjust((pkt->data[0] == 1) ? 1 : -1);
 }
 
 static inline void led_timer_start(void) {
