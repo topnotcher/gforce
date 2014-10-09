@@ -73,7 +73,7 @@ void start_game_cmd(command_t const * const cmd) {
 	game_countdown_time = settings->prestart+1;
 	countdown_cb = &start_game_activate;
 
-	timer_register(&game_countdown, 1000, game_countdown_time);
+	add_timer(&game_countdown, 1000, game_countdown_time);
 }
 
 void game_tick(void) {
@@ -82,7 +82,7 @@ void game_tick(void) {
 }
 
 void start_game_activate(void) {
-	timer_register(&game_tick, 1000, TIMER_RUN_UNLIMITED);
+	add_timer(&game_tick, 1000, TIMER_RUN_UNLIMITED);
 	player_activate();
 }
 
@@ -110,12 +110,12 @@ void stop_game(void) {
 		lights_off();
 
 		sound_play_effect(SOUND_POWER_DOWN);
-		timer_unregister(&game_tick);
+		del_timer(&game_tick);
 
 		display_write("            ");
 
 		//slight issue here: if we stop game during countdown.
-		timer_unregister(&game_countdown);
+		del_timer(&game_countdown);
 //		lcd_clear();
 		game_state.playing = 0;
 	}
@@ -125,7 +125,7 @@ void stun_timer(void) {
 
 
 	if (!game_state.playing) {
-		timer_unregister(stun_timer);
+		del_timer(stun_timer);
 		return;
 	}
 
@@ -139,7 +139,7 @@ void stun_timer(void) {
 		lights_unstun();
 		game_state.stunned = 0;
 		game_state.active = 1;
-		timer_unregister(&stun_timer);
+		del_timer(&stun_timer);
 		display_send(0,2,(uint8_t*)" ");
 	}
 }
@@ -189,7 +189,7 @@ void do_stun(void) {
 	
 	lights_stun();
 
-	timer_register(&stun_timer, 1000, game_countdown_time);
+	add_timer(&stun_timer, 1000, game_countdown_time);
 }
 
 void do_deac(void) {
@@ -199,7 +199,7 @@ void do_deac(void) {
 	
 	game_countdown_time = game_settings.deac_time;
 	countdown_cb = player_activate;
-	timer_register(&game_countdown, 1000, game_countdown_time);
+	add_timer(&game_countdown, 1000, game_countdown_time);
 }
 
 void process_ir_pkt(mpc_pkt const * const pkt) {

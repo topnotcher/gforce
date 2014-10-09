@@ -31,7 +31,7 @@ int main(void) {
 	trigger_init();
 	irrx_init();
 	mpc_init();
-	timer_init();
+	init_timers();
 	tasks_init();
 	mpc_register_cmd('P', mpc_reply_ping);
 	mpc_register_cmd('T', ir_cmd_tx);

@@ -35,7 +35,7 @@ inline void trigger_init(void) {
 inline bool trigger_pressed(void) {
 	if ( _trigger_pressed ) {
 		_trigger_pressed = false;
-		timer_register(trigger_tick, 500, 1);
+		add_timer(trigger_tick, 500, 1);
 		return true;
 	}
 	return false;

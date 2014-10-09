@@ -26,7 +26,7 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
-	timer_init();
+	init_timers();
 	display_init();
 	mastercomm_init();
 

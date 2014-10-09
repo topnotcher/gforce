@@ -85,7 +85,7 @@ static inline void display_out_raw(char data) {
 void display_out(char data, lcd_data_type type) {
 
 	if ( lcd_queue.read == lcd_queue.write )
-		timer_register(&display_tick, LCD_TIMER_FREQ ,TIMER_RUN_UNLIMITED);
+		add_timer(&display_tick, LCD_TIMER_FREQ ,TIMER_RUN_UNLIMITED);
 
 
 	lcd_queue.data[lcd_queue.write].data = data;
@@ -152,7 +152,7 @@ static inline bool lcd_busy(void) {
 void display_tick(void) {
 	// nothing to do here!
 	if ( lcd_queue.read == (lcd_queue.write-1) ) {
-		timer_unregister(&display_tick);
+		del_timer(&display_tick);
 	}
 
 	if ( lcd_queue.read == lcd_queue.write )

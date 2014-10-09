@@ -27,7 +27,7 @@ static void mpc_reply_ping(const mpc_pkt * const pkt);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	timer_init();
+	init_timers();
 	mpc_init();
 	led_init();
 	buzz_init();

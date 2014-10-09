@@ -94,7 +94,7 @@ inline void sound_stop(void) {
 #if W_SOUNDS == 1
 	tick_disable();
 	sound_play_deinit();
-//	timer_unregister(&sound_play_byte);
+//	del_timer(&sound_play_byte);
 #endif
 }
 

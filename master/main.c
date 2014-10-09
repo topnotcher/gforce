@@ -32,7 +32,7 @@ static void xbee_relay_mpc(const mpc_pkt * const pkt);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	timer_init();
+	init_timers();
 	sound_init();
 	xbee_init();
 	mpc_init();

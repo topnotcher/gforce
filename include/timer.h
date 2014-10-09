@@ -37,8 +37,8 @@ typedef uint16_t task_freq_t;
 typedef uint16_t task_ticks_t;
 typedef uint8_t task_lifetime_t;
 
-void timer_init(void);
-void timer_register(void (*)(void), task_freq_t, task_lifetime_t );
-void timer_unregister(void (*)(void));
+void init_timers(void);
+void add_timer(void (*)(void), task_freq_t, task_lifetime_t );
+void del_timer(void (*)(void));
 
 #endif

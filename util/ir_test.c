@@ -233,7 +233,7 @@ void ir_rx(ir_pkt_t * pkt) {
 		}
 		else {
 //			printf("*****Read and write are at the same position\n");
-//			timer_unregister(rx_timer_tick);
+//			del_timer(rx_timer_tick);
 //			rx_state.scheduled = 0;
 		}
 
@@ -330,7 +330,7 @@ void ISR_RECEIVE_BYTE(uint8_t bit8, uint8_t data) {
 			
 //			if ( !rx_state.scheduled ) {
 //				rx_state.scheduled = 1;
-//				timer_register(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
+//				add_timer(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
 //			}
 		}
 

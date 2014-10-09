@@ -228,7 +228,7 @@ ISR(IRRX_USART_RXC_vect) {
 			
 			/*if ( !rx_state.scheduled ) {
 				rx_state.scheduled = 1;
-				timer_register(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
+				add_timer(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
 			}*/
 		}
 

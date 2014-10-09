@@ -33,7 +33,7 @@ static task_freq_t ticks;
 static inline void set_ticks(void);
 static void timer_remove_node(task_node * rm_node);
 
-inline void timer_init(void) {
+inline void init_timers(void) {
 
 	//@TODO
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
@@ -45,7 +45,7 @@ inline void timer_init(void) {
 	task_pool = chunkpool_create(sizeof(task_node), MAX_TASKS);
 }
 
-void timer_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
+void add_timer(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
 	timer_task * task = NULL;
 	task_node * node = NULL;
 
@@ -105,7 +105,7 @@ static inline void set_ticks(void) {
  * Entire function wrapped in ATOMIC_BLOCK: must avoid any interrupts modifying
  * the task list while iterating.
  */
-void timer_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+void del_timer(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 	task_node * node = task_list;
 
@@ -180,7 +180,7 @@ TIMER_RUN {
 	while (cur != NULL) {
 		node = cur;
 
-		// advance pointer early because timer_register might
+		// advance pointer early because add_timer might
 		// deallocate the node, leaving a dangling pointer.
 		cur = node->next;
 

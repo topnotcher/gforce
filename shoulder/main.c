@@ -26,7 +26,7 @@ int main(void) {
 	sysclk_set_internal_32mhz();
 	
 	//safe to pass PTR because we never leave main()
-	timer_init();
+	init_timers();
 	mpc_init();
 	led_init();
 	buzz_init();
