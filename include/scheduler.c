@@ -3,10 +3,13 @@
 #include <scheduler.h>
 #include <stdlib.h>
 #include <string.h>
+#include <chunkpool.h>
 
+#ifndef MAX_TASKS
 #define MAX_TASKS 8
+#endif
 
-static task_node _task_heap[MAX_TASKS];
+static chunkpool_t * task_pool;
 static task_node * task_list = NULL;
 
 #define _TASK_NODE_EMPTY(node)((node)->task.task == NULL)
@@ -26,27 +29,16 @@ inline void scheduler_init(void) {
 	ticks = 1;
 	RTC.CNT = 0;
 
-	//unoccupied blocks have NULL function pointer.
-	for (uint8_t i = 0; i < MAX_TASKS; ++i )
-		_task_heap[i].task.task = NULL;
-
+	task_pool = chunkpool_create(sizeof(task_node), MAX_TASKS);
 }
 
 void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
-ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 	scheduler_task * task = NULL;
 	task_node * node = NULL;
 
-	//find the first free node
-	for (uint8_t i = 0; i < MAX_TASKS; ++i ) {
-		if (_TASK_NODE_EMPTY(&_task_heap[i])) {
-			node = &_task_heap[i];
-			task = &(node->task);
-			break;
-		}
-	}
-
-	//assuming that the loop always finds an available node.
+	//@TODO check return
+	node = (task_node*)chunkpool_acquire(task_pool);
+	task = &(node->task);
 
 	task->task = task_cb;
 	task->freq = task_freq;
@@ -55,35 +47,37 @@ ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
 	node->next = NULL;
 
-	if (task_list == NULL) {
-		task_list = node;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		if (task_list == NULL) {
+			task_list = node;
+			set_ticks();
+			SCHEDULER_INTERRUPT_REGISTER |= SCHEDULER_INTERRUPT_ENABLE_BITS;
+			return;
+		}
+
+		task_node * cur = task_list;
+		while (cur != NULL) {
+			cur->task.ticks -= RTC.CNT;
+			cur = cur->next;
+		}
+
+		//handle the case of replacing the head
+		if (task_list->task.ticks >= task->ticks) {
+			node->next = task_list;
+			task_list = node;
+		} else {
+			task_node * tmp = task_list;
+
+			while (tmp->next != NULL && tmp->next->task.ticks < task->ticks)
+				tmp = tmp->next;
+
+			node->next = tmp->next;
+			tmp->next = node;
+		}
+
 		set_ticks();
-		SCHEDULER_INTERRUPT_REGISTER |= SCHEDULER_INTERRUPT_ENABLE_BITS;
-		return;
 	}
-
-	task_node * cur = task_list;
-	while (cur != NULL) {
-		cur->task.ticks -= RTC.CNT;
-		cur = cur->next;
-	}
-
-	//handle the case of replacing the head
-	if (task_list->task.ticks >= task->ticks) {
-		node->next = task_list;
-		task_list = node;
-	} else {
-		task_node * tmp = task_list;
-
-		while (tmp->next != NULL && tmp->next->task.ticks < task->ticks)
-			tmp = tmp->next;
-
-		node->next = tmp->next;
-		tmp->next = node;
-	}
-
-	set_ticks();
-}}
+}
 
 static inline void set_ticks(void) {
 	RTC.CNT = 0;
@@ -110,11 +104,9 @@ void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTOREST
  * Only call from an atomic block.
  */
 static void scheduler_remove_node(task_node * rm_node) {
-
 	if (task_list == NULL) return;
 
 	task_node * node = task_list;
-	rm_node->task.task = NULL;
 
 	if (rm_node == node) {
 		task_list = node->next;
@@ -133,8 +125,13 @@ static void scheduler_remove_node(task_node * rm_node) {
 			}
 		}
 	}
+
+	chunkpool_putref(rm_node);
 }
 
+/**
+ * only call with interrupts disabled.
+ */
 static inline void scheduler_reorder_tasks(uint8_t reorder) {
 	task_ticks_t min = task_list->task.ticks;
 	task_node * cur = task_list->next;
