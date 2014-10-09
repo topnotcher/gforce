@@ -26,12 +26,6 @@
 #define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
 /**************************************
- * Heap Size
- */
-#define MALLOC_HEAP_SIZE 2048
-
-
-/**************************************
  * XBee Configuration
  */
 #define XBEE_BSEL_VALUE 12

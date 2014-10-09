@@ -65,6 +65,4 @@
 #define MPC_ADDR 0x10
 #define MPC_QUEUE_SIZE 4
 
-#define MALLOC_HEAP_SIZE 512
-
 #endif

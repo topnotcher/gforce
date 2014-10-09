@@ -1,2 +1,1 @@
 #define MPC_ADDR 0
-#define MALLOC_HEAP_SIZE 512

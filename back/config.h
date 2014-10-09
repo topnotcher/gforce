@@ -33,6 +33,4 @@
 
 #define MPC_QUEUE_SIZE 4
 
-#define MALLOC_HEAP_SIZE 1024
-
 #endif
