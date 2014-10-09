@@ -33,12 +33,11 @@
 //to make the task run indefinitely.
 #define TIMER_RUN_UNLIMITED 0
 
-typedef uint16_t timer_freq_t;
 typedef uint16_t timer_ticks_t;
 typedef uint8_t timer_lifetime_t;
 
 void init_timers(void);
-void add_timer(void (*)(void), timer_freq_t, timer_lifetime_t );
+void add_timer(void (*)(void), timer_ticks_t, timer_lifetime_t );
 void del_timer(void (*)(void));
 
 #endif

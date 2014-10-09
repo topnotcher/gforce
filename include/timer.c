@@ -11,7 +11,7 @@
 
 typedef struct {
 	void (* task)(void);
-	timer_freq_t freq;
+	timer_ticks_t freq;
 	timer_ticks_t ticks;
 	//TIMER_RUN_UNLIMITED = infinite.
 	timer_lifetime_t lifetime;
@@ -26,7 +26,7 @@ typedef struct timer_node_st {
 
 static chunkpool_t * task_pool;
 static timer_node * task_list = NULL;
-static timer_freq_t ticks;
+static timer_ticks_t ticks;
 
 #define _TASK_NODE_EMPTY(node)((node)->task.task == NULL)
 
@@ -45,7 +45,7 @@ inline void init_timers(void) {
 	task_pool = chunkpool_create(sizeof(timer_node), MAX_TASKS);
 }
 
-void add_timer(void (*task_cb)(void), timer_freq_t task_freq, timer_lifetime_t task_lifetime) {
+void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_task * task = NULL;
 	timer_node * node = NULL;
 
