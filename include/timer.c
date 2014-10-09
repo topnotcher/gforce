@@ -25,7 +25,7 @@ typedef struct timer_node_st {
 } timer_node;
 
 static chunkpool_t * task_pool;
-static timer_node * task_list = NULL;
+static timer_node * task_list;
 static timer_ticks_t ticks;
 
 #define _TIMER_NODE_EMPTY(node)((node)->task.task == NULL)
