@@ -9,6 +9,20 @@
 #define MAX_TASKS 8
 #endif
 
+typedef struct {
+	void (* task)(void);
+	task_freq_t freq;
+	task_ticks_t ticks;
+	//SCHEDULER_RUN_UNLIMITED = infinite.
+	task_lifetime_t lifetime;
+} scheduler_task;
+
+struct task_node_st;
+typedef struct task_node_st {
+	scheduler_task task;
+	struct task_node_st * next;
+} task_node;
+
 static chunkpool_t * task_pool;
 static task_node * task_list = NULL;
 

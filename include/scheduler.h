@@ -37,33 +37,8 @@ typedef uint16_t task_freq_t;
 typedef uint16_t task_ticks_t;
 typedef uint8_t task_lifetime_t;
 
-typedef struct {
-	void (* task)(void);
-
-	//number of ticks between runs.
-	task_freq_t freq;
-
-	//number of ticks since last run.
-	task_ticks_t ticks;
-
-	//number of times to run.
-	//SCHEDULER_RUN_UNLIMITED = infinite.
-	task_lifetime_t lifetime;
-
-} scheduler_task;
-
 void scheduler_init(void);
-
 void scheduler_register(void (*)(void), task_freq_t, task_lifetime_t );
-
 void scheduler_unregister(void (*)(void));
-
-struct task_node_st {
-	scheduler_task task;
-	struct task_node_st * next;
-};
-
-typedef struct task_node_st task_node;
-
 
 #endif
