@@ -56,11 +56,10 @@ void dummy(void) {}
 inline display_pkt * mastercomm_recv(void) {
 	comm_frame_t * frame;
 
-	//this is backwards. Shouldn't be decrementing the refcnt so early
+	//@TODO this is backwards. Shouldn't be decrementing the refcnt so early
 	//but it should work almost all of the time, and I'm being lazy at the moment.	
 	if ( (frame = comm_rx(comm)) != NULL ) {
-
-		chunkpool_decref(frame);
+		chunkpool_putref(frame);
 		return (display_pkt*)frame->data;
 	}
 

@@ -80,8 +80,8 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) 
 
 	memcpy(pkt->data, data, pkt->size);
 
-	comm_send(comm,frame);
-	chunkpool_decref(frame);
+	comm_send(comm,chunkpool_getref(frame));
+	chunkpool_putref(frame);
 }
 
 inline void display_write(char * str) {

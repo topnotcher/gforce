@@ -49,14 +49,9 @@ comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t m
 	return comm;
 }
 
-/**
- * note: this assumes that * frame must have been 
- * allocated by the chunk pool allocator
- */
 void comm_send(comm_driver_t * comm, comm_frame_t * frame) {
 	//@todo reture failure?
-	queue_offer( comm->tx.queue, (void*)frame );
-	chunkpool_incref(frame);
+	queue_offer( comm->tx.queue, frame );
 }
 
 /**
@@ -87,7 +82,7 @@ comm_frame_t * comm_rx(comm_driver_t * comm) {
  */
 void comm_end_tx(comm_driver_t * comm) {
 	if (comm->tx.frame != NULL) {
-		chunkpool_decref(comm->tx.frame);
+		chunkpool_putref(comm->tx.frame);
 		comm->tx.frame = NULL;
 	}		
 		

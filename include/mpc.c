@@ -125,7 +125,7 @@ static void mpc_rx_frame(comm_frame_t * frame) {
 	}
 
 	if ( crc != pkt->chksum ) {
-		chunkpool_decref(frame);
+		chunkpool_putref(frame);
 		return;
 		//	goto: cleanup;
 	}
@@ -139,7 +139,7 @@ static void mpc_rx_frame(comm_frame_t * frame) {
 	}
 
 	//cleanup:
-	chunkpool_decref(frame);
+	chunkpool_putref(frame);
 }
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
@@ -184,19 +184,19 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	#ifdef PHASOR_COMM
 	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) ) {
-		comm_send(phasor_comm,frame);
+		comm_send(phasor_comm, chunkpool_getref(frame));
 		task_schedule(mpc_tx_process);
 	}
 	#endif
 
 	#ifdef MPC_TWI
 	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
-		comm_send(comm, frame);
+		comm_send(comm, chunkpool_getref(frame));
 		task_schedule(mpc_tx_process);
 	}
 	#endif
-	
-	chunkpool_decref(frame);
+
+	chunkpool_putref(frame);
 }
 
 void mpc_tx_process(void) {

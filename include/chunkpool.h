@@ -20,7 +20,21 @@ chunkpool_t * chunkpool_create(const uint8_t buffsize, const uint8_t chunks);
 
 uint8_t * chunkpool_acquire(chunkpool_t * pool); 
 
-#define chunkpool_decref(buff) do { ((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt--; } while (0)
-#define chunkpool_incref(buff) do { ((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt++; } while (0)
+#define __CHUNKPOOL_DECREF(buff) do { \
+	((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt--; \
+} while (0)
+
+#define __CHUNKPOOL_INCREF(buff) do { \
+	((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt++; \
+} while (0)
+
+static inline void * chunkpool_getref(void * buff) {
+	__CHUNKPOOL_INCREF(buff);
+	return buff;
+}
+
+static inline void chunkpool_putref(void * buff) {
+	__CHUNKPOOL_DECREF(buff);
+}
 
 #endif
