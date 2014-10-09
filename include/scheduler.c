@@ -21,6 +21,7 @@ struct task_node_st;
 typedef struct task_node_st {
 	scheduler_task task;
 	struct task_node_st * next;
+	struct task_node_st * prev;
 } task_node;
 
 static chunkpool_t * task_pool;
@@ -57,6 +58,7 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 	task->lifetime = task_lifetime;
 	task->ticks = task_freq;
 
+	node->prev = NULL;
 	node->next = NULL;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -76,15 +78,17 @@ void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifet
 		//handle the case of replacing the head
 		if (task_list->task.ticks >= task->ticks) {
 			node->next = task_list;
+			task_list->prev = node;
 			task_list = node;
 		} else {
 			task_node * tmp = task_list;
 
 			while (tmp->next != NULL && tmp->next->task.ticks < task->ticks)
 				tmp = tmp->next;
-
+			
 			node->next = tmp->next;
 			tmp->next = node;
+			node->prev = tmp;
 		}
 
 		set_ticks();
@@ -118,24 +122,18 @@ void scheduler_unregister(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTOREST
 static void scheduler_remove_node(task_node * rm_node) {
 	if (task_list == NULL) return;
 
-	task_node * node = task_list;
-
-	if (rm_node == node) {
-		task_list = node->next;
+	if (rm_node == task_list) {
+		task_list = rm_node->next;
 
 		if (task_list == NULL)
 			SCHEDULER_INTERRUPT_REGISTER &= ~SCHEDULER_INTERRUPT_ENABLE_BITS;
-
 	} else {
-		while (node->next != NULL) {
-			if (node->next == rm_node) {
-				node->next = rm_node->next;
+		//this should always be true.
+		if (rm_node->prev != NULL)
+			rm_node->prev->next = rm_node->next;
 
-				break;
-			} else {
-				node = node->next;
-			}
-		}
+		if (rm_node->next != NULL)
+			rm_node->next->prev = rm_node->prev;
 	}
 
 	chunkpool_putref(rm_node);
@@ -147,20 +145,27 @@ static void scheduler_remove_node(task_node * rm_node) {
 static inline void scheduler_reorder_tasks(uint8_t reorder) {
 	task_ticks_t min = task_list->task.ticks;
 	task_node * cur = task_list->next;
-	task_node * prev = task_list;
 
 	while (cur != NULL && reorder--) {
 		if (cur->task.ticks < min) {
-			min = cur->task.ticks;
+			task_node * new_head = cur;
 
-			task_node * tmp = cur;
-			prev->next = cur->next;
-			cur = prev->next;
-			tmp->next = task_list;
-			task_list = tmp;
+			min = cur->task.ticks;
+			
+			//should always be true.
+			if (cur->prev != NULL)
+				cur->prev->next = cur->next;
+
+			if (cur->next != NULL)
+				cur->next->prev = cur->next;
+
+			cur = cur->next;
+
+			new_head->next = task_list;
+			task_list->prev = new_head;
+			task_list = new_head;
 
 		} else {
-			prev = cur;
 			cur = cur->next;
 		}
 	}
