@@ -32,6 +32,7 @@ static timer_ticks_t ticks;
 
 static inline void set_ticks(void);
 static void timer_remove_node(timer_node * rm_node);
+static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime);
 
 inline void init_timers(void) {
 
@@ -45,21 +46,26 @@ inline void init_timers(void) {
 	task_pool = chunkpool_create(sizeof(timer_node), MAX_TIMERS);
 }
 
-void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
-	timer_task * task = NULL;
-	timer_node * node = NULL;
 
-	//@TODO check return
-	node = (timer_node*)chunkpool_acquire(task_pool);
-	task = &(node->task);
+static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq, 
+		timer_lifetime_t task_lifetime) {
+
+	timer_node *node = (timer_node*)chunkpool_acquire(task_pool);
+	timer_task *task = &(node->task);
 
 	task->task = task_cb;
 	task->freq = task_freq;
 	task->lifetime = task_lifetime;
 	task->ticks = task_freq;
-
 	node->prev = NULL;
 	node->next = NULL;
+
+	return node;
+}
+
+
+void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
+	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if (task_list == NULL) {
@@ -76,14 +82,14 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
 		}
 
 		//handle the case of replacing the head
-		if (task_list->task.ticks >= task->ticks) {
+		if (task_list->task.ticks >= node->task.ticks) {
 			node->next = task_list;
 			task_list->prev = node;
 			task_list = node;
 		} else {
 			timer_node * tmp = task_list;
 
-			while (tmp->next != NULL && tmp->next->task.ticks < task->ticks)
+			while (tmp->next != NULL && tmp->next->task.ticks < node->task.ticks)
 				tmp = tmp->next;
 			
 			node->next = tmp->next;
