@@ -11,27 +11,27 @@
 
 typedef struct {
 	void (* task)(void);
-	task_freq_t freq;
-	task_ticks_t ticks;
+	timer_freq_t freq;
+	timer_ticks_t ticks;
 	//TIMER_RUN_UNLIMITED = infinite.
-	task_lifetime_t lifetime;
+	timer_lifetime_t lifetime;
 } timer_task;
 
-struct task_node_st;
-typedef struct task_node_st {
+struct timer_node_st;
+typedef struct timer_node_st {
 	timer_task task;
-	struct task_node_st * next;
-	struct task_node_st * prev;
-} task_node;
+	struct timer_node_st * next;
+	struct timer_node_st * prev;
+} timer_node;
 
 static chunkpool_t * task_pool;
-static task_node * task_list = NULL;
-static task_freq_t ticks;
+static timer_node * task_list = NULL;
+static timer_freq_t ticks;
 
 #define _TASK_NODE_EMPTY(node)((node)->task.task == NULL)
 
 static inline void set_ticks(void);
-static void timer_remove_node(task_node * rm_node);
+static void timer_remove_node(timer_node * rm_node);
 
 inline void init_timers(void) {
 
@@ -42,15 +42,15 @@ inline void init_timers(void) {
 	ticks = 1;
 	RTC.CNT = 0;
 
-	task_pool = chunkpool_create(sizeof(task_node), MAX_TASKS);
+	task_pool = chunkpool_create(sizeof(timer_node), MAX_TASKS);
 }
 
-void add_timer(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
+void add_timer(void (*task_cb)(void), timer_freq_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_task * task = NULL;
-	task_node * node = NULL;
+	timer_node * node = NULL;
 
 	//@TODO check return
-	node = (task_node*)chunkpool_acquire(task_pool);
+	node = (timer_node*)chunkpool_acquire(task_pool);
 	task = &(node->task);
 
 	task->task = task_cb;
@@ -69,7 +69,7 @@ void add_timer(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t tas
 			return;
 		}
 
-		task_node * cur = task_list;
+		timer_node * cur = task_list;
 		while (cur != NULL) {
 			cur->task.ticks -= RTC.CNT;
 			cur = cur->next;
@@ -81,7 +81,7 @@ void add_timer(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t tas
 			task_list->prev = node;
 			task_list = node;
 		} else {
-			task_node * tmp = task_list;
+			timer_node * tmp = task_list;
 
 			while (tmp->next != NULL && tmp->next->task.ticks < task->ticks)
 				tmp = tmp->next;
@@ -107,7 +107,7 @@ static inline void set_ticks(void) {
  */
 void del_timer(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 
-	task_node * node = task_list;
+	timer_node * node = task_list;
 
 	while (node != NULL) {
 		if (node->task.task == task_cb)
@@ -119,7 +119,7 @@ void del_timer(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 /**
  * Only call from an atomic block.
  */
-static void timer_remove_node(task_node * rm_node) {
+static void timer_remove_node(timer_node * rm_node) {
 	if (task_list == NULL) return;
 
 	if (rm_node == task_list) {
@@ -143,12 +143,12 @@ static void timer_remove_node(task_node * rm_node) {
  * only call with interrupts disabled.
  */
 static inline void timer_reorder_tasks(uint8_t reorder) {
-	task_ticks_t min = task_list->task.ticks;
-	task_node * cur = task_list->next;
+	timer_ticks_t min = task_list->task.ticks;
+	timer_node * cur = task_list->next;
 
 	while (cur != NULL && reorder--) {
 		if (cur->task.ticks < min) {
-			task_node * new_head = cur;
+			timer_node * new_head = cur;
 
 			min = cur->task.ticks;
 			
@@ -173,8 +173,8 @@ static inline void timer_reorder_tasks(uint8_t reorder) {
 
 TIMER_RUN {
 
-	task_node * node = task_list;
-	task_node * cur = task_list;
+	timer_node * node = task_list;
+	timer_node * cur = task_list;
 	uint8_t reorder = 0;
 
 	while (cur != NULL) {
