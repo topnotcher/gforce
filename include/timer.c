@@ -5,8 +5,8 @@
 #include <string.h>
 #include <chunkpool.h>
 
-#ifndef MAX_TASKS
-#define MAX_TASKS 8
+#ifndef MAX_TIMERS
+#define MAX_TIMERS 8
 #endif
 
 typedef struct {
@@ -28,7 +28,7 @@ static chunkpool_t * task_pool;
 static timer_node * task_list = NULL;
 static timer_ticks_t ticks;
 
-#define _TASK_NODE_EMPTY(node)((node)->task.task == NULL)
+#define _TIMER_NODE_EMPTY(node)((node)->task.task == NULL)
 
 static inline void set_ticks(void);
 static void timer_remove_node(timer_node * rm_node);
@@ -42,7 +42,7 @@ inline void init_timers(void) {
 	ticks = 1;
 	RTC.CNT = 0;
 
-	task_pool = chunkpool_create(sizeof(timer_node), MAX_TASKS);
+	task_pool = chunkpool_create(sizeof(timer_node), MAX_TIMERS);
 }
 
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
