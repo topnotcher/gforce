@@ -17,7 +17,7 @@
 #include <buzz.h>
 #include <irrx.h>
 #include <tasks.h>
-#include <scheduler.h>
+#include <timer.h>
 #include <util.h>
 
 static void mpc_reply_ping(const mpc_pkt * const pkt);
@@ -26,7 +26,7 @@ int main(void) {
 	sysclk_set_internal_32mhz();
 	
 	//safe to pass PTR because we never leave main()
-	scheduler_init();
+	timer_init();
 	mpc_init();
 	led_init();
 	buzz_init();

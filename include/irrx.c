@@ -14,7 +14,7 @@
 #include <irrx.h>
 //#include <leds.h>
 #include <ringbuf.h>
-#include "scheduler.h"
+#include "timer.h"
 
 #define _RXPIN_bm G4_PIN(IRRX_USART_RXPIN)
 
@@ -24,8 +24,8 @@
 
 //when the packet timer reaches this level, set the state to process.
 // 1/IR_BAUD*mil = uS per bit. Timeout after 11 bits. (too generous)
-//this is the number of scheduler ticks per IR bits.
-#define RX_TIMEOUT_TIME (task_freq_t)(1/IR_BAUD*1000000/SCHEDULER_TICK_US)
+//this is the number of timer ticks per IR bits.
+#define RX_TIMEOUT_TIME (task_freq_t)(1/IR_BAUD*1000000/TIMER_TICK_US)
 #define RX_TIMEOUT_TICKS 11 //time out after this many bit widths with no data (too low?)
 
 /**
@@ -228,7 +228,7 @@ ISR(IRRX_USART_RXC_vect) {
 			
 			/*if ( !rx_state.scheduled ) {
 				rx_state.scheduled = 1;
-				scheduler_register(rx_timer_tick, RX_TIMEOUT_TIME , SCHEDULER_RUN_UNLIMITED);
+				timer_register(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
 			}*/
 		}
 

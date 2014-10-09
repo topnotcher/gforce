@@ -8,7 +8,7 @@
 #include <string.h>
 #include <util.h>
 #include <displaycomm.h>
-#include <scheduler.h>
+#include <timer.h>
 
 #include "display.h"
 #include "mastercomm.h"
@@ -26,7 +26,7 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
-	scheduler_init();
+	timer_init();
 	display_init();
 	mastercomm_init();
 

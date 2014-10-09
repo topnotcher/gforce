@@ -12,7 +12,7 @@
 #include "threads.h"
 #include <tasks.h>
 #include "display.h"
-#include <scheduler.h>
+#include <timer.h>
 
 #ifndef IBUTTON_SLEEP_MS
 #define IBUTTON_SLEEP_MS 300
@@ -29,7 +29,7 @@ void ibutton_init(void) {
 	onewiredev = ds2483_init(twim,&DS2483_SLPZ_PORT,G4_PIN(DS2483_SLPZ_PIN));
 
 	//this starts the process (300+ms from now).
-	scheduler_register(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
+	timer_register(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
 }
 
 /**
@@ -74,7 +74,7 @@ static inline int8_t ibutton_detect_cycle(void) {
 }
 
 static inline void ibutton_sleep(void) {
-	scheduler_register(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
+	timer_register(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
 	ibutton_switchfrom();
 }
 

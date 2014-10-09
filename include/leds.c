@@ -12,7 +12,7 @@
 #include <leds.h>
 #include "colors.h"
 
-#include <scheduler.h>
+#include <timer.h>
 #include <mpc.h>
 #include <tasks.h>
 
@@ -167,7 +167,7 @@ led_state state = {
 inline void set_lights(uint8_t status) {
 
 	if ( !status && state.ticks ) 
-		scheduler_unregister(led_timer_tick);
+		timer_unregister(led_timer_tick);
 
 	state.status = status ? start : stop;
 	task_schedule(leds_run);
@@ -366,7 +366,7 @@ void led_init(void) {
 }
 
 static inline void led_timer_start(void) {
-	scheduler_register(led_timer_tick, LED_DELAY_TIME*state.ticks, 1);
+	timer_register(led_timer_tick, LED_DELAY_TIME*state.ticks, 1);
 }
 
 void led_timer_tick(void) {

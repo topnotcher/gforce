@@ -14,7 +14,7 @@
 #include <irrx.h>
 #include <tasks.h>
 #include <mpc.h>
-#include <scheduler.h>
+#include <timer.h>
 #include <util.h>
 
 #include "irtx.h"
@@ -31,7 +31,7 @@ int main(void) {
 	trigger_init();
 	irrx_init();
 	mpc_init();
-	scheduler_init();
+	timer_init();
 	tasks_init();
 	mpc_register_cmd('P', mpc_reply_ping);
 	mpc_register_cmd('T', ir_cmd_tx);

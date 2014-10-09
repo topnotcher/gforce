@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "scheduler.h"
+#include "timer.h"
 #include "sounds.h"
 
 #include <util/delay.h>
@@ -94,7 +94,7 @@ inline void sound_stop(void) {
 #if W_SOUNDS == 1
 	tick_disable();
 	sound_play_deinit();
-//	scheduler_unregister(&sound_play_byte);
+//	timer_unregister(&sound_play_byte);
 #endif
 }
 

@@ -5,7 +5,7 @@
 #include "config.h"
 #include "trigger.h"
 #include <util.h>
-#include <scheduler.h>
+#include <timer.h>
 
 #define _TRIGPINCTRL G4_PINCTRL(TRIGGER_PIN)
 #define _TRIGPIN_bm G4_PIN(TRIGGER_PIN)
@@ -35,7 +35,7 @@ inline void trigger_init(void) {
 inline bool trigger_pressed(void) {
 	if ( _trigger_pressed ) {
 		_trigger_pressed = false;
-		scheduler_register(trigger_tick, 500, 1);
+		timer_register(trigger_tick, 500, 1);
 		return true;
 	}
 	return false;

@@ -19,7 +19,7 @@
 #include <irrx.h>
 #include <tasks.h>
 #include <util.h>
-#include <scheduler.h>
+#include <timer.h>
 
 static void mpc_reply_ping(const mpc_pkt * const pkt);
 static void mpc_echo_ir(const mpc_pkt * const pkt);
@@ -27,7 +27,7 @@ static void mpc_echo_ir(const mpc_pkt * const pkt);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	scheduler_init();
+	timer_init();
 	mpc_init();
 	led_init();
 	buzz_init();

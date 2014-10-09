@@ -7,7 +7,7 @@
 //#include <avr/wdt.h>
 
 #include <g4config.h>
-#include <scheduler.h>
+#include <timer.h>
 #include "lights.h"
 #include "sounds.h"
 #include "xbee.h"
@@ -32,7 +32,7 @@ static void xbee_relay_mpc(const mpc_pkt * const pkt);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	scheduler_init();
+	timer_init();
 	sound_init();
 	xbee_init();
 	mpc_init();

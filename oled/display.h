@@ -26,7 +26,7 @@
 // I pulled 10 out of my ass :).
 // This number should be small enoguh to avoid lag
 // Other than that, making it larger will free the CPU up for other shit.
-#define LCD_SCHEDULER_FREQ 1
+#define LCD_TIMER_FREQ 1
 
 typedef uint8_t lcd_data_type;
 #define LCD_TYPE_CMD 0
