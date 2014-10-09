@@ -25,11 +25,9 @@ typedef struct task_node_st {
 
 static chunkpool_t * task_pool;
 static task_node * task_list = NULL;
+static task_freq_t ticks;
 
 #define _TASK_NODE_EMPTY(node)((node)->task.task == NULL)
-
-//number of "ticks" skipped.
-static task_freq_t ticks;
 
 static inline void set_ticks(void);
 static void scheduler_remove_node(task_node * rm_node);
