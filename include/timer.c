@@ -31,10 +31,16 @@ static timer_ticks_t ticks;
 #define _TIMER_NODE_EMPTY(node)((node)->task.task == NULL)
 
 static inline void set_ticks(void);
-static void timer_remove_node(timer_node * rm_node);
-static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime);
+static inline void timer_remove_node(timer_node * rm_node);
+static inline void __del_timer(void (*task_cb)(void));
+static inline void __add_timer_node(timer_node * node);
+static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
+		timer_lifetime_t task_lifetime);
 
-inline void init_timers(void) {
+/**
+ * Initialize the timers: run at boot.
+ */
+void init_timers(void) {
 
 	//@TODO
 	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
@@ -46,8 +52,10 @@ inline void init_timers(void) {
 	task_pool = chunkpool_create(sizeof(timer_node), MAX_TIMERS);
 }
 
-
-static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq, 
+/**
+ * @see add_timer()
+ */
+static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime) {
 
 	timer_node *node = (timer_node*)chunkpool_acquire(task_pool);
@@ -63,46 +71,62 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 	return node;
 }
 
-
+/**
+ * Create a timer.
+ *
+ * @param task_cb callback function to run when timer triggers.
+ * @param task_freq frequency to trigger the timer.
+ * @param task_lifetime number of times to trigger the timer (or TIMER_RUN_UNLIMITED).
+ */
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		if (task_list == NULL) {
-			task_list = node;
-			set_ticks();
-			TIMER_INTERRUPT_REGISTER |= TIMER_INTERRUPT_ENABLE_BITS;
-			return;
-		}
-
-		timer_node * cur = task_list;
-		while (cur != NULL) {
-			cur->task.ticks -= RTC.CNT;
-			cur = cur->next;
-		}
-
-		//handle the case of replacing the head
-		if (task_list->task.ticks >= node->task.ticks) {
-			node->next = task_list;
-			task_list->prev = node;
-			task_list = node;
-		} else {
-			timer_node * tmp = task_list;
-
-			while (tmp->next != NULL && tmp->next->task.ticks < node->task.ticks)
-				tmp = tmp->next;
-			
-			node->next = tmp->next;
-			tmp->next = node;
-			node->prev = tmp;
-		}
-
-		set_ticks();
+		__add_timer_node(node);
 	}
 }
 
 /**
- * @TODO the RTC COMP/CNT size must be 16 bits? 
+ * Add a timer node to the list. Must be called with interrupts disabled.
+ * @see add_timer()
+ */
+static inline void __add_timer_node(timer_node * node) {
+	if (task_list == NULL) {
+		task_list = node;
+		set_ticks();
+		TIMER_INTERRUPT_REGISTER |= TIMER_INTERRUPT_ENABLE_BITS;
+		return;
+	}
+
+	timer_node * cur = task_list;
+	while (cur != NULL) {
+		cur->task.ticks -= RTC.CNT;
+		cur = cur->next;
+	}
+
+	//handle the case of replacing the head
+	if (task_list->task.ticks >= node->task.ticks) {
+		node->next = task_list;
+		task_list->prev = node;
+		task_list = node;
+	} else {
+		timer_node * tmp = task_list;
+
+		while (tmp->next != NULL && tmp->next->task.ticks < node->task.ticks)
+			tmp = tmp->next;
+
+		node->next = tmp->next;
+		tmp->next = node;
+		node->prev = tmp;
+	}
+
+	set_ticks();
+}
+
+/**
+ * Set the number of ticks until the next interrupt.
+ *
+ * @TODO the RTC COMP/CNT size must be 16 bits?
  * this could get nasty otherwise.
  */
 static inline void set_ticks(void) {
@@ -112,11 +136,9 @@ static inline void set_ticks(void) {
 }
 
 /**
- * Entire function wrapped in ATOMIC_BLOCK: must avoid any interrupts modifying
- * the task list while iterating.
+ * Must be called with interrupts disabled.
  */
-void del_timer(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-
+static inline void __del_timer(void (*task_cb)(void)) {
 	timer_node * node = task_list;
 
 	while (node != NULL) {
@@ -124,12 +146,24 @@ void del_timer(void (*task_cb)(void)) { ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 			timer_remove_node(node);
 		node = node->next;
 	}
-}}
+}
 
 /**
- * Only call from an atomic block.
+ * Delete a timer.
+ *
+ * @param task_cb the callback function registered in the timer.
  */
-static void timer_remove_node(timer_node * rm_node) {
+void del_timer(void (*task_cb)(void)) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		__del_timer(task_cb);
+	}
+}
+
+/**
+ * Remove a timer node from the list.
+ * Must be called with interrupts disabled.
+ */
+static inline void timer_remove_node(timer_node * rm_node) {
 	if (task_list == NULL) return;
 
 	if (rm_node == task_list) {
@@ -161,7 +195,7 @@ static inline void timer_reorder_tasks(uint8_t reorder) {
 			timer_node * new_head = cur;
 
 			min = cur->task.ticks;
-			
+
 			//should always be true.
 			if (cur->prev != NULL)
 				cur->prev->next = cur->next;
@@ -181,17 +215,16 @@ static inline void timer_reorder_tasks(uint8_t reorder) {
 	}
 }
 
+/**
+ * Timer interrupt handling.
+ */
 TIMER_RUN {
-
 	timer_node * node = task_list;
 	timer_node * cur = task_list;
 	uint8_t reorder = 0;
 
 	while (cur != NULL) {
 		node = cur;
-
-		// advance pointer early because add_timer might
-		// deallocate the node, leaving a dangling pointer.
 		cur = node->next;
 
 		if (node->task.ticks <= ticks) {
