@@ -34,7 +34,6 @@ inline void scheduler_init(void) {
 
 void scheduler_register(void (*task_cb)(void), task_freq_t task_freq, task_lifetime_t task_lifetime) {
 ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-
 	scheduler_task * task = NULL;
 	task_node * node = NULL;
 
@@ -63,13 +62,6 @@ ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		return;
 	}
 
-	/** Everything gets inserted into the list in order of ticks This way the
-	 * ISR can be optimized to tick only when needed.  that said: when
-	 * inserting via ticks, an item in the queue may have K < item.freq ticks
-	 * remaining until the next run... this could place it ahead of the
-	 * inserted item even though it runs less often (the queue needs to be
-	 * reordered when something runs???)
-	 */
 	task_node * cur = task_list;
 	while (cur != NULL) {
 		cur->task.ticks -= RTC.CNT;
@@ -121,17 +113,12 @@ static void scheduler_remove_node(task_node * rm_node) {
 
 	if (task_list == NULL) return;
 
-	//node we need to remove.
 	task_node * node = task_list;
-	
-	//mark the node unused.
 	rm_node->task.task = NULL;
 
 	if (rm_node == node) {
-	
 		task_list = node->next;
 
-		//killed the head: no need to tick!
 		if (task_list == NULL)
 			SCHEDULER_INTERRUPT_REGISTER &= ~SCHEDULER_INTERRUPT_ENABLE_BITS;
 
@@ -146,7 +133,6 @@ static void scheduler_remove_node(task_node * rm_node) {
 			}
 		}
 	}
-
 }
 
 static inline void scheduler_reorder_tasks(uint8_t reorder) {
