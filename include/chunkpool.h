@@ -18,7 +18,7 @@ typedef struct {
 
 chunkpool_t * chunkpool_create(const uint8_t buffsize, const uint8_t chunks);
 
-uint8_t * chunkpool_acquire(chunkpool_t * pool); 
+void *chunkpool_alloc(chunkpool_t * pool); 
 
 #define __CHUNKPOOL_DECREF(buff) do { \
 	((chunkpool_chunk_t *)((uint8_t*)(buff)-offsetof(chunkpool_chunk_t,chunk)))->refcnt--; \

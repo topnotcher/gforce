@@ -152,7 +152,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	comm_frame_t * frame;
 	mpc_pkt * pkt;
 
-	frame = (comm_frame_t*)chunkpool_acquire(chunkpool);
+	frame = chunkpool_alloc(chunkpool);
 
 	frame->daddr = addr;
 	frame->size = sizeof(*pkt)+len;

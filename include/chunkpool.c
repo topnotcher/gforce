@@ -3,7 +3,7 @@
 
 #include "chunkpool.h"
 
-#define chunk(pool,i) ( (chunkpool_chunk_t*)( ((uint8_t*)pool) + sizeof(*pool) + i*( sizeof(pool->chunks[0]) + pool->buffsize) ) )
+#define chunk(pool,i) ( (chunkpool_chunk_t*)( ((void*)pool) + sizeof(*pool) + i*( sizeof(pool->chunks[0]) + pool->buffsize) ) )
 
 
 chunkpool_t * chunkpool_create(const uint8_t buffsize, const uint8_t chunks) {
@@ -19,8 +19,8 @@ chunkpool_t * chunkpool_create(const uint8_t buffsize, const uint8_t chunks) {
 	return pool;
 }
 
-uint8_t * chunkpool_acquire(chunkpool_t * pool) {
-	uint8_t * ret = NULL;
+void *chunkpool_alloc(chunkpool_t * pool) {
+	void * ret = NULL;
 	
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		for ( uint8_t i = 0; i < pool->size; ++i ) {

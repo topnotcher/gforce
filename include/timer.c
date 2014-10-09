@@ -58,7 +58,7 @@ void init_timers(void) {
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime) {
 
-	timer_node *node = (timer_node*)chunkpool_acquire(task_pool);
+	timer_node *node = chunkpool_alloc(task_pool);
 	timer_task *task = &(node->task);
 
 	task->task = task_cb;

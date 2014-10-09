@@ -101,7 +101,7 @@ void comm_begin_rx(comm_driver_t * comm) {
 	 * we might as well just drop the whole frame.
 	 */
 	if ( comm->rx.frame == NULL ) 
-		comm->rx.frame = (comm_frame_t*)chunkpool_acquire(comm->pool);
+		comm->rx.frame = chunkpool_alloc(comm->pool);
 				
 	comm->rx.frame->size = 0;
 }

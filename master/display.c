@@ -69,7 +69,7 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) 
 	comm_frame_t * frame;
 	display_pkt * pkt;
 
-	frame = (comm_frame_t*)chunkpool_acquire(chunkpool);
+	frame = chunkpool_alloc(chunkpool);
 	frame->daddr = 1 /*dummy*/;
 	frame->size = sizeof(*pkt)+size;
 
