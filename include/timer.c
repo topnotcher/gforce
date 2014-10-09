@@ -95,6 +95,10 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
 	}
 }
 
+/**
+ * @TODO the RTC COMP/CNT size must be 16 bits? 
+ * this could get nasty otherwise.
+ */
 static inline void set_ticks(void) {
 	RTC.CNT = 0;
 	RTC.COMP = task_list->task.ticks;
