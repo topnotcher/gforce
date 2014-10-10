@@ -3,7 +3,7 @@
 #include <timer.h>
 #include <stdlib.h>
 #include <string.h>
-#include <chunkpool.h>
+#include <mempool.h>
 
 #ifndef MAX_TIMERS
 #define MAX_TIMERS 8
@@ -24,7 +24,7 @@ typedef struct timer_node_st {
 	struct timer_node_st * prev;
 } timer_node;
 
-static chunkpool_t * task_pool;
+static mempool_t * task_pool;
 static timer_node * task_list;
 static timer_ticks_t ticks;
 
@@ -49,7 +49,7 @@ void init_timers(void) {
 	ticks = 1;
 	RTC.CNT = 0;
 
-	task_pool = chunkpool_create(sizeof(timer_node), MAX_TIMERS);
+	task_pool = init_mempool(sizeof(timer_node), MAX_TIMERS);
 }
 
 /**
@@ -58,7 +58,7 @@ void init_timers(void) {
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime) {
 
-	timer_node *node = chunkpool_alloc(task_pool);
+	timer_node *node = mempool_alloc(task_pool);
 	timer_task *task = &(node->task);
 
 	task->task = task_cb;
@@ -180,7 +180,7 @@ static inline void timer_remove_node(timer_node * rm_node) {
 			rm_node->next->prev = rm_node->prev;
 	}
 
-	chunkpool_putref(rm_node);
+	mempool_putref(rm_node);
 }
 
 /**

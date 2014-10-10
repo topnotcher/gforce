@@ -7,7 +7,7 @@
 #include <string.h>
 #include <comm.h>
 #include <serialcomm.h>
-#include <chunkpool.h>
+#include <mempool.h>
 #include <displaycomm.h>
 
 #include "display.h"
@@ -24,7 +24,7 @@
 #define _SS_bm G4_PIN(DISPLAY_PIN_SS)
 
 static comm_driver_t * comm;
-static chunkpool_t * chunkpool;
+static mempool_t * mempool;
 
 static void tx_begin(void);
 static void tx_end(void);
@@ -42,11 +42,11 @@ inline void display_init(void) {
 	//note passing 0 for rxbuff size - RX is not used!
 	//display_uart_driver = uart_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 0);
 
-	chunkpool = chunkpool_create(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
+	mempool = init_mempool(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
 
 	comm_dev_t * commdev;
 	commdev = serialcomm_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 1 /*dummy address*/);
-	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool, NULL );
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool, NULL );
 }
 
 static void tx_begin(void) {
@@ -69,7 +69,7 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) 
 	comm_frame_t * frame;
 	display_pkt * pkt;
 
-	frame = chunkpool_alloc(chunkpool);
+	frame = mempool_alloc(mempool);
 	frame->daddr = 1 /*dummy*/;
 	frame->size = sizeof(*pkt)+size;
 
@@ -80,8 +80,8 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t * data) 
 
 	memcpy(pkt->data, data, pkt->size);
 
-	comm_send(comm,chunkpool_getref(frame));
-	chunkpool_putref(frame);
+	comm_send(comm,mempool_getref(frame));
+	mempool_putref(frame);
 }
 
 inline void display_write(char * str) {

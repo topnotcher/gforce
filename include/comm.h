@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "chunkpool.h"
+#include "mempool.h"
 #include "queue.h"
 
 #ifndef COMM_H
@@ -22,7 +22,7 @@ typedef struct comm_driver_struct {
 	
 	void (*end_rx)(struct comm_driver_struct *);
 
-	chunkpool_t * pool;
+	mempool_t * pool;
 
 	uint8_t mtu;
 	uint8_t addr;
@@ -56,7 +56,7 @@ typedef struct comm_dev_struct {
 	void (* begin_tx)(comm_driver_t *);
 } comm_dev_t;
 
-comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool, void (*end_rx)(comm_driver_t*) );
+comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, mempool_t * pool, void (*end_rx)(comm_driver_t*) );
 void comm_tx(comm_driver_t * comm);
 comm_frame_t * comm_rx(comm_driver_t * comm);
 void comm_end_tx(comm_driver_t * comm);

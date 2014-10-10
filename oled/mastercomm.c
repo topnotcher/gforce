@@ -6,7 +6,7 @@
 
 #include <comm.h>
 #include <serialcomm.h>
-#include <chunkpool.h>
+#include <mempool.h>
 #include <displaycomm.h>
 
 #include "display.h"
@@ -45,9 +45,9 @@ inline void mastercomm_init(void) {
 
 //	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy,dummy, RX_BUFF_SIZE);
 
-	chunkpool_t * chunkpool = chunkpool_create(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
+	mempool_t * mempool = init_mempool(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
 	comm_dev_t * commdev = serialcomm_init(&COMM_SPI.DATA, dummy, dummy, 1 /*dummy address*/);
-	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, chunkpool ,NULL);
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool ,NULL);
 
 }
 
@@ -59,7 +59,7 @@ inline display_pkt * mastercomm_recv(void) {
 	//@TODO this is backwards. Shouldn't be decrementing the refcnt so early
 	//but it should work almost all of the time, and I'm being lazy at the moment.	
 	if ( (frame = comm_rx(comm)) != NULL ) {
-		chunkpool_putref(frame);
+		mempool_putref(frame);
 		return (display_pkt*)frame->data;
 	}
 

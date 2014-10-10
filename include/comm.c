@@ -23,7 +23,7 @@
  * sending a "group" of bytes.
  */
 
-comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, chunkpool_t * pool, void (*end_rx)(comm_driver_t*) ) {
+comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, mempool_t * pool, void (*end_rx)(comm_driver_t*) ) {
 
 	comm_driver_t * comm;
 	comm = smalloc(sizeof *comm);
@@ -82,7 +82,7 @@ comm_frame_t * comm_rx(comm_driver_t * comm) {
  */
 void comm_end_tx(comm_driver_t * comm) {
 	if (comm->tx.frame != NULL) {
-		chunkpool_putref(comm->tx.frame);
+		mempool_putref(comm->tx.frame);
 		comm->tx.frame = NULL;
 	}		
 		
@@ -101,7 +101,7 @@ void comm_begin_rx(comm_driver_t * comm) {
 	 * we might as well just drop the whole frame.
 	 */
 	if ( comm->rx.frame == NULL ) 
-		comm->rx.frame = chunkpool_alloc(comm->pool);
+		comm->rx.frame = mempool_alloc(comm->pool);
 				
 	comm->rx.frame->size = 0;
 }

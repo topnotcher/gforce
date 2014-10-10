@@ -28,7 +28,7 @@ static comm_driver_t * comm;
 static comm_driver_t * phasor_comm;
 #endif
 
-static chunkpool_t * chunkpool;
+static mempool_t * mempool;
 
 //@TODO hard-coded # of elementsghey
 #define N_MPC_CMDS 10
@@ -57,7 +57,7 @@ inline void mpc_init(void) {
 		mpc_addr = ((uint8_t)MPC_ADDR);
 	#endif
 
-	chunkpool = chunkpool_create(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
+	mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 
 	#ifdef MPC_TWI
 		uint8_t mask;
@@ -70,11 +70,11 @@ inline void mpc_init(void) {
 
 		comm_dev_t * twi;
 		twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, chunkpool, mpc_rx_event);
+		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event);
 	#endif 
 
 	#ifdef PHASOR_COMM
-		phasor_comm = phasor_comm_init(chunkpool,mpc_addr, mpc_rx_event);
+		phasor_comm = phasor_comm_init(mempool,mpc_addr, mpc_rx_event);
 	#endif
 }
 
@@ -125,7 +125,7 @@ static void mpc_rx_frame(comm_frame_t * frame) {
 	}
 
 	if ( crc != pkt->chksum ) {
-		chunkpool_putref(frame);
+		mempool_putref(frame);
 		return;
 		//	goto: cleanup;
 	}
@@ -139,7 +139,7 @@ static void mpc_rx_frame(comm_frame_t * frame) {
 	}
 
 	//cleanup:
-	chunkpool_putref(frame);
+	mempool_putref(frame);
 }
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
@@ -152,7 +152,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	comm_frame_t * frame;
 	mpc_pkt * pkt;
 
-	frame = chunkpool_alloc(chunkpool);
+	frame = mempool_alloc(mempool);
 
 	frame->daddr = addr;
 	frame->size = sizeof(*pkt)+len;
@@ -184,19 +184,19 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	#ifdef PHASOR_COMM
 	if ( addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR) ) {
-		comm_send(phasor_comm, chunkpool_getref(frame));
+		comm_send(phasor_comm, mempool_getref(frame));
 		task_schedule(mpc_tx_process);
 	}
 	#endif
 
 	#ifdef MPC_TWI
 	if ( addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR) ) {
-		comm_send(comm, chunkpool_getref(frame));
+		comm_send(comm, mempool_getref(frame));
 		task_schedule(mpc_tx_process);
 	}
 	#endif
 
-	chunkpool_putref(frame);
+	mempool_putref(frame);
 }
 
 void mpc_tx_process(void) {

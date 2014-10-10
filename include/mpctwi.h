@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <avr/io.h>
 
-#include "chunkpool.h"
+#include "mempool.h"
 #include "queue.h"
 #include "comm.h"
 #include "twi_master.h"
