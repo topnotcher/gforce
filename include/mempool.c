@@ -5,7 +5,11 @@
 
 #define block(pool,i) ( (mempool_block_t*)( ((uint8_t*)pool) + sizeof(*pool) + i*( sizeof(pool->blocks[0]) + pool->block_size) ) )
 
-
+/**
+ * Implement a reference counted memory pool allocator. The pool contains size
+ * blocks of block_size. All blocks are reference counted with the reference
+ * count being set to 1 on mempool_alloc(). Calls to mempool_getref() and
+ * mempool_putref() increase and decrease the reference count, respectively.*/
 mempool_t * init_mempool(const uint8_t block_size, const uint8_t size) {
 	mempool_t * pool;
 

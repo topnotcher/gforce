@@ -34,11 +34,21 @@ void *mempool_alloc(mempool_t * pool);
 	__MEMPOOL_BLOCK(buffer)->refcnt++; \
 } while (0)
 
+/**
+ * Get a "new" reference to a block. This should be called when copying the
+ * data.
+ */
 static inline void * mempool_getref(void *buffer) {
 	__MEMPOOL_INCREF(buffer);
 	return buffer;
 }
 
+/**
+ * Remove a reference to a block (i.e. decrement refcnt). This should be called
+ * one time to undo mempool_alloc then an additional time ffor each
+ * mempool_getref() call. Excess calls to mempool_putref will result in a
+ * memory leak.
+ */
 static inline void mempool_putref(void *buffer) {
 	__MEMPOOL_DECREF(buffer);
 }
