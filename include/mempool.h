@@ -20,21 +20,27 @@ mempool_t * init_mempool(const uint8_t buffsize, const uint8_t blocks);
 
 void *mempool_alloc(mempool_t * pool); 
 
-#define __MEMPOOL_DECREF(block) do { \
-	((mempool_block_t *)((uint8_t*)(block)-offsetof(mempool_block_t,block)))->refcnt--; \
+/**
+ * Get a pointer to the block given membool_block_t.block (buffer)
+ */
+#define __MEMPOOL_BLOCK(buffer) \
+	((mempool_block_t *)((uint8_t*)(buffer)-offsetof(mempool_block_t,block)))
+
+#define __MEMPOOL_DECREF(buffer) do { \
+	__MEMPOOL_BLOCK(buffer)->refcnt--; \
 } while (0)
 
-#define __MEMPOOL_INCREF(block) do { \
-	((mempool_block_t *)((uint8_t*)(block)-offsetof(mempool_block_t,block)))->refcnt++; \
+#define __MEMPOOL_INCREF(buffer) do { \
+	__MEMPOOL_BLOCK(buffer)->refcnt++; \
 } while (0)
 
-static inline void * mempool_getref(void *block) {
-	__MEMPOOL_INCREF(block);
-	return block;
+static inline void * mempool_getref(void *buffer) {
+	__MEMPOOL_INCREF(buffer);
+	return buffer;
 }
 
-static inline void mempool_putref(void * block) {
-	__MEMPOOL_DECREF(block);
+static inline void mempool_putref(void *buffer) {
+	__MEMPOOL_DECREF(buffer);
 }
 
 #endif
