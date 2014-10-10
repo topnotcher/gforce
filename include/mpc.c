@@ -47,35 +47,50 @@ static uint8_t next_mpc_cmd = 0;
 #include <avr/eeprom.h>
 #endif
 
-inline void mpc_init(void) {
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+#define __mpc_addr()\
+		eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR)
+#else
+#define __mpc_addr() ((uint8_t)MPC_ADDR)
+#endif
 
-	uint8_t mpc_addr;
+/**
+ * Initialize the mpc_twi driver if this board is configured for TWI
+ */
+static inline void __mpc_twi_init(uint8_t mpc_addr) {
+#ifdef MPC_TWI
+	uint8_t mask;
 
-	#ifdef MPC_TWI_ADDR_EEPROM_ADDR
-		mpc_addr = eeprom_read_byte((uint8_t*)MPC_TWI_ADDR_EEPROM_ADDR);
+	#ifdef MPC_TWI_ADDRMASK
+		mask = MPC_TWI_ADDRMASK;
 	#else
-		mpc_addr = ((uint8_t)MPC_ADDR);
+		mask = 0;
 	#endif
+
+	comm_dev_t * twi;
+	twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
+	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event);
+#else
+#endif 
+}
+
+/**
+ * Initalize the mpc phasor driver if this board is phasor/master
+ */
+static inline void __mpc_phasor_init(uint8_t mpc_addr) {
+#ifdef PHASOR_COMM
+	phasor_comm = phasor_comm_init(mempool,mpc_addr, mpc_rx_event);
+#else
+#endif
+}
+
+
+void mpc_init(void) {
+	uint8_t mpc_addr = __mpc_addr();
 
 	mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-
-	#ifdef MPC_TWI
-		uint8_t mask;
-
-		#ifdef MPC_TWI_ADDRMASK
-			mask = MPC_TWI_ADDRMASK;
-		#else
-			mask = 0;
-		#endif
-
-		comm_dev_t * twi;
-		twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-		comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event);
-	#endif 
-
-	#ifdef PHASOR_COMM
-		phasor_comm = phasor_comm_init(mempool,mpc_addr, mpc_rx_event);
-	#endif
+	__mpc_twi_init(mpc_addr);
+	__mpc_phasor_init(mpc_addr);
 }
 
 /**
@@ -171,15 +186,12 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	pkt->chksum = MPC_CRC_SHIFT;
 
-//#ifndef MPC_DISABLE_CRC
 	for ( uint8_t i = 0; i < sizeof(*pkt)-sizeof(pkt->chksum); ++i )
 		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t*)pkt)[i]);
-//#endif
+
 	for ( uint8_t i = 0; i < len; ++i ) {
 			pkt->data[i] = data[i];
-//#ifndef MPC_DISABLE_CRC
 			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
-//#endif
 	}
 
 	#ifdef PHASOR_COMM
