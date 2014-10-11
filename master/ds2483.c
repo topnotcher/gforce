@@ -9,9 +9,15 @@
 	#define DS2483_1W_WAIT_TIMEOUT 10
 #endif
 
-static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes, uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) ATTR_ALWAYS_INLINE;
-static inline void ds2483_read(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) ATTR_ALWAYS_INLINE;
-static inline void ds2483_write(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) ATTR_ALWAYS_INLINE;
+static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes,
+		uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) ATTR_ALWAYS_INLINE;
+
+static inline void ds2483_read(ds2483_dev_t * dev, uint8_t len, uint8_t * buf)
+	ATTR_ALWAYS_INLINE;
+
+static inline void ds2483_write(ds2483_dev_t * dev, uint8_t len, uint8_t * buf)
+	ATTR_ALWAYS_INLINE;
+
 static uint8_t ds2483_1w_wait_idle(ds2483_dev_t * dev);
 
 ds2483_dev_t * ds2483_init(twi_master_t * twim, PORT_t * slpz_port, uint8_t slpz_pin) {
@@ -37,7 +43,8 @@ static inline void ds2483_read(ds2483_dev_t * dev, uint8_t len, uint8_t * buf) {
 	twi_master_read(dev->twim, DS2483_I2C_ADDR, len, buf);
 }
 
-static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes, uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) {
+static inline void ds2483_write_read(ds2483_dev_t * dev, uint8_t txbytes,
+		uint8_t * txbuf, uint8_t rxbytes, uint8_t * rxbuf) {
 	twi_master_write_read(dev->twim, DS2483_I2C_ADDR, txbytes, txbuf, rxbytes, rxbuf);
 }
 
