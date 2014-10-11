@@ -3,11 +3,11 @@
 
 #include <phasor_comm.h>
 #include <mpc.h>
+#include <tasks.h>
 
 
 #include "timer.h"
 #include "display.h"
-//#include "lcd.h"
 #include "sounds.h"
 #include "game.h"
 #include "lights.h"
@@ -37,6 +37,7 @@ void ( *countdown_cb )(void);
 
 static inline void handle_shot(const uint8_t, command_t const * const);
 static void process_trigger_pkt(const mpc_pkt * const pkt);
+static void __game_countdown(void);
 
 inline void game_init(void) {
 	mpc_register_cmd('I', process_ir_pkt);
@@ -44,6 +45,10 @@ inline void game_init(void) {
 }
 
 void game_countdown(void) {
+	task_schedule(__game_countdown);
+}
+
+static void __game_countdown(void) {
 	static uint8_t data[] = "        ";
 
 	if ( --game_countdown_time == 0 ) {
