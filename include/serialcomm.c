@@ -93,8 +93,11 @@ void serialcomm_tx_isr(comm_driver_t * comm) {
 			(*dev->data) = comm_tx_next(comm);
 		} else {
 			dev->tx_end();
-			comm_end_tx(comm);
 			dev->tx_state = SERIAL_TX_IDLE;
+			
+			//NOTE: This could cause execution to reenter this function.
+			//(when there is another packet pending)
+			comm_end_tx(comm);
 		}
  	}
 }

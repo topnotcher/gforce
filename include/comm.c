@@ -87,6 +87,10 @@ void comm_end_tx(comm_driver_t * comm) {
 	}		
 		
 	comm->tx.state = COMM_TX_STATE_IDLE;
+
+	// Begin sending any additional queued packets.
+	// @TODO will this work with the SPI driver?
+	comm_tx(comm);
 }
 
 /**

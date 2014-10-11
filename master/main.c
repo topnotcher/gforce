@@ -26,7 +26,6 @@
 #define DEBUG 1
 #endif
 
-static inline void process_ib_pkt(mpc_pkt const * const pkt);
 static void xbee_relay_mpc(const mpc_pkt * const pkt);
 
 int main(void) {
@@ -71,33 +70,11 @@ int main(void) {
 	while (1) {
 		tasks_run();
 	//	wdt_reset();
-		process_ib_pkt(xbee_recv());
 		display_tx();
 
 	}
 
 	return 0;
-}
-
-
-static inline void process_ib_pkt(mpc_pkt const * const pkt) {
-
-	if ( pkt == NULL ) return;
-	
-	if ( pkt->cmd == 'I' ) {
-		//simulate IR by "bouncing" it off of chest
-		mpc_send(MPC_CHEST_ADDR,'I', pkt->len, (uint8_t*)pkt->data);
-		//process_ir_pkt(pkt);
-
-	//hackish thing.
-	//receive a "ping" from the xbee means 
-	//send a ping to the board specified by byte 0
-	//of the data. That board should then reply...
-	} else if ( pkt->cmd == 'P' ) {
-		mpc_send_cmd(pkt->data[0], 'P');
-	} else if (pkt->cmd == 'O') {
-		task_schedule(ibutton_switchto);
-	}
 }
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt) {
