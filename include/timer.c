@@ -142,8 +142,10 @@ static inline void __del_timer(void (*task_cb)(void)) {
 	timer_node * node = task_list;
 
 	while (node != NULL) {
-		if (node->task.task == task_cb)
+		if (node->task.task == task_cb) {
 			timer_remove_node(node);
+			break;
+		}
 		node = node->next;
 	}
 }
@@ -201,12 +203,14 @@ static inline void timer_reorder_tasks(uint8_t reorder) {
 				cur->prev->next = cur->next;
 
 			if (cur->next != NULL)
-				cur->next->prev = cur->next;
+				cur->next->prev = cur->prev;
 
 			cur = cur->next;
 
-			new_head->next = task_list;
+			new_head->prev->next = new_head->next;
 			task_list->prev = new_head;
+			new_head->next = task_list;
+			new_head->prev = NULL;
 			task_list = new_head;
 
 		} else {
