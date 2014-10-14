@@ -31,7 +31,7 @@ static timer_ticks_t ticks;
 #define _TIMER_NODE_EMPTY(node)((node)->task.task == NULL)
 
 static inline void set_ticks(void);
-static inline void timer_remove_node(timer_node * rm_node);
+static inline void __del_timer_node(timer_node * rm_node);
 static inline void __del_timer(void (*task_cb)(void));
 static inline void __add_timer_node(timer_node * node, uint8_t adjust);
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
@@ -155,7 +155,7 @@ static inline void __del_timer(void (*task_cb)(void)) {
 
 	while (node != NULL) {
 		if (node->task.task == task_cb) {
-			timer_remove_node(node);
+			__del_timer_node(node);
 			break;
 		}
 		node = node->next;
@@ -178,7 +178,7 @@ void del_timer(void (*task_cb)(void)) {
  * Remove a timer node from the list.
  * Must be called with interrupts disabled.
  */
-static inline void timer_remove_node(timer_node * rm_node) {
+static inline void __del_timer_node(timer_node * rm_node) {
 	if (rm_node == task_list) {
 		task_list = rm_node->next;
 
