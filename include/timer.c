@@ -51,12 +51,18 @@ void init_timers(void) {
 }
 
 /**
- * @see ()
+ * Allocate memory for a timer and initialize the structure members.
+ *
+ * @see add_timer()
  */
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime) {
 
 	timer_node *node = mempool_alloc(task_pool);
+
+	if (node == NULL)
+		return NULL;
+
 	timer_task *task = &(node->task);
 
 	task->task = task_cb;
@@ -70,7 +76,7 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 }
 
 /**
- * Create a timer.
+ * Create and register a timer.
  *
  * @param task_cb callback function to run when timer triggers.
  * @param task_freq frequency to trigger the timer.
@@ -79,6 +85,10 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
 
+	//derp silent failure is fun
+	if (node == NULL)
+		return;
+
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		__add_timer_node(node, 1);
 		set_ticks();
@@ -86,7 +96,15 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
 }
 
 /**
- * Add a timer node to the list. Must be called with interrupts disabled.
+ * Register a timer. This function MUST be called with interrupts disabled. If
+ * it is called outside of the timer interrupt, adjust should be set to 1 to
+ * indicate that the partial tick should be deducted from the timers. List
+ * items are inserted in increasing order of # of ticks. It is assumed that the
+ * added node has NULL ->next and ->prev.
+ *
+ * @param node the node to add to the list
+ * @param adjust whether the current timers need to be adjusted.
+ *
  * @see add_timer()
  */
 static inline void __add_timer_node(timer_node * node, uint8_t adjust) {
@@ -193,7 +211,8 @@ static inline void __del_timer_node(timer_node * rm_node) {
 }
 
 /**
- * Timer interrupt handling.
+ * Note that the list is rebuilt. This is to handle reordering of the list
+ * items when node->task.ticks is reset to .freq.
  */
 TIMER_RUN {
 	timer_node * node;
