@@ -28,8 +28,6 @@ static mempool_t * task_pool;
 static timer_node * task_list;
 static timer_ticks_t ticks;
 
-#define _TIMER_NODE_EMPTY(node)((node)->task.task == NULL)
-
 static inline void set_ticks(void);
 static inline void __del_timer_node(timer_node * rm_node);
 static inline void __del_timer(void (*task_cb)(void));
