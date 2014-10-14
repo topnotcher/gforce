@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mempool.h>
+#include <util.h>
 
 #ifndef MAX_TIMERS
 #define MAX_TIMERS 8
@@ -28,10 +29,10 @@ static mempool_t * task_pool;
 static timer_node * task_list;
 static timer_ticks_t ticks;
 
-static inline void set_ticks(void);
-static inline void __del_timer_node(timer_node * rm_node);
-static inline void __del_timer(void (*task_cb)(void));
-static inline void __add_timer_node(timer_node * node, uint8_t adjust);
+static inline void set_ticks(void) ATTR_ALWAYS_INLINE;
+static void __del_timer_node(timer_node * rm_node);
+static void __del_timer(void (*task_cb)(void));
+static void __add_timer_node(timer_node * node, uint8_t adjust);
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime);
 
@@ -107,7 +108,7 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
  *
  * @see add_timer()
  */
-static inline void __add_timer_node(timer_node * node, uint8_t adjust) {
+static void __add_timer_node(timer_node * node, uint8_t adjust) {
 	if (task_list == NULL) {
 		task_list = node;
 		return;
@@ -166,7 +167,7 @@ static inline void set_ticks(void) {
 /**
  * Must be called with interrupts disabled.
  */
-static inline void __del_timer(void (*task_cb)(void)) {
+static void __del_timer(void (*task_cb)(void)) {
 	timer_node * node = task_list;
 
 	while (node != NULL) {
@@ -194,7 +195,7 @@ void del_timer(void (*task_cb)(void)) {
  * Remove a timer node from the list.
  * Must be called with interrupts disabled.
  */
-static inline void __del_timer_node(timer_node * rm_node) {
+static void __del_timer_node(timer_node * rm_node) {
 	if (rm_node == task_list) {
 		task_list = rm_node->next;
 
