@@ -33,7 +33,7 @@ static timer_ticks_t ticks;
 static inline void set_ticks(void);
 static inline void timer_remove_node(timer_node * rm_node);
 static inline void __del_timer(void (*task_cb)(void));
-static inline void __add_timer_node(timer_node * node);
+static inline void __add_timer_node(timer_node * node, uint8_t adjust);
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime);
 
@@ -53,7 +53,7 @@ void init_timers(void) {
 }
 
 /**
- * @see add_timer()
+ * @see ()
  */
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime) {
@@ -82,7 +82,8 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
 	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		__add_timer_node(node);
+		__add_timer_node(node, 1);
+		set_ticks();
 	}
 }
 
@@ -90,18 +91,23 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
  * Add a timer node to the list. Must be called with interrupts disabled.
  * @see add_timer()
  */
-static inline void __add_timer_node(timer_node * node) {
+static inline void __add_timer_node(timer_node * node, uint8_t adjust) {
 	if (task_list == NULL) {
 		task_list = node;
-		set_ticks();
-		TIMER_INTERRUPT_REGISTER |= TIMER_INTERRUPT_ENABLE_BITS;
 		return;
 	}
 
-	timer_node * cur = task_list;
-	while (cur != NULL) {
-		cur->task.ticks -= RTC.CNT;
-		cur = cur->next;
+	//if add_timer is called between ticks.
+	if (adjust) {
+		timer_node * cur = task_list;
+		while (cur != NULL) {
+			//this is probably unlikely to be false (though possible)
+			if (cur->task.ticks >= RTC.CNT)
+				cur->task.ticks -= RTC.CNT;
+			else
+				cur->task.ticks = 0;
+			cur = cur->next;
+		}
 	}
 
 	//handle the case of replacing the head
@@ -118,9 +124,10 @@ static inline void __add_timer_node(timer_node * node) {
 		node->next = tmp->next;
 		tmp->next = node;
 		node->prev = tmp;
-	}
 
-	set_ticks();
+		if (node->next != NULL)
+			node->next->prev = node;
+	}
 }
 
 /**
@@ -130,9 +137,14 @@ static inline void __add_timer_node(timer_node * node) {
  * this could get nasty otherwise.
  */
 static inline void set_ticks(void) {
-	RTC.CNT = 0;
-	RTC.COMP = task_list->task.ticks;
-	ticks = task_list->task.ticks;
+	if (task_list == NULL) {
+		TIMER_INTERRUPT_REGISTER &= ~TIMER_INTERRUPT_ENABLE_BITS;
+	} else {
+		RTC.CNT = 0;
+		RTC.COMP = task_list->task.ticks;
+		ticks = task_list->task.ticks;
+		TIMER_INTERRUPT_REGISTER |= TIMER_INTERRUPT_ENABLE_BITS;
+	}
 }
 
 /**
@@ -158,6 +170,7 @@ static inline void __del_timer(void (*task_cb)(void)) {
 void del_timer(void (*task_cb)(void)) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		__del_timer(task_cb);
+		set_ticks();
 	}
 }
 
@@ -166,13 +179,9 @@ void del_timer(void (*task_cb)(void)) {
  * Must be called with interrupts disabled.
  */
 static inline void timer_remove_node(timer_node * rm_node) {
-	if (task_list == NULL) return;
-
 	if (rm_node == task_list) {
 		task_list = rm_node->next;
 
-		if (task_list == NULL)
-			TIMER_INTERRUPT_REGISTER &= ~TIMER_INTERRUPT_ENABLE_BITS;
 	} else {
 		//this should always be true.
 		if (rm_node->prev != NULL)
@@ -186,73 +195,39 @@ static inline void timer_remove_node(timer_node * rm_node) {
 }
 
 /**
- * only call with interrupts disabled.
- */
-static inline void timer_reorder_tasks(uint8_t reorder) {
-	timer_ticks_t min = task_list->task.ticks;
-	timer_node * cur = task_list->next;
-
-	while (cur != NULL && reorder--) {
-		if (cur->task.ticks < min) {
-			timer_node * new_head = cur;
-
-			min = cur->task.ticks;
-
-			//should always be true.
-			if (cur->prev != NULL)
-				cur->prev->next = cur->next;
-
-			if (cur->next != NULL)
-				cur->next->prev = cur->prev;
-
-			cur = cur->next;
-
-			new_head->prev->next = new_head->next;
-			task_list->prev = new_head;
-			new_head->next = task_list;
-			new_head->prev = NULL;
-			task_list = new_head;
-
-		} else {
-			cur = cur->next;
-		}
-	}
-}
-
-/**
  * Timer interrupt handling.
  */
 TIMER_RUN {
-	timer_node * node = task_list;
+	timer_node * node;
 	timer_node * cur = task_list;
-	uint8_t reorder = 0;
+	task_list = NULL;
 
 	while (cur != NULL) {
 		node = cur;
 		cur = node->next;
 
+		node->next = NULL;
+		node->prev = NULL;
+
 		if (node->task.ticks <= ticks) {
 			node->task.task();
 
 			if (node->task.lifetime != TIMER_RUN_UNLIMITED && --node->task.lifetime == 0) {
-				timer_remove_node(node);
+				mempool_putref(node);
 			} else {
-				reorder++;
 				node->task.ticks = node->task.freq;
+				__add_timer_node(node,0);
 			}
 		} else {
 			node->task.ticks -= ticks;
+
+			//@TODO this could possibly be done once with the entire tail
+			//inserted: since the remaining nodes are not run, they are already
+			//ordered correctly. This would require seeking to the tail of the
+			//list. The benefit is probably not worth it.
+			__add_timer_node(node,0);
 		}
 	}
 
-	if (task_list != NULL) {
-		// the list is in order as of when items are inserted so they can only
-		// become out of order when something run and is NOT unregistered.  In
-		// this case, the item that was run would have been on top (could have
-		// been top N items?)
-		if (reorder)
-			timer_reorder_tasks(reorder);
-
-		set_ticks();
-	}
+	set_ticks();
 }
