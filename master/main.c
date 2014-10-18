@@ -27,9 +27,12 @@
 #endif
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt);
+static void main_thread(void);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
+
+	threads_init();
 
 	init_timers();
 	sound_init();
@@ -64,17 +67,20 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
-	threads_init_stack();
+	main_stack = thread_create(main_thread);
 	ibtn_stack = thread_create(ibutton_run);
 
+	cur_stack = main_stack;
+	thread_context_in();
+	asm volatile ("ret");
+}
+
+static void main_thread(void) {
 	while (1) {
 		tasks_run();
 	//	wdt_reset();
 		display_tx();
-
 	}
-
-	return 0;
 }
 
 static void xbee_relay_mpc(const mpc_pkt * const pkt) {
