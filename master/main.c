@@ -32,8 +32,6 @@ static void main_thread(void);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	threads_init();
-
 	init_timers();
 	sound_init();
 	xbee_init();
@@ -46,14 +44,8 @@ int main(void) {
 	//clear shit by default.
 	lights_off();
 
-//	display_write("Good Morning");
-//	_delay_ms(500);
-
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
-
-//	_delay_ms(500);
-	display_write("");
 
 	//wdt_enable(9);
 	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
@@ -67,15 +59,14 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
-	main_stack = thread_create(main_thread);
-	ibtn_stack = thread_create(ibutton_run);
-
-	cur_stack = main_stack;
-	thread_context_in();
-	asm volatile ("ret");
+	threads_init_stack();
+	thread_create(main_thread);
+	thread_create(ibutton_run);
+	threads_start_main();
 }
 
 static void main_thread(void) {
+	display_write("foo");
 	while (1) {
 		tasks_run();
 	//	wdt_reset();

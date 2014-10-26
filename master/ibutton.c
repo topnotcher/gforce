@@ -91,11 +91,7 @@ static void ibutton_scheduled_wake(void) {
  * to the ibutton process
  */
 void ibutton_switchto(void) {
-	thread_context_out();
-	main_stack = cur_stack;
-	cur_stack = ibtn_stack;
-	thread_context_in();
-	asm volatile ("ret");
+	threads_switchto(1);
 }
 
 /**
@@ -103,11 +99,7 @@ void ibutton_switchto(void) {
  * to the main process
  */
 void ibutton_switchfrom(void) {
-	thread_context_out();
-	ibtn_stack = cur_stack;
-	cur_stack = main_stack;
-	thread_context_in();
-	asm volatile ("ret");
+	threads_switchto(0);
 }
 
 

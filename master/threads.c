@@ -2,20 +2,23 @@
 #include <util/atomic.h>
 #include "threads.h"
 
-void * volatile main_stack;
-void * volatile ibtn_stack;
-void * volatile cur_stack;
-void * volatile top_of_stack;
+static void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
 
-void * thread_create(void (*task)(void)) {
-	void * new_thread_stack;
+threads_t threads;
+
+uint8_t thread_create(void (*task)(void)) {
+	tcb_t * tcb;
+	uint8_t pid;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		pid = threads.num++;
+		tcb = &threads.list[pid];
+		tcb->pid = pid;
 		//new thread goes on the current top of stack
-		new_thread_stack = thread_stack_init(top_of_stack, task);
-		top_of_stack = (void*)((uint16_t)new_thread_stack - (uint16_t)THREADS_STACK_SIZE); 
+		tcb->stack = thread_stack_init(threads.top_of_stack, task);
+		threads.top_of_stack = (void*)((uint16_t)tcb->stack - (uint16_t)THREADS_STACK_SIZE); 
 	}
 
-	return new_thread_stack; 
+	return pid; 
 }
 
 void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
@@ -140,4 +143,15 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	stack--;
 
 	return stack;
+}
+
+void threads_start_main(void) {
+	threads.tcb = &threads.list[0];
+	thread_context_in();
+}
+
+void threads_switchto(uint8_t derp) {
+	thread_context_out();
+	threads.tcb = &threads.list[derp];
+	thread_context_in();
 }

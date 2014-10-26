@@ -4,31 +4,46 @@
 #define THREADS_CONTEXT_SIZE 38
 #define THREADS_STACK_SIZE 64
 
-extern void * volatile main_stack;
-extern void * volatile top_of_stack;
-extern void * volatile ibtn_stack;
-extern void * volatile cur_stack;
+#ifndef NUM_THREADS
+#define NUM_THREADS 5
+#endif
+
+typedef struct {
+	uint8_t pid;
+	void * stack;
+} tcb_t;
+
+typedef struct {
+	uint8_t num;
+	tcb_t * tcb;
+	void * top_of_stack;
+	tcb_t list[NUM_THREADS];	
+} threads_t;
+
+extern threads_t threads;
 
 /**
  * Sets the stack pointer to the top of the "main" thread of coroutines.
  * (since main is never "started" as a task...)
+ * 16 is subtracted as a buffer - enough to get the first thread launched.
  */
-#define threads_init()\
+#define threads_init_stack()\
 	asm volatile(\
-		"in r28, __SP_L__\n"\
-		"in r29, __SP_H__\n"\
-		"sts top_of_stack, r28\n"\
-		"sts top_of_stack+1, r29\n"\
+		"in %A0, __SP_L__\n"\
+		"in %B0, __SP_H__\n"\
+		"sbci %A0, 16\n"\
+		: "=e" (threads.top_of_stack) : :\
 	);\
 
-void * thread_create(void (*task)(void)); 
-void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
+uint8_t thread_create(void (*task)(void)); 
+
+void threads_start_main(void);
+void threads_switchto(uint8_t);
 
 #define thread_context_in()                                \
-    asm volatile (  "lds    r26, cur_stack        \n\t"    \
-                    "lds    r27, cur_stack + 1    \n\t"    \
-                    "out    __SP_L__, r26            \n\t"    \
-                    "out    __SP_H__, r27            \n\t"    \
+	asm volatile(\
+                    "out    __SP_L__, %A0            \n\t"    \
+                    "out    __SP_H__, %B0            \n\t"    \
                     "pop    r31                      \n\t"    \
                     "pop    r30                      \n\t"    \
                     "pop    r29                      \n\t"    \
@@ -63,6 +78,7 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void));
                     "pop    r0                       \n\t"    \
                     "out    __SREG__, r0             \n\t"    \
                     "pop    r0                       \n\t"    \
+					: : "e" (threads.tcb->stack) : \
                 );
 #define thread_context_out()                                   \
     asm volatile (  "push    r0                     \n\t"    \
@@ -101,9 +117,8 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void));
                     "push    r29                    \n\t"    \
                     "push    r30                    \n\t"    \
                     "push    r31                    \n\t"    \
-                    "in      r0, __SP_L__           \n\t"    \
-                    "sts     cur_stack, r0          \n\t"    \
-                    "in      r0, __SP_H__           \n\t"    \
-                    "sts     cur_stack+1, r0        \n\t"    \
+                    "in      %A0, __SP_L__           \n\t"    \
+                    "in      %B0, __SP_H__           \n\t"    \
+					: "=e" (threads.tcb->stack) : :\
                 );
 #endif
