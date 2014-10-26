@@ -1,3 +1,4 @@
+#include <string.h>
 #include <malloc.h>
 #include <stddef.h>
 #include <comm.h>
@@ -14,6 +15,7 @@ twi_slave_t * twi_slave_init(
 
 	twi_slave_t * dev;
 	dev = (twi_slave_t*)smalloc(sizeof *dev);
+	memset(dev, 0, sizeof *dev);
 
 	dev->twi = twi;
 	dev->addr = addr<<1;
