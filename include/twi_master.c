@@ -1,3 +1,4 @@
+#include <string.h>
 #include <util.h>
 #include <malloc.h>
 #include <twi_master.h>
@@ -21,10 +22,13 @@ twi_master_t * twi_master_init(
 ) {
 	twi_master_t * dev;
 	dev = smalloc(sizeof *dev);
+	memset(dev, 0, sizeof *dev);
 
 	dev->twi = twi;
 	dev->txn_complete = txn_complete;
 	dev->ins = ins;
+	dev->block = NULL;
+	dev->resume = NULL;
 
 	/**
 	 * Master initialization
