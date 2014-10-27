@@ -6,12 +6,13 @@ static void * thread_stack_init(uint8_t * stack, void (*task)(void));
 
 threads_t threads;
 
-uint8_t thread_create(void (*task)(void)) {
+uint8_t thread_create(const char * name, void (*task)(void)) {
 	tcb_t * tcb;
 	uint8_t pid;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		pid = threads.num++;
 		tcb = &threads.list[pid];
+		tcb->name = name;
 		tcb->pid = pid;
 		//new thread goes on the current top of stack
 		tcb->stack = thread_stack_init(threads.top_of_stack, task);
@@ -143,15 +144,4 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	stack--;
 
 	return stack;
-}
-
-void threads_start_main(void) {
-	threads.tcb = &threads.list[0];
-	thread_context_in();
-}
-
-void threads_switchto(uint8_t derp) {
-	thread_context_out();
-	threads.tcb = &threads.list[derp];
-	thread_context_in();
 }

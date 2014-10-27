@@ -11,6 +11,7 @@
 typedef struct {
 	uint8_t pid;
 	void * stack;
+	const char * name;
 } tcb_t;
 
 typedef struct {
@@ -33,12 +34,25 @@ extern threads_t threads;
 		"in %B0, __SP_H__\n"\
 		"sbci %A0, 16\n"\
 		: "=e" (threads.top_of_stack) : :\
-	);\
+	)\
 
-uint8_t thread_create(void (*task)(void)); 
 
-void threads_start_main(void);
-void threads_switchto(uint8_t);
+
+#define threads_start_main() do {\
+		threads.tcb = &threads.list[0];\
+		thread_context_in();\
+		asm volatile ("ret");\
+	} while(0)
+
+
+#define threads_switchto(derp) do {\
+		thread_context_out();\
+		threads.tcb = &threads.list[derp];\
+		thread_context_in();\
+		asm volatile ("ret");\
+	} while(0)
+
+uint8_t thread_create(const char * name, void (*task)(void));
 
 #define thread_context_in()                                \
 	asm volatile(\
@@ -79,7 +93,7 @@ void threads_switchto(uint8_t);
                     "out    __SREG__, r0             \n\t"    \
                     "pop    r0                       \n\t"    \
 					: : "e" (threads.tcb->stack) : \
-                );
+                )
 #define thread_context_out()                                   \
     asm volatile (  "push    r0                     \n\t"    \
                     "in      r0, __SREG__           \n\t"    \
@@ -120,5 +134,5 @@ void threads_switchto(uint8_t);
                     "in      %A0, __SP_L__           \n\t"    \
                     "in      %B0, __SP_H__           \n\t"    \
 					: "=e" (threads.tcb->stack) : :\
-                );
+                )
 #endif
