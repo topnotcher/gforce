@@ -38,6 +38,8 @@ void ( *countdown_cb )(void);
 static inline void handle_shot(const uint8_t, command_t const * const);
 static void process_trigger_pkt(const mpc_pkt * const pkt);
 static void __game_countdown(void);
+static void stun_timer(void);
+static void __stun_timer(void);
 
 inline void game_init(void) {
 	mpc_register_cmd('I', process_ir_pkt);
@@ -126,7 +128,11 @@ void stop_game(void) {
 	}
 }
 
-void stun_timer(void) {
+static void stun_timer(void) {
+	task_schedule(__stun_timer);
+}
+
+static void __stun_timer(void) {
 
 
 	if (!game_state.playing) {
