@@ -20,7 +20,7 @@
 //we count the overflow ticks, which acts a a prescaler.
 //this is every 256 CPU instructions? seems a bit fuckin steeep. WE SHALL GO WITH IT
 
-#define TIMER_HZ 1000
+#define TIMER_HZ 1024
 //TEMP - IFDK why it's running 2x as fast
 //#define TIMER_HZ 131071
 //#define TIMER_HZ 62652
