@@ -78,7 +78,7 @@ void start_game_cmd(command_t const * const cmd) {
 	game_countdown_time = settings->prestart+1;
 	countdown_cb = &start_game_activate;
 
-	add_timer(&game_countdown, 1000, game_countdown_time);
+	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }
 
 void game_tick(void) {
@@ -87,7 +87,7 @@ void game_tick(void) {
 }
 
 void start_game_activate(void) {
-	add_timer(&game_tick, 1000, TIMER_RUN_UNLIMITED);
+	add_timer(&game_tick, TIMER_HZ, TIMER_RUN_UNLIMITED);
 	player_activate();
 }
 
@@ -194,7 +194,7 @@ void do_stun(void) {
 	
 	lights_stun();
 
-	add_timer(&stun_timer, 1000, game_countdown_time);
+	add_timer(&stun_timer, TIMER_HZ, game_countdown_time);
 }
 
 void do_deac(void) {
@@ -204,7 +204,7 @@ void do_deac(void) {
 	
 	game_countdown_time = game_settings.deac_time;
 	countdown_cb = player_activate;
-	add_timer(&game_countdown, 1000, game_countdown_time);
+	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }
 
 void process_ir_pkt(mpc_pkt const * const pkt) {
