@@ -1,17 +1,17 @@
 #include <util/atomic.h>
-
-#include <timer.h>
 #include <stdlib.h>
-#include <string.h>
-#include <mempool.h>
-#include <util.h>
+#include <stdbool.h>
+#include "timer.h"
+#include "mempool.h"
+
+#define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
 #ifndef MAX_TIMERS
 #define MAX_TIMERS 8
 #endif
 
 typedef struct {
-	void (* task)(void);
+	void (*task)(void);
 	timer_ticks_t freq;
 	timer_ticks_t ticks;
 	//TIMER_RUN_UNLIMITED = infinite.
@@ -21,18 +21,18 @@ typedef struct {
 struct timer_node_st;
 typedef struct timer_node_st {
 	timer_task task;
-	struct timer_node_st * next;
-	struct timer_node_st * prev;
+	struct timer_node_st *next;
+	struct timer_node_st *prev;
 } timer_node;
 
-static mempool_t * task_pool;
-static timer_node * task_list;
+static mempool_t *task_pool;
+static timer_node *task_list;
 static timer_ticks_t ticks;
 
 static inline void set_ticks(void) ATTR_ALWAYS_INLINE;
-static void __del_timer_node(timer_node * rm_node);
+static void __del_timer_node(timer_node *rm_node);
 static void __del_timer(void (*task_cb)(void));
-static void __add_timer_node(timer_node * node, uint8_t adjust);
+static void __add_timer_node(timer_node *node, uint8_t adjust);
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 		timer_lifetime_t task_lifetime);
 
@@ -77,7 +77,8 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 }
 
 /**
- * Create and register a timer.
+ * Create and register a timer. Result is _undefined_ if called while executing
+ * a timer.
  *
  * @param task_cb callback function to run when timer triggers.
  * @param task_freq frequency to trigger the timer.
@@ -85,10 +86,6 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
  */
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
-
-	//derp silent failure is fun
-	if (node == NULL)
-		return;
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		__add_timer_node(node, 1);
@@ -108,7 +105,7 @@ void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t 
  *
  * @see add_timer()
  */
-static void __add_timer_node(timer_node * node, uint8_t adjust) {
+static void __add_timer_node(timer_node *node, uint8_t adjust) {
 	if (task_list == NULL) {
 		task_list = node;
 		return;
@@ -116,7 +113,7 @@ static void __add_timer_node(timer_node * node, uint8_t adjust) {
 
 	//if add_timer is called between ticks.
 	if (adjust) {
-		timer_node * cur = task_list;
+		timer_node *cur = task_list;
 		while (cur != NULL) {
 			//this is probably unlikely to be false (though possible)
 			if (cur->task.ticks >= RTC.CNT)
@@ -157,6 +154,9 @@ static inline void set_ticks(void) {
 	if (task_list == NULL) {
 		TIMER_INTERRUPT_REGISTER &= ~TIMER_INTERRUPT_ENABLE_BITS;
 	} else {
+		//see xmegaA, p190. Results are insane if SYNCBUSY is not checked.
+		//(i.e. the values do not update)
+		while (RTC.STATUS&RTC_SYNCBUSY_bm);
 		RTC.CNT = 0;
 		RTC.COMP = task_list->task.ticks;
 		ticks = task_list->task.ticks;
@@ -168,19 +168,21 @@ static inline void set_ticks(void) {
  * Must be called with interrupts disabled.
  */
 static void __del_timer(void (*task_cb)(void)) {
-	timer_node * node = task_list;
+
+	timer_node *node = task_list;
 
 	while (node != NULL) {
+		timer_node *next = node->next;
 		if (node->task.task == task_cb) {
 			__del_timer_node(node);
 			break;
 		}
-		node = node->next;
+		node = next;;
 	}
 }
 
 /**
- * Delete a timer.
+ * Delete a timer. Result is undefined if called while executing a timer.
  *
  * @param task_cb the callback function registered in the timer.
  */
@@ -195,7 +197,7 @@ void del_timer(void (*task_cb)(void)) {
  * Remove a timer node from the list.
  * Must be called with interrupts disabled.
  */
-static void __del_timer_node(timer_node * rm_node) {
+static void __del_timer_node(timer_node *rm_node) {
 	if (rm_node == task_list) {
 		task_list = rm_node->next;
 
@@ -213,11 +215,13 @@ static void __del_timer_node(timer_node * rm_node) {
 
 /**
  * Note that the list is rebuilt. This is to handle reordering of the list
- * items when node->task.ticks is reset to .freq.
+ * items when node->task.ticks is reset to .freq. Due to this, a task cannot
+ * modify timers while it is running; this must be deferred until outside of
+ * timer interrupt context.
  */
 TIMER_RUN {
-	timer_node * node;
-	timer_node * cur = task_list;
+	timer_node *node;
+	timer_node *cur = task_list;
 	task_list = NULL;
 
 	while (cur != NULL) {

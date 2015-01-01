@@ -79,7 +79,6 @@ void player_activate(void);
 void do_stun(void);
 void do_deac(void);
 
-void stun_timer(void);
 
 void game_init(void);
 
