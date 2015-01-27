@@ -23,9 +23,11 @@ static void ibutton_scheduled_wake(void);
 static inline void ibutton_sleep(void);
 static inline int8_t ibutton_detect_cycle(void);
 
+static void ibutton_switchto(void) __attribute__((naked));
+
 void ibutton_init(void) {
 	twi_master_t * twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, ibutton_switchfrom,ibutton_scheduled_wake);
+	twi_master_set_blocking(twim, block,ibutton_scheduled_wake);
 	onewiredev = ds2483_init(twim,&DS2483_SLPZ_PORT,G4_PIN(DS2483_SLPZ_PIN));
 
 	//this starts the process (300+ms from now).
@@ -75,7 +77,7 @@ static inline int8_t ibutton_detect_cycle(void) {
 
 static inline void ibutton_sleep(void) {
 	add_timer(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
-	ibutton_switchfrom();
+	block();
 }
 
 /**
@@ -93,14 +95,5 @@ static void ibutton_scheduled_wake(void) {
 void ibutton_switchto(void) {
 	threads_switchto(1);
 }
-
-/**
- * Triggers a context switch from the ibutton process
- * to the main process
- */
-void ibutton_switchfrom(void) {
-	threads_switchto(0);
-}
-
 
 DS2483_INTERRUPT_HANDLER(ISR(TWIE_TWIM_vect), onewiredev)

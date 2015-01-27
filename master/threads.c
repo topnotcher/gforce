@@ -22,6 +22,10 @@ uint8_t thread_create(const char * name, void (*task)(void)) {
 	return pid; 
 }
 
+void block(void) {
+	threads_switchto(0);
+}
+
 void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 	*stack = 0x11; //38
 	stack--;
