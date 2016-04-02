@@ -19,7 +19,7 @@ sound_player player;
 
 #endif
 
-inline void sound_init() {
+void sound_init(void) {
 	
 	TCC0.CCA = 63;
 	TCC0.CTRLB |= TC0_CCAEN_bm;
@@ -43,7 +43,7 @@ inline void sound_init() {
 #endif
 }
 
-inline void sound_play_init() {
+void sound_play_init(void) {
 #if W_SOUNDS == 1
 
 	DACB.CH0DATA = 0x7FF;
@@ -55,7 +55,7 @@ inline void sound_play_init() {
 #endif
 }
 
-inline void sound_play_deinit() {
+void sound_play_deinit(void) {
 
 
 	//MUTE
@@ -90,7 +90,7 @@ void sound_play_effect(uint8_t effect) {
 #endif
 }
 
-inline void sound_stop(void) {
+void sound_stop(void) {
 #if W_SOUNDS == 1
 	tick_disable();
 	sound_play_deinit();
@@ -98,7 +98,7 @@ inline void sound_stop(void) {
 #endif
 }
 
-void sound_play_byte() {
+void sound_play_byte(void) {
 #if W_SOUNDS == 1
 //PORTD.OUT ^= PIN5_bm;
 	DACB.CH0DATA = (uint16_t)pgm_read_byte(&player.effect[player.pos++]) * 16UL;

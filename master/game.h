@@ -1,4 +1,5 @@
 #include <mpc.h>
+#include <stdint.h>
 
 #ifndef GAME_H
 #define GAME_H
@@ -9,14 +10,13 @@
 typedef struct {
 	uint8_t cmd;
 	uint8_t packs;
-	uint8_t data;
+	uint8_t size;
 	uint8_t crc;
-} command_t;
 
+	uint8_t data[];
+} __attribute__((packed)) command_t;
 
 typedef struct {
-	command_t hdr;
-
 	uint8_t passkey2;
 
 	//game number
@@ -58,7 +58,7 @@ typedef struct {
 
 	uint8_t crc;
 
-} game_start_cmd;
+} __attribute__((packed)) game_start_cmd;
 
 typedef struct {
 	uint8_t playing:1;
@@ -82,6 +82,6 @@ void do_deac(void);
 
 void game_init(void);
 
-void process_ir_pkt(mpc_pkt const * const pkt);
+void process_ir_pkt(const mpc_pkt *const pkt);
 
 #endif

@@ -62,11 +62,11 @@ static void __game_countdown(void) {
 	display_send(0,9,data);
 }
 
-void start_game_cmd(command_t const * const cmd) {
+void start_game_cmd(command_t const *const cmd) {
 	if ( game_state.playing )
 		return;
 
-	game_start_cmd * settings = (game_start_cmd *)cmd;
+	game_start_cmd *settings = (game_start_cmd *)cmd->data;
 
 	game_state.playing = 1;
 	game_state.stunned = 0;
@@ -214,9 +214,9 @@ void do_deac(void) {
 	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }
 
-void process_ir_pkt(mpc_pkt const * const pkt) {
+void process_ir_pkt(const mpc_pkt *const pkt) {
 
-	command_t const * const  cmd = (command_t*)pkt->data;
+	const command_t *const cmd = (command_t*)pkt->data;
 
 	if ( cmd->cmd == 0x38) {
 		start_game_cmd(cmd);

@@ -10,7 +10,7 @@ typedef struct {
 	uint8_t saddr;
 	uint8_t chksum;
 	uint8_t data [] ;
-} mpc_pkt;
+} __attribute__((packed)) mpc_pkt;
 
 
 void mpc_init(void);
