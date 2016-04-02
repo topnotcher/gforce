@@ -2,22 +2,18 @@
 MCU = atxmega256a3
 F_CPU = 32000000
 
+PROJECT=master
+
 C_DEFS=W_SOUNDS=0 DEBUG=0
-
-# List C source files here. (C dependencies are automatically generated.)
-SRC = main.c timer.c sounds.c util.c xbee.c mpc.c display.c game.c lights.c malloc.c mempool.c queue.c comm.c serialcomm.c phasor_comm.c twi_slave.c twi_master.c mpctwi.c tasks.c ibutton.c ds2483.c threads.c
-
-#these are not ready for this hardware
-# ir_sensor.c lcd.c game.c
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
 
 # dir to put output files.
-TMP = tmp
+OUTPUT = output
 
 # Target file name (without extension).
-TARGET = $(TMP)/main
+TARGET = $(OUTPUT)/main
 
 # Optimization level, can be [0, 1, 2, 3, s]. 0 turns off optimization.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
@@ -43,7 +39,7 @@ CFLAGS = -g -O$(OPT) \
 -Wall -Wstrict-prototypes -Werror\
 -finline-functions -finline-functions-called-once -finline-limit=1000 -finline-small-functions\
 -DF_CPU=$(F_CPU) \
--Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
+-Wa,-adhlns=$(@:.o=.lst) \
 $(patsubst %,-I%,$(EXTRAINCDIRS)) \
 $(patsubst %,-D%,$(C_DEFS))
 
@@ -63,8 +59,7 @@ CFLAGS += -std=gnu99 -Wno-overflow
 #             for use in COFF files, additional information about filenames
 #             and function names needs to be present in the assembler source
 #             files -- see avr-libc docs [FIXME: not yet described there]
-ASFLAGS = -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.S=.lst)),-gstabs 
-#LST = $(patsubst %,$(TMP)/%, $(SRC:.c=.lst) $(ASRC:.S=.lst))
+ASFLAGS = -Wa,-adhlns=$(@:.o=.lst),-gstabs 
 
 
 
@@ -169,31 +164,19 @@ MSG_CLEANING = Cleaning project:
 
 
 
-
-# Define all object files.
-#OBJ = $(SRC:.c=.o) $(ASRC:.S=.o) 
-
-OBJ = $(patsubst %,$(TMP)/%, $(SRC:.c=.o) $(ASRC:.S=.o))
-
-
-
-# Define all listing files.
-#LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
-
-LST = $(patsubst %,$(TMP)/%, $(SRC:.c=.lst) $(ASRC:.S=.lst))
-
-
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
+ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) -MMD
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
-
+-include make.rules
 
 # Default target.
 all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
 	$(TARGET).lss $(TARGET).sym sizeafter finished end
 
+make.rules: sources.mk ../util/make.py
+	python ../util/make.py sources.mk
 
 # Eye candy.
 # AVR Studio 3.x does not check make's exit code but relies on
@@ -201,6 +184,7 @@ all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex $(TARGET).eep \
 begin:
 	@echo
 	@echo $(MSG_BEGIN)
+	mkdir -p $(OUTPUT)
 
 finished:
 	@echo $(MSG_ERRORS_NONE)
@@ -247,7 +231,6 @@ extcoff: $(TARGET).elf
 	$(COFFCONVERT) -O coff-ext-avr $< $(TARGET).cof
 
 
-
 reset:
 	$(AVRDUDE) $(AVRDUDE_FLAGS)
 
@@ -267,7 +250,8 @@ burn-fuse:
 read-fuse:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -u -U lfuse:r:l.txt:r
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -u -U hfuse:r:h.txt:r
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -u -U efuse:r:e.txt:r
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -u -U efuse:r:e.txt:rm
+
 # Create final output files (.hex, .eep) from ELF output file.
 %.hex: %.elf
 	@echo
@@ -296,35 +280,11 @@ read-fuse:
 
 # Link: create ELF output file from object files.
 .SECONDARY : $(TARGET).elf
-.PRECIOUS : $(OBJ)
-%.elf: $(OBJ)
+.PRECIOUS : $(OBJECTS)
+%.elf: $(OBJECTS)
 	@echo
 	@echo $(MSG_LINKING) $@
-	$(CC) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
-
-
-# Compile: create object files from C source files.
-$(TMP)/%.o : %.c
-	@echo
-	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@
-
-
-# Compile: create assembler files from C source files.
-%.s : %.c
-	$(CC) -S $(ALL_CFLAGS) $< -o $@
-
-
-# Assemble: create object files from assembler source files.
-$(TMP)/%.o : %.S
-	@echo
-	@echo $(MSG_ASSEMBLING) $<
-	$(CC) -c $(ALL_ASFLAGS) $< -o $@
-
-
-
-
-
+	$(CC) $(ALL_CFLAGS) $(OBJECTS) --output $@ $(LDFLAGS)
 
 # Target: clean project.
 clean: begin clean_list finished end
@@ -343,30 +303,13 @@ clean_list :
 	$(REMOVE) $(TARGET).sym
 	$(REMOVE) $(TARGET).lnk
 	$(REMOVE) $(TARGET).lss
-	$(REMOVE) $(OBJ)
-	$(REMOVE) $(LST)
-	$(REMOVE) $(SRC:.c=.s)
-	$(REMOVE) $(SRC:.c=.d)
+	$(REMOVE) $(OBJECTS)
+	$(REMOVE) $(OBJECTS:.o=.lst)
+	$(REMOVE) $(OBJECTS:.o=.s)
+	$(REMOVE) $(OBJECTS:.o=.d)
 
 
-# Automatically generate C source code dependencies. 
-# (Code originally taken from the GNU make user manual and modified 
-# (See README.txt Credits).)
-#
-# Note that this will work with sh (bash) and sed that is shipped with WinAVR
-# (see the SHELL variable defined above).
-# This may not work with other shells or other seds.
-#
-$(TMP)/%.d: %.c
-	set -e; $(CC) -MM $(ALL_CFLAGS) $< \
-	| sed 's,\(.*\)\.o[ :]*,\1.o \1.d : ,g' > $@; \
-	[ -s $@ ] || rm -f $@
-
-
-# Remove the '-' if you want to see the dependency files generated.
--include $(SRC:.c=.d)
-
-
+-include $(OBJECTS:.o=.d)
 
 # Listing of phony targets.
-.PHONY : all begin finish end sizebefore sizeafter gccversion coff extcoff \
+.PHONY : all begin finish end sizebefore sizeafter gccversion coff extcoff 

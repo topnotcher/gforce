@@ -2,17 +2,14 @@
 MCU = atxmega32a4
 F_CPU = 32000000
 
-# List C source files here. (C dependencies are automatically generated.)
-SRC = $(shell ls *.c)
-
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
 
 # dir to put output files.
-TMP = tmp
+OUTPUT = output
 
 # Target file name (without extension).
-TARGET = $(TMP)/main
+TARGET = $(OUTPUT)/main
 
 # Optimization level, can be [0, 1, 2, 3, s]. 0 turns off optimization.
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
@@ -46,9 +43,8 @@ CFLAGS = -g -O$(OPT) \
 -Wlogical-op -Wfloat-equal -Wstrict-aliasing=1 -Wredundant-decls \
 -Wold-style-definition \
 -DF_CPU=$(F_CPU) \
--Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.c=.lst)) \
-$(patsubst %,-I%,$(EXTRAINCDIRS)) 
-#$(patsubst %,-D%,$(C_DEFS))
+-Wa,-adhlns=$(@:.o=.lst)\
+$(patsubst %,-I%,$(EXTRAINCDIRS))
 
 # Set a "language standard" compiler flag.
 #   Unremark just one line below to set the language standard to use.
@@ -65,9 +61,7 @@ CFLAGS += -std=c99 -Wno-overflow
 #             for use in COFF files, additional information about filenames
 #             and function names needs to be present in the assembler source
 #             files -- see avr-libc docs [FIXME: not yet described there]
-ASFLAGS = -Wa,-adhlns=$(patsubst %,$(TMP)/%,$(<:.S=.lst)),-gstabs 
-#LST = $(patsubst %,$(TMP)/%, $(SRC:.c=.lst) $(ASRC:.S=.lst))
-
+ASFLAGS = -Wa,-adhlns=$(@:.o=.lst),-gstabs 
 
 
 # Optional linker flags.
@@ -170,33 +164,20 @@ MSG_ASSEMBLING = Assembling:
 MSG_CLEANING = Cleaning project:
 
 
-
-
-# Define all object files.
-#OBJ = $(SRC:.c=.o) $(ASRC:.S=.o) 
-
-OBJ = $(patsubst %,$(TMP)/%, $(SRC:.c=.o) $(ASRC:.S=.o))
-
-
-
-# Define all listing files.
-#LST = $(ASRC:.S=.lst) $(SRC:.c=.lst)
-
-LST = $(patsubst %,$(TMP)/%, $(SRC:.c=.lst) $(ASRC:.S=.lst))
-
-
 # Combine all necessary flags and optional flags.
 # Add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
+ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS) -MMD
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
-
+-include make.rules
 
 # Default target.
 # $(TARGET).eep was here - removed
 all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex \
 	$(TARGET).lss $(TARGET).sym sizeafter finished end
 
+make.rules: sources.mk ../util/make.py
+	python ../util/make.py sources.mk
 
 # Eye candy.
 # AVR Studio 3.x does not check make's exit code but relies on
@@ -300,34 +281,11 @@ read-fuse:
 
 # Link: create ELF output file from object files.
 .SECONDARY : $(TARGET).elf
-.PRECIOUS : $(OBJ)
-%.elf: $(OBJ)
+.PRECIOUS : $(OBJECTS)
+%.elf: $(OBJECTS)
 	@echo
 	@echo $(MSG_LINKING) $@
-	$(CC) $(ALL_CFLAGS) $(OBJ) --output $@ $(LDFLAGS)
-
-
-# Compile: create object files from C source files.
-$(TMP)/%.o : %.c
-	@echo
-	@echo $(MSG_COMPILING) $<
-	$(CC) -c $(ALL_CFLAGS) $< -o $@
-
-
-# Compile: create assembler files from C source files.
-%.s : %.c
-	$(CC) -S $(ALL_CFLAGS) $< -o $@
-
-
-# Assemble: create object files from assembler source files.
-$(TMP)/%.o : %.S
-	@echo
-	@echo $(MSG_ASSEMBLING) $<
-	$(CC) -c $(ALL_ASFLAGS) $< -o $@
-
-
-
-
+	$(CC) $(ALL_CFLAGS) $(OBJECTS) --output $@ $(LDFLAGS)
 
 
 # Target: clean project.
@@ -347,29 +305,14 @@ clean_list :
 	$(REMOVE) $(TARGET).sym
 	$(REMOVE) $(TARGET).lnk
 	$(REMOVE) $(TARGET).lss
-	$(REMOVE) $(OBJ)
-	$(REMOVE) $(LST)
-	$(REMOVE) $(SRC:.c=.s)
-	$(REMOVE) $(SRC:.c=.d)
-
-
-# Automatically generate C source code dependencies. 
-# (Code originally taken from the GNU make user manual and modified 
-# (See README.txt Credits).)
-#
-# Note that this will work with sh (bash) and sed that is shipped with WinAVR
-# (see the SHELL variable defined above).
-# This may not work with other shells or other seds.
-#
-$(TMP)/%.d: %.c
-	set -e; $(CC) -MM $(ALL_CFLAGS) $< \
-	| sed 's,\(.*\)\.o[ :]*,\1.o \1.d : ,g' > $@; \
-	[ -s $@ ] || rm -f $@
+	$(REMOVE) $(OBJECTS)
+	$(REMOVE) $(OBJECTS:.o=.lst)
+	$(REMOVE) $(OBJECTS:.o=.s)
+	$(REMOVE) $(OBJECTS:.o=.d)
 
 
 # Remove the '-' if you want to see the dependency files generated.
 -include $(SRC:.c=.d)
-
 
 
 # Listing of phony targets.

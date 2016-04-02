@@ -1,2 +1,2 @@
-!tmp/.keep
-tmp/
+output/*
+make.rules

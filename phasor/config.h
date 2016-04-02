@@ -2,6 +2,10 @@
 
 #define MPC_TWI_ADDR 16
 
+#define BUZZ_PORT PORTA
+#define BUZZ_PIN PIN3_bm
+
+
 /**
  * Configuration specific to this board as required to work with includes etcetc
  */
