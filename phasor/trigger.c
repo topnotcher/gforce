@@ -33,7 +33,7 @@ inline void trigger_init(void) {
 }
 
 inline bool trigger_pressed(void) {
-	if ( _trigger_pressed ) {
+	if (_trigger_pressed) {
 		_trigger_pressed = false;
 		add_timer(trigger_tick, 500, 1);
 		return true;
@@ -53,7 +53,7 @@ static inline bool trigger_enabled(void) {
 }
 
 ISR(PORTA_INT0_vect) {
-	if ( !(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/ ) {
+	if (!(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/) {
 		_trigger_pressed = true;
 		trigger_disable();
 	}

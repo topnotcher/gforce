@@ -28,7 +28,7 @@
 
 static uint8_t rst_reason;
 
-static void xbee_relay_mpc(const mpc_pkt * const pkt);
+static void xbee_relay_mpc(const mpc_pkt *const pkt);
 static void main_thread(void);
 static void why_the_fuck_did_i_reset(void);
 
@@ -57,15 +57,15 @@ int main(void) {
 	WDT.CTRL = temp;
 
 	//ping hack: master receives a ping reply
-	//send it to the xbee. 
+	//send it to the xbee.
 	mpc_register_cmd('R', xbee_relay_mpc);
 
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
 	threads_init_stack();
-	thread_create("main",main_thread);
-	thread_create("ibutton",ibutton_run);
+	thread_create("main", main_thread);
+	thread_create("ibutton", ibutton_run);
 	threads_start_main();
 }
 
@@ -73,13 +73,13 @@ static void main_thread(void) {
 	display_write("foo");
 	while (1) {
 		tasks_run();
-	//	wdt_reset();
+		//	wdt_reset();
 		display_tx();
 	}
 }
 
-static void xbee_relay_mpc(const mpc_pkt * const pkt) {
-	xbee_send(pkt->cmd,pkt->len+sizeof(*pkt),(uint8_t*)pkt);
+static void xbee_relay_mpc(const mpc_pkt *const pkt) {
+	xbee_send(pkt->cmd, pkt->len + sizeof(*pkt), (uint8_t *)pkt);
 }
 
 static void why_the_fuck_did_i_reset(void) {
@@ -111,5 +111,5 @@ static void why_the_fuck_did_i_reset(void) {
 }
 
 ISR(BADISR_vect) {
-	while(1);
+	while (1);
 }

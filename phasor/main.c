@@ -20,8 +20,8 @@
 #include "irtx.h"
 #include "trigger.h"
 
-static void mpc_reply_ping(const mpc_pkt * const pkt); 
-static void ir_cmd_tx(const mpc_pkt *  const pkt);
+static void mpc_reply_ping(const mpc_pkt *const pkt);
+static void ir_cmd_tx(const mpc_pkt *const pkt);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -38,10 +38,10 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 	sei();
-	
-	while(1) {
-		tasks_run();	
-		if ( trigger_pressed() ) 
+
+	while (1) {
+		tasks_run();
+		if (trigger_pressed())
 			//T = trigger pressed
 			mpc_send_cmd(MPC_MASTER_ADDR, 'T');
 	}
@@ -49,9 +49,9 @@ int main(void) {
 	return 0;
 }
 
-static void mpc_reply_ping(const mpc_pkt * const pkt) {
+static void mpc_reply_ping(const mpc_pkt *const pkt) {
 	mpc_send_cmd( pkt->saddr, 'R');
 }
-static void ir_cmd_tx(const mpc_pkt * const pkt) {
-	irtx_send((const irtx_pkt*)pkt->data);
+static void ir_cmd_tx(const mpc_pkt *const pkt) {
+	irtx_send((const irtx_pkt *)pkt->data);
 }

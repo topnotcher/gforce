@@ -35,8 +35,8 @@ static struct {
 
 void ( *countdown_cb )(void);
 
-static inline void handle_shot(const uint8_t, command_t const * const);
-static void process_trigger_pkt(const mpc_pkt * const pkt);
+static inline void handle_shot(const uint8_t, command_t const *const);
+static void process_trigger_pkt(const mpc_pkt *const pkt);
 static void __game_countdown(void);
 static void stun_timer(void);
 static void __stun_timer(void);
@@ -53,17 +53,17 @@ void game_countdown(void) {
 static void __game_countdown(void) {
 	static uint8_t data[] = "        ";
 
-	if ( --game_countdown_time == 0 ) {
+	if (--game_countdown_time == 0) {
 		countdown_cb();
 		data[7] = ' ';
 	} else {
 		data[7] = 0x30 + game_countdown_time;
 	}
-	display_send(0,9,data);
+	display_send(0, 9, data);
 }
 
 void start_game_cmd(command_t const *const cmd) {
-	if ( game_state.playing )
+	if (game_state.playing)
 		return;
 
 	game_start_cmd *settings = (game_start_cmd *)cmd->data;
@@ -73,18 +73,18 @@ void start_game_cmd(command_t const *const cmd) {
 	game_state.active = 0;
 
 	game_settings.game_time = settings->seconds;
-	game_settings.deac_time = settings->deac+4;
+	game_settings.deac_time = settings->deac + 4;
 	//@TODO disable stun option
-	game_settings.stun_time = game_settings.deac_time/settings->stuns;
+	game_settings.stun_time = game_settings.deac_time / settings->stuns;
 
-	game_countdown_time = settings->prestart+1;
+	game_countdown_time = settings->prestart + 1;
 	countdown_cb = &start_game_activate;
 
 	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }
 
 void game_tick(void) {
-	if ( --game_settings.game_time == 0 )
+	if (--game_settings.game_time == 0)
 		//stop_game modifies timers, which cannot happen in timer context
 		task_schedule(stop_game);
 }
@@ -97,10 +97,10 @@ void start_game_activate(void) {
 void player_activate(void) {
 
 	/**
-	* Because we'll get fucked sideways if someone gets deaced
-	* at the end of the game, then the game ends...
-	*/
-	if ( !game_state.playing )
+	 * Because we'll get fucked sideways if someone gets deaced
+	 * at the end of the game, then the game ends...
+	 */
+	if (!game_state.playing)
 		return;
 
 	sound_play_effect(SOUND_POWER_UP);
@@ -109,7 +109,7 @@ void player_activate(void) {
 	lights_on();
 }
 
-void stop_game_cmd( command_t const * const cmd ) {
+void stop_game_cmd( command_t const *const cmd ) {
 	stop_game();
 }
 
@@ -144,25 +144,25 @@ static void __stun_timer(void) {
 	--game_countdown_time;
 
 	//fuck shit remove this.
-	if ( game_countdown_time == (game_settings.stun_time>>1) )
+	if (game_countdown_time == (game_settings.stun_time >> 1))
 		lights_halfstun();
 
-	else if ( game_countdown_time == 0 ) {
+	else if (game_countdown_time == 0) {
 		lights_unstun();
 		game_state.stunned = 0;
 		game_state.active = 1;
 		del_timer(&stun_timer);
-		display_send(0,2,(uint8_t*)" ");
+		display_send(0, 2, (uint8_t *)" ");
 	}
 }
 
-static inline void handle_shot(const uint8_t saddr, command_t const * const cmd) {
+static inline void handle_shot(const uint8_t saddr, command_t const *const cmd) {
 
-	if ( !game_state.active || !game_state.playing || game_state.stunned )
+	if (!game_state.active || !game_state.playing || game_state.stunned)
 		return;
 
-	char * sensor;
-	switch(saddr) {
+	char *sensor;
+	switch (saddr) {
 	case MPC_CHEST_ADDR:
 		sensor = "Tagged: CH";
 		break;
@@ -180,10 +180,10 @@ static inline void handle_shot(const uint8_t saddr, command_t const * const cmd)
 		break;
 	default:
 		sensor = "Tagged: ??";
-			break;
+		break;
 	}
 
-	if ( saddr & (MPC_BACK_ADDR | MPC_CHEST_ADDR) )
+	if (saddr & (MPC_BACK_ADDR | MPC_CHEST_ADDR))
 		do_deac();
 	else
 		do_stun();
@@ -216,23 +216,23 @@ void do_deac(void) {
 
 void process_ir_pkt(const mpc_pkt *const pkt) {
 
-	const command_t *const cmd = (command_t*)pkt->data;
+	const command_t *const cmd = (command_t *)pkt->data;
 
-	if ( cmd->cmd == 0x38) {
+	if (cmd->cmd == 0x38) {
 		start_game_cmd(cmd);
 
-	} else if ( cmd->cmd == 0x08 )  {
+	} else if (cmd->cmd == 0x08) {
 		stop_game_cmd(cmd);
 
-	} else if ( cmd->cmd == 0x0c ) {
+	} else if (cmd->cmd == 0x0c) {
 		handle_shot(pkt->saddr, cmd);
 
-		xbee_send('S',sizeof(*pkt)+pkt->len, (uint8_t*)pkt);
+		xbee_send('S', sizeof(*pkt) + pkt->len, (uint8_t *)pkt);
 	}
 }
 
-void process_trigger_pkt(const mpc_pkt * const pkt) {
-	static uint8_t data[] = {16,3,255, 56, 127 ,138,103,83,0,15,15,68,72,0,44,1,88,113};
+void process_trigger_pkt(const mpc_pkt *const pkt) {
+	static uint8_t data[] = {16, 3, 255, 56, 127, 138, 103, 83, 0, 15, 15, 68, 72, 0, 44, 1, 88, 113};
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
 		mpc_send(MPC_PHASOR_ADDR, 'T', 18, data);

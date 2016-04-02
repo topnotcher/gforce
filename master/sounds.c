@@ -11,7 +11,7 @@
 #if W_SOUNDS == 1
 #include "g4_sounds.h"
 
-#define tick_enable() do { TCC0.CNT = 0; TCC0.INTCTRLB |= TC_CCAINTLVL_HI_gc; } while(0)
+#define tick_enable() do { TCC0.CNT = 0; TCC0.INTCTRLB |= TC_CCAINTLVL_HI_gc; } while (0)
 #define tick_disable() TCC0.INTCTRLB &= ~TC_CCAINTLVL_HI_gc
 
 
@@ -20,17 +20,17 @@ sound_player player;
 #endif
 
 void sound_init(void) {
-	
+
 	TCC0.CCA = 63;
 	TCC0.CTRLB |= TC0_CCAEN_bm;
-	
+
 	TCC0.CTRLA = TC_CLKSEL_DIV64_gc;
 
 
-    DACB.CTRLA = (DAC_CH0EN_bm | DAC_ENABLE_bm);
-    DACB.CTRLB = (DAC_CHSEL_SINGLE_gc);
-    DACB.CTRLC = (DAC_REFSEL_AVCC_gc);
-    DACB.EVCTRL = 0;
+	DACB.CTRLA = (DAC_CH0EN_bm | DAC_ENABLE_bm);
+	DACB.CTRLB = (DAC_CHSEL_SINGLE_gc);
+	DACB.CTRLC = (DAC_REFSEL_AVCC_gc);
+	DACB.EVCTRL = 0;
 
 
 	PORTB.DIRSET |= PIN2_bm | PIN1_bm;
@@ -38,7 +38,7 @@ void sound_init(void) {
 	sound_play_deinit();
 
 #if W_SOUNDS == 1
-	memset(&player,0,sizeof player);
+	memset(&player, 0, sizeof player);
 
 #endif
 }
@@ -50,7 +50,7 @@ void sound_play_init(void) {
 
 	//change this to unmute
 	PORTB.OUTSET = PIN1_bm;
-	
+
 	tick_enable();
 #endif
 }
@@ -70,21 +70,21 @@ void sound_play_effect(uint8_t effect) {
 	player.pos = 0;
 
 	switch (effect) {
-		case SOUND_LASER:
-			player.effect = sound_laser_fire.effect;
-			player.len = pgm_read_word(&sound_laser_fire.len);
-			break;
-		case SOUND_POWER_UP:
-			player.effect = sound_power_up.effect;
-			player.len = pgm_read_word(&sound_power_up.len);
-			break;
-		case SOUND_POWER_DOWN:
-			player.effect = sound_power_down.effect;
-			player.len = pgm_read_word(&sound_power_down.len);
-			break;
+	case SOUND_LASER:
+		player.effect = sound_laser_fire.effect;
+		player.len = pgm_read_word(&sound_laser_fire.len);
+		break;
+	case SOUND_POWER_UP:
+		player.effect = sound_power_up.effect;
+		player.len = pgm_read_word(&sound_power_up.len);
+		break;
+	case SOUND_POWER_DOWN:
+		player.effect = sound_power_down.effect;
+		player.len = pgm_read_word(&sound_power_down.len);
+		break;
 
-		default:
-			return;
+	default:
+		return;
 	}
 	sound_play_init();
 #endif
@@ -103,7 +103,7 @@ void sound_play_byte(void) {
 //PORTD.OUT ^= PIN5_bm;
 	DACB.CH0DATA = (uint16_t)pgm_read_byte(&player.effect[player.pos++]) * 16UL;
 	TCC0.CNT = 0;
-	if ( player.pos >= player.len )
+	if (player.pos >= player.len)
 		sound_stop();
 #endif
 }

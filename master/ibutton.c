@@ -18,7 +18,7 @@
 #define IBUTTON_SLEEP_MS 300
 #endif
 
-static ds2483_dev_t * onewiredev;
+static ds2483_dev_t *onewiredev;
 static void ibutton_scheduled_wake(void);
 static inline void ibutton_sleep(void);
 static inline int8_t ibutton_detect_cycle(void);
@@ -26,9 +26,9 @@ static inline int8_t ibutton_detect_cycle(void);
 static void ibutton_switchto(void) __attribute__((naked));
 
 void ibutton_init(void) {
-	twi_master_t * twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, block,ibutton_scheduled_wake);
-	onewiredev = ds2483_init(twim,&DS2483_SLPZ_PORT,G4_PIN(DS2483_SLPZ_PIN));
+	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
+	twi_master_set_blocking(twim, block, ibutton_scheduled_wake);
+	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
 	//this starts the process (300+ms from now).
 	add_timer(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
@@ -41,7 +41,7 @@ void ibutton_init(void) {
 void ibutton_run(void) {
 	ds2483_rst(onewiredev);
 
-	while(1) {
+	while (1) {
 		int8_t result = ibutton_detect_cycle();
 
 		if (result > 0)
@@ -66,9 +66,9 @@ static inline int8_t ibutton_detect_cycle(void) {
 		result = ds2483_1w_read_byte(onewiredev);
 
 		if (i < 7)
-			crc = _crc_ibutton_update(crc,result);
+			crc = _crc_ibutton_update(crc, result);
 	}
-	
+
 	if (crc == result)
 		return 1;
 	else

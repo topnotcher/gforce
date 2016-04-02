@@ -2,12 +2,12 @@
 #include <util/atomic.h>
 #include "threads.h"
 
-static void * thread_stack_init(uint8_t * stack, void (*task)(void)); 
+static void *thread_stack_init(uint8_t *stack, void (*task)(void));
 
 threads_t threads;
 
-uint8_t thread_create(const char * name, void (*task)(void)) {
-	tcb_t * tcb;
+uint8_t thread_create(const char *name, void (*task)(void)) {
+	tcb_t *tcb;
 	uint8_t pid;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		pid = threads.num++;
@@ -16,17 +16,17 @@ uint8_t thread_create(const char * name, void (*task)(void)) {
 		tcb->pid = pid;
 		//new thread goes on the current top of stack
 		tcb->stack = thread_stack_init(threads.top_of_stack, task);
-		threads.top_of_stack = (void*)((uint16_t)tcb->stack - (uint16_t)THREADS_STACK_SIZE); 
+		threads.top_of_stack = (void *)((uint16_t)tcb->stack - (uint16_t)THREADS_STACK_SIZE);
 	}
 
-	return pid; 
+	return pid;
 }
 
 void block(void) {
 	threads_switchto(0);
 }
 
-void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
+void *thread_stack_init(uint8_t *stack, void (*task)(void)) {
 	*stack = 0x11; //38
 	stack--;
 	*stack = 0x22; //37
@@ -36,15 +36,15 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 
 	uint16_t addr = (uint16_t)task;
 
-	*stack = (addr&0xff); //35
+	*stack = (addr & 0xff); //35
 	stack--;
 	addr >>= 8;
 
-	*stack = (addr&0xff); //34
+	*stack = (addr & 0xff); //34
 	stack--;
 
 #if defined(__AVR_3_BYTE_PC__) && __AVR_3_BYTE_PC__
-	*stack = 0; 
+	*stack = 0;
 	stack--;
 #endif
 
@@ -56,7 +56,7 @@ void * thread_stack_init(uint8_t * stack, void (*task)(void) ) {
 
 	*stack = 0x00; /*R1*/
 	stack--;
-	
+
 	*stack = 0x02; /*R2*/
 	stack--;
 

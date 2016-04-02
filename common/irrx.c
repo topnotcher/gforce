@@ -25,19 +25,19 @@
 //when the packet timer reaches this level, set the state to process.
 // 1/IR_BAUD*mil = uS per bit. Timeout after 11 bits. (too generous)
 //this is the number of timer ticks per IR bits.
-#define RX_TIMEOUT_TIME (task_freq_t)(1/IR_BAUD*1000000/TIMER_TICK_US)
+#define RX_TIMEOUT_TIME (task_freq_t)(1 / IR_BAUD * 1000000 / TIMER_TICK_US)
 #define RX_TIMEOUT_TICKS 11 //time out after this many bit widths with no data (too low?)
 
 /**
- * In order to keep the processing out of the ISR 
+ * In order to keep the processing out of the ISR
  * and avoid storing uint16_t, the 9th bit is read in the ISR.
- * It could be used to clear the state of the receiver, but if that 
+ * It could be used to clear the state of the receiver, but if that
  * happens while a packet is still processing, good data is droppedd.
  * Instead, the ISR will begin writing to a new queue.
  * (This is probably very unnecessary given the bit rate versus CPU speed)
  */
 static struct {
-	
+
 	/**
 	 * Queues of unprocessed bytes.
 	 */
@@ -46,29 +46,29 @@ static struct {
 
 	struct {
 		enum {
-			//Dirty state 
+			//Dirty state
 			RX_STATE_EMPTY,
 			//ready to receive data
 			RX_STATE_READY,
-			//receiving data 
+			//receiving data
 			RX_STATE_RECEIVE,
 			//no more data will be received for this pkt,
 			//so finish processing remaining bytes then return pkt.
 			RX_STATE_PROCESS,
-		} state ;
+		} state;
 
 		//@TODO why is this even a ring buffer ???
 		//@TODO all these buffers are fucked (why do I have so many??)
-		ringbuf_t * buf;
+		ringbuf_t *buf;
 
 		uint8_t crc;
 
 		//size at which to process.
 		uint8_t max_size;
-		
+
 		//incremented by a timer :p.
 		uint8_t timer;
-		//copied to an ir_pkt_t after processing. 
+		//copied to an ir_pkt_t after processing.
 		uint8_t size;
 		uint8_t data[MAX_PKT_SIZE];
 	} pkts[N_BUFF];
@@ -92,18 +92,18 @@ inline void irrx_init(void) {
 		//size, crc = initialized at start byte
 		// data initialized first byte after start byte.
 	}
-	
+
 	IRRX_USART_PORT.DIRCLR = _RXPIN_bm;
 
 	/** These values are from G4CONFIG, NOT board config **/
-	IRRX_USART.BAUDCTRLA = (uint8_t)(IR_USART_BSEL&0x00FF);
-	IRRX_USART.BAUDCTRLB = (IR_USART_BSCALE<<USART_BSCALE_gp) | (uint8_t)( (IR_USART_BSEL>>8) & 0x0F );
+	IRRX_USART.BAUDCTRLA = (uint8_t)(IR_USART_BSEL & 0x00FF);
+	IRRX_USART.BAUDCTRLB = (IR_USART_BSCALE << USART_BSCALE_gp) | (uint8_t)((IR_USART_BSEL >> 8) & 0x0F);
 
 	IRRX_USART.CTRLA |= USART_RXCINTLVL_MED_gc;
 	IRRX_USART.CTRLB |= USART_RXEN_bm;
 
 	//NOTE : removed 1<<USART_SBMODE_bp Why does /LW use 2 stop bits?
-	IRRX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc ;
+	IRRX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc;
 
 
 }
@@ -115,10 +115,10 @@ void ir_rx(void) {
 	//tells the caller whether data was returned: default to no
 	pkt.size = 0;
 
-	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY ) {
+	if (rx_state.pkts[ rx_state.read ].state == RX_STATE_EMPTY) {
 		//SHOULD do this upon processing, but... shit is failing!
-		if ( rx_state.read != rx_state.write )
-				rx_state.read = (rx_state.read == N_BUFF-1) ? 0 : rx_state.read+1;
+		if (rx_state.read != rx_state.write)
+			rx_state.read = (rx_state.read == N_BUFF - 1) ? 0 : rx_state.read + 1;
 		else
 			return;
 	}
@@ -128,12 +128,12 @@ void ir_rx(void) {
 	//when RX_STATE_RECEIVE => RX_STATE_PROCESS, but size = 0, this doesn't loop and we try to process zero bytes instead of flushing the queue.
 	//instead: require that state == RECEIVE OR the read queue is not updated.
 	//oorrr I'm just retarded
-	while ( !ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max ) 
+	while (!ringbuf_empty(rx_state.pkts[ rx_state.read ].buf) && i++ < process_max)
 		process_rx_byte();
 
-	if ( rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS ) {
+	if (rx_state.pkts[ rx_state.read ].state == RX_STATE_PROCESS) {
 
-		if ( rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1] ) {
+		if (rx_state.pkts[ rx_state.read ].crc == rx_state.pkts[ rx_state.read ].data[ rx_state.pkts[rx_state.read].size - 1]) {
 
 			//@TODO this is sooo fucked up
 			pkt.data = rx_state.pkts[ rx_state.read ].data;
@@ -144,8 +144,8 @@ void ir_rx(void) {
 
 		} else {
 		}
-		
-		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer. 
+
+		//while the state is RX_STATE_PROCESS, the ISR will not write any data to this buffer.
 		ringbuf_flush( rx_state.pkts[ rx_state.read ].buf );
 		rx_state.pkts[ rx_state.read ].state = RX_STATE_EMPTY;
 	}
@@ -155,7 +155,7 @@ void ir_rx(void) {
 static inline void process_rx_byte(void) {
 	uint8_t data = ringbuf_get(rx_state.pkts[rx_state.read].buf);
 
-	if ( rx_state.pkts[rx_state.read].size == 0 ) {
+	if (rx_state.pkts[rx_state.read].size == 0) {
 
 		/**
 		 * @TODO: wtf
@@ -169,10 +169,10 @@ static inline void process_rx_byte(void) {
 	} else {
 
 		//previous byte was the header CRC.
-		if ( rx_state.pkts[rx_state.read].size == offsetof(ir_hdr_t,crc)+1 ) {
+		if (rx_state.pkts[rx_state.read].size == offsetof(ir_hdr_t, crc) + 1) {
 			//in the case where the CRC is correct, this is going to get checked twice (also by ir_rx,
 			//but that also tests the final CRC of "long" packets.)
-			if ( rx_state.pkts[rx_state.read].crc != rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size -1] ) {
+			if (rx_state.pkts[rx_state.read].crc != rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size - 1]) {
 				//this is a bit of a hack to jump to the cleanup in ir_rx().
 				//by setting RX_STATE_PROCESS, we guarantee that the ISR will not put more data into the ringbuf
 				rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
@@ -180,11 +180,11 @@ static inline void process_rx_byte(void) {
 				return;
 			}
 		} else {
-			crc(&rx_state.pkts[rx_state.read].crc, rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size-1], IR_CRC_POLY);
+			crc(&rx_state.pkts[rx_state.read].crc, rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size - 1], IR_CRC_POLY);
 		}
 		rx_state.pkts[rx_state.read].data[rx_state.pkts[rx_state.read].size] = data;
-				
-		if ( ++rx_state.pkts[rx_state.read].size == rx_state.pkts[rx_state.read].max_size )
+
+		if (++rx_state.pkts[rx_state.read].size == rx_state.pkts[rx_state.read].max_size)
 			rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
 	}
 }
@@ -194,13 +194,13 @@ static inline void process_rx_byte(void) {
  */
 /*static void rx_timer_tick(void) {
 
-	//only need to time out reception if it is receiving
-	if ( rx_state.pkts[rx_state.read].state != RX_STATE_RECEIVE )
-		return;
+        //only need to time out reception if it is receiving
+        if ( rx_state.pkts[rx_state.read].state != RX_STATE_RECEIVE )
+                return;
 
-	if ( ++rx_state.pkts[rx_state.read].timer == RX_TIMEOUT_TICKS )
-		rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
-}*/
+        if ( ++rx_state.pkts[rx_state.read].timer == RX_TIMEOUT_TICKS )
+                rx_state.pkts[rx_state.read].state = RX_STATE_PROCESS;
+   }*/
 
 
 ISR(IRRX_USART_RXC_vect) {
@@ -210,26 +210,26 @@ ISR(IRRX_USART_RXC_vect) {
 	/**
 	 * This represents the start of a new packet
 	 */
-	if ( (data == 0xFF && !bit8) && rx_state.pkts[ rx_state.write ].state != RX_STATE_READY ) {
-		
+	if ((data == 0xFF && !bit8) && rx_state.pkts[ rx_state.write ].state != RX_STATE_READY) {
+
 		uint8_t idx = rx_state.write;
-		
-		if ( rx_state.pkts[ idx ].state != RX_STATE_EMPTY ) {
+
+		if (rx_state.pkts[ idx ].state != RX_STATE_EMPTY) {
 			//buffer will receive no new bytes -> process remaining bytes then set to empty.
 			rx_state.pkts[ idx ].state = RX_STATE_PROCESS;
 
 			//this is somewhat of a hack maybe.
 			task_schedule(ir_rx);
 
-			if ( ++idx == N_BUFF-1 ) 
+			if (++idx == N_BUFF - 1)
 				idx = 0;
-		
+
 			rx_state.write = idx;
-			
+
 			/*if ( !rx_state.scheduled ) {
-				rx_state.scheduled = 1;
-				add_timer(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
-			}*/
+			        rx_state.scheduled = 1;
+			        add_timer(rx_timer_tick, RX_TIMEOUT_TIME , TIMER_RUN_UNLIMITED);
+			   }*/
 		}
 
 		rx_state.pkts[idx].state = RX_STATE_READY;
@@ -237,23 +237,23 @@ ISR(IRRX_USART_RXC_vect) {
 		ringbuf_flush(rx_state.pkts[idx].buf);
 
 	/**
-	 * @TODO when state is set to ready, start a timer that... ticks. Timer is reset when bytes are 
+	 * @TODO when state is set to ready, start a timer that... ticks. Timer is reset when bytes are
 	 * received. if timer > N, then set the state to process or empty.
 	 */
-	//received a valid data byte, and at some point before said byte... there was a start byte... 
-	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE ) {
+	//received a valid data byte, and at some point before said byte... there was a start byte...
+	} else if (rx_state.pkts[ rx_state.write ].state == RX_STATE_RECEIVE) {
 		rx_state.pkts[ rx_state.write ].timer = 0;
-		ringbuf_put( rx_state.pkts[ rx_state.write ].buf , data );
+		ringbuf_put( rx_state.pkts[ rx_state.write ].buf, data );
 		//this is somewhat of a hack maybe.
 		task_schedule(ir_rx);
 
-	} else if ( rx_state.pkts[ rx_state.write ].state == RX_STATE_READY ) {
+	} else if (rx_state.pkts[ rx_state.write ].state == RX_STATE_READY) {
 		rx_state.pkts[ rx_state.write ].state = RX_STATE_RECEIVE;
 		rx_state.pkts[ rx_state.write ].timer = 0;
 		ringbuf_put( rx_state.pkts[ rx_state.write ].buf, data );
 	} else {
 		///fuck off
-		//this could happen if the receiver sets the state to RX_STATE_PROCESS, meaning that the 
+		//this could happen if the receiver sets the state to RX_STATE_PROCESS, meaning that the
 		//packet is "complete" and should not receive any more bytes.
 	}
 }

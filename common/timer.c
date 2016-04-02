@@ -34,7 +34,7 @@ static void __del_timer_node(timer_node *rm_node);
 static void __del_timer(void (*task_cb)(void));
 static void __add_timer_node(timer_node *node, uint8_t adjust);
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
-		timer_lifetime_t task_lifetime);
+                              timer_lifetime_t task_lifetime);
 
 /**
  * Initialize the timers: run at boot.
@@ -57,7 +57,7 @@ void init_timers(void) {
  * @see add_timer()
  */
 static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
-		timer_lifetime_t task_lifetime) {
+                              timer_lifetime_t task_lifetime) {
 
 	timer_node *node = mempool_alloc(task_pool);
 
@@ -85,7 +85,7 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
  * @param task_lifetime number of times to trigger the timer (or TIMER_RUN_UNLIMITED).
  */
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
-	timer_node * node = init_timer(task_cb, task_freq, task_lifetime);
+	timer_node *node = init_timer(task_cb, task_freq, task_lifetime);
 
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		__add_timer_node(node, 1);
@@ -130,7 +130,7 @@ static void __add_timer_node(timer_node *node, uint8_t adjust) {
 		task_list->prev = node;
 		task_list = node;
 	} else {
-		timer_node * tmp = task_list;
+		timer_node *tmp = task_list;
 
 		while (tmp->next != NULL && tmp->next->task.ticks < node->task.ticks)
 			tmp = tmp->next;
@@ -156,7 +156,7 @@ static inline void set_ticks(void) {
 	} else {
 		//see xmegaA, p190. Results are insane if SYNCBUSY is not checked.
 		//(i.e. the values do not update)
-		while (RTC.STATUS&RTC_SYNCBUSY_bm);
+		while (RTC.STATUS & RTC_SYNCBUSY_bm);
 		RTC.CNT = 0;
 		RTC.COMP = task_list->task.ticks;
 		ticks = task_list->task.ticks;
@@ -238,7 +238,7 @@ TIMER_RUN {
 				mempool_putref(node);
 			} else {
 				node->task.ticks = node->task.freq;
-				__add_timer_node(node,0);
+				__add_timer_node(node, 0);
 			}
 		} else {
 			node->task.ticks -= ticks;
@@ -247,7 +247,7 @@ TIMER_RUN {
 			//inserted: since the remaining nodes are not run, they are already
 			//ordered correctly. This would require seeking to the tail of the
 			//list. The benefit is probably not worth it.
-			__add_timer_node(node,0);
+			__add_timer_node(node, 0);
 		}
 	}
 

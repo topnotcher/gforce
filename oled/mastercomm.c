@@ -26,12 +26,12 @@
 #define _SOUT_bm G4_PIN(COMM_PIN_SOUT)
 #define _SS_bm G4_PIN(COMM_PIN_SS)
 
-static comm_driver_t * comm;
+static comm_driver_t *comm;
 
 void dummy(void);
 
 inline void mastercomm_init(void) {
-	
+
 	//xmegaA, pp226.
 	COMM_PORT.DIRCLR = _SCLK_bm | _SS_bm | _SIN_bm;
 
@@ -45,22 +45,23 @@ inline void mastercomm_init(void) {
 
 //	comm_uart_driver = uart_init(&COMM_SPI.DATA, dummy,dummy, RX_BUFF_SIZE);
 
-	mempool_t * mempool = init_mempool(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
-	comm_dev_t * commdev = serialcomm_init(&COMM_SPI.DATA, dummy, dummy, 1 /*dummy address*/);
-	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool ,NULL);
+	mempool_t *mempool = init_mempool(DISPLAY_PKT_MAX_SIZE + sizeof(comm_frame_t), 2);
+	comm_dev_t *commdev = serialcomm_init(&COMM_SPI.DATA, dummy, dummy, 1 /*dummy address*/);
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool, NULL);
 
 }
 
-void dummy(void) {}
+void dummy(void) {
+}
 
-inline display_pkt * mastercomm_recv(void) {
-	comm_frame_t * frame;
+inline display_pkt *mastercomm_recv(void) {
+	comm_frame_t *frame;
 
 	//@TODO this is backwards. Shouldn't be decrementing the refcnt so early
-	//but it should work almost all of the time, and I'm being lazy at the moment.	
-	if ( (frame = comm_rx(comm)) != NULL ) {
+	//but it should work almost all of the time, and I'm being lazy at the moment.
+	if ((frame = comm_rx(comm)) != NULL) {
 		mempool_putref(frame);
-		return (display_pkt*)frame->data;
+		return (display_pkt *)frame->data;
 	}
 
 	return NULL;

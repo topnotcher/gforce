@@ -13,12 +13,12 @@
 #include "display.h"
 #include "mastercomm.h"
 
-#define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
+#define CLKSYS_Enable( _oscSel ) (OSC.CTRL |= (_oscSel))
 
-#define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
+#define CLKSYS_IsReady( _oscSel ) (OSC.STATUS & (_oscSel))
 
-static inline void shift_string(char * string);
-static inline void display_scroll(char * string);
+static inline void shift_string(char *string);
+static inline void display_scroll(char *string);
 
 
 int main(void) {
@@ -34,15 +34,15 @@ int main(void) {
 
 	sei();
 	//display_putstring("derp");
-	while(1) {
+	while (1) {
 		wdt_reset();
 
-		display_pkt * pkt = mastercomm_recv();
+		display_pkt *pkt = mastercomm_recv();
 
 		if (pkt == NULL) continue;
 
-		display_cmd(0x02); 
-		display_cmd(0x01); 
+		display_cmd(0x02);
+		display_cmd(0x01);
 		display_putstring((char *)pkt->data);
 
 	}
@@ -57,27 +57,27 @@ int main(void) {
 
 
 
-static inline void display_scroll(char * string) {
+static inline void display_scroll(char *string) {
 	while (1) {
 		display_cmd(0x02);
 		display_tick();
 //		display_clear();
-			
-		for ( uint8_t i = 0; i < 16 && *(string+i) != '\0'; ++i ) {
-			display_write(*(string+i));
+
+		for (uint8_t i = 0; i < 16 && *(string + i) != '\0'; ++i) {
+			display_write(*(string + i));
 			display_tick();
 		}
 
 		shift_string(string);
-		
+
 		_delay_ms(125);
 	}
 }
 
-static inline void shift_string(char * string) {
+static inline void shift_string(char *string) {
 	char first = *string;
 
-	while ( 1 ) {
+	while (1) {
 		*string = *(string + 1);
 
 		if (*string == '\0') {

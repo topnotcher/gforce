@@ -21,8 +21,8 @@
 #include <util.h>
 #include <timer.h>
 
-static void mpc_reply_ping(const mpc_pkt * const pkt);
-static void mpc_echo_ir(const mpc_pkt * const pkt);
+static void mpc_reply_ping(const mpc_pkt *const pkt);
+static void mpc_echo_ir(const mpc_pkt *const pkt);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -31,7 +31,7 @@ int main(void) {
 	mpc_init();
 	led_init();
 	buzz_init();
-	irrx_init(); 
+	irrx_init();
 	tasks_init();
 	mpc_register_cmd('P', mpc_reply_ping);
 	mpc_register_cmd('I', mpc_echo_ir);
@@ -39,7 +39,7 @@ int main(void) {
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 	sei();
 
-	while(1) {
+	while (1) {
 		tasks_run();
 	}
 
@@ -47,10 +47,10 @@ int main(void) {
 	return 0;
 }
 
-static void mpc_reply_ping(const mpc_pkt * const pkt) {
+static void mpc_reply_ping(const mpc_pkt *const pkt) {
 	mpc_send_cmd( pkt->saddr, 'R');
 }
 
-static void mpc_echo_ir(const mpc_pkt * const pkt) {
-	mpc_send(pkt->saddr, 'I', pkt->len, (uint8_t*)pkt->data);
+static void mpc_echo_ir(const mpc_pkt *const pkt) {
+	mpc_send(pkt->saddr, 'I', pkt->len, (uint8_t *)pkt->data);
 }

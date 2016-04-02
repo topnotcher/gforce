@@ -7,8 +7,8 @@
 #include <util.h>
 #include "display.h"
 
-#define PIN_LOW(PORT,PIN_bm) PORT.OUTCLR = PIN_bm
-#define PIN_HIGH(PORT,PIN_bm) PORT.OUTSET = PIN_bm
+#define PIN_LOW(PORT, PIN_bm) PORT.OUTCLR = PIN_bm
+#define PIN_HIGH(PORT, PIN_bm) PORT.OUTSET = PIN_bm
 
 #define _E_bm  G4_PIN(LCD_E)
 #define _RS_bm G4_PIN(LCD_RS)
@@ -32,7 +32,7 @@ inline void display_init(void) {
 
 	//15
 	_delay_ms(100);
-	
+
 	//wake
 	display_out_raw(0x30);
 	_delay_ms(30);
@@ -40,36 +40,36 @@ inline void display_init(void) {
 	_delay_ms(10);
 	display_out_raw(0x30);
 	_delay_ms(10);
-	
+
 	//set to 8bit/2 line (Func set)
 	display_out_raw(0x38); //try 3c?
-	
-	_delay_us(100);
-	
-	//display on??? 	
-	display_out_raw(0x08); 
 
 	_delay_us(100);
-	
+
+	//display on???
+	display_out_raw(0x08);
+
+	_delay_us(100);
+
 	//clear
 	display_out_raw(0x01);
 	//home
 	display_out_raw(0x02);
-	
-	
+
+
 	_delay_ms(4);
-	
+
 	//entry mode set
 	display_out_raw(0x06);
-	
+
 	_delay_us(100);
-	
+
 	//display on???
 	//0x0C = on, no cursor
 	//0x0E = on, steady cursor
 	//0x0F = on, blinking cursor.
 	display_out_raw(0x0C);
-	
+
 	_delay_us(100);
 
 }
@@ -84,19 +84,19 @@ static inline void display_out_raw(char data) {
 
 void display_out(char data, lcd_data_type type) {
 
-	if ( lcd_queue.read == lcd_queue.write )
-		add_timer(&display_tick, LCD_TIMER_FREQ ,TIMER_RUN_UNLIMITED);
+	if (lcd_queue.read == lcd_queue.write)
+		add_timer(&display_tick, LCD_TIMER_FREQ, TIMER_RUN_UNLIMITED);
 
 
 	lcd_queue.data[lcd_queue.write].data = data;
 	lcd_queue.data[lcd_queue.write].type = type;
 
-	lcd_queue.write = (lcd_queue.write == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.write+1;
+	lcd_queue.write = (lcd_queue.write == LCD_QUEUE_MAX - 1) ? 0 : lcd_queue.write + 1;
 }
 
-void display_putstring(char * string) {
-	
-	while ( *string != '\0' ) {
+void display_putstring(char *string) {
+
+	while (*string != '\0') {
 		display_write( *string );
 		string++;
 	}
@@ -115,7 +115,7 @@ static inline void lcd_toggle_read(const bool read) {
 	//by default, we're in write mode.
 	static bool is_read = false;
 
-	if ( read && !is_read ) {
+	if (read && !is_read) {
 		is_read = true;
 
 		//set data ports to read
@@ -128,7 +128,7 @@ static inline void lcd_toggle_read(const bool read) {
 
 		PIN_LOW(LCD_CONTROL_PORT, _RS_bm);
 
-	} else if ( !read && is_read ) {
+	} else if (!read && is_read) {
 		is_read = false;
 
 		LCD_DATA_PORT.DIRSET = 0xFF;
@@ -151,23 +151,23 @@ static inline bool lcd_busy(void) {
 
 void display_tick(void) {
 	// nothing to do here!
-	if ( lcd_queue.read == (lcd_queue.write-1) ) {
+	if (lcd_queue.read == (lcd_queue.write - 1)) {
 		del_timer(&display_tick);
 	}
 
-	if ( lcd_queue.read == lcd_queue.write )
+	if (lcd_queue.read == lcd_queue.write)
 		return;
 
-	if (lcd_busy()) 
+	if (lcd_busy())
 		return;
 
 	lcd_toggle_read(false);
 
-	if ( lcd_queue.data[lcd_queue.read].type == LCD_TYPE_CMD )
+	if (lcd_queue.data[lcd_queue.read].type == LCD_TYPE_CMD)
 		PIN_LOW(LCD_CONTROL_PORT, _RS_bm);
 	else
-		PIN_HIGH(LCD_CONTROL_PORT,_RS_bm);
-	
+		PIN_HIGH(LCD_CONTROL_PORT, _RS_bm);
+
 	display_out_raw(lcd_queue.data[lcd_queue.read].data);
-	lcd_queue.read = (lcd_queue.read == LCD_QUEUE_MAX-1) ? 0 : lcd_queue.read+1;
+	lcd_queue.read = (lcd_queue.read == LCD_QUEUE_MAX - 1) ? 0 : lcd_queue.read + 1;
 }

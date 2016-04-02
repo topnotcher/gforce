@@ -20,31 +20,31 @@
 #include <timer.h>
 #include <util.h>
 
-static void mpc_reply_ping(const mpc_pkt * const pkt);
+static void mpc_reply_ping(const mpc_pkt *const pkt);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
-	
+
 	//safe to pass PTR because we never leave main()
 	init_timers();
 	mpc_init();
 	led_init();
 	buzz_init();
-	irrx_init(); 
+	irrx_init();
 	tasks_init();
 	mpc_register_cmd('P', mpc_reply_ping);
 
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 	sei();
 
-	while(1) {
-		tasks_run();	
+	while (1) {
+		tasks_run();
 	}
 
 
 	return 0;
 }
 
-static void mpc_reply_ping(const mpc_pkt * const pkt) {
+static void mpc_reply_ping(const mpc_pkt *const pkt) {
 	mpc_send_cmd(pkt->saddr, 'R');
 }
