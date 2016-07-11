@@ -13,10 +13,6 @@
 #include "display.h"
 #include "mastercomm.h"
 
-#define CLKSYS_Enable( _oscSel ) (OSC.CTRL |= (_oscSel))
-
-#define CLKSYS_IsReady( _oscSel ) (OSC.STATUS & (_oscSel))
-
 static inline void shift_string(char *string);
 static inline void display_scroll(char *string);
 
