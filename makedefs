@@ -105,6 +105,8 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 -include make.rules
 
+DEP=$(OBJECTS:%.o=%.d)
+
 # Default target.
 # $(TARGET).eep was here - removed
 all: begin gccversion sizebefore $(TARGET).elf $(TARGET).hex \
@@ -241,10 +243,9 @@ clean_list :
 	$(REMOVE) $(OBJECTS)
 	$(REMOVE) $(OBJECTS:.o=.lst)
 	$(REMOVE) $(OBJECTS:.o=.s)
-	$(REMOVE) $(OBJECTS:.o=.d)
+	$(REMOVE) $(DEP)
 
-# Remove the '-' if you want to see the dependency files generated.
--include $(SRC:.c=.d)
+-include $(DEP)
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion coff extcoff \
