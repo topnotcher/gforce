@@ -1,3 +1,5 @@
+#include <g4config.h>
+
 #ifndef BOARD_CONFIG_H
 
 /**
@@ -17,7 +19,7 @@
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
-#define MPC_ADDR 0b0100
+#define MPC_ADDR MPC_BACK_ADDR
 
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm

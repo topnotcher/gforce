@@ -1,3 +1,4 @@
+#include <g4config.h>
 
 #ifndef BOARD_CONFIG_H
 
@@ -27,7 +28,7 @@
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
-#define MPC_ADDR 0x01
+#define MPC_ADDR MPC_CHEST_ADDR
 
 /********************************************
  * Configuration for the vibrator
