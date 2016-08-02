@@ -108,64 +108,6 @@ led_state state = {
 	}
 };
 
-/*
-led_sequence seq_active = {
-	.size = 8,
-	.repeat_time = 0,
-	.patterns = {
-		{
-			.pattern = LED_PATTERN(RED, OFF, RED, OFF, RED, OFF, RED, OFF),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-
-		{
-			.pattern = LED_PATTERN(OFF, GREEN, OFF, GREEN, OFF, GREEN, OFF, GREEN),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(BLUE, OFF, BLUE, OFF, BLUE, OFF, BLUE, OFF),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(OFF, YELLOW, OFF, YELLOW, OFF, YELLOW, OFF, YELLOW),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(PURPLE, OFF, PURPLE, OFF, PURPLE, OFF, PURPLE, OFF),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(OFF, WHITE, OFF, WHITE, OFF, WHITE, OFF, WHITE),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(CYAN, OFF, CYAN, OFF, CYAN, OFF, CYAN, OFF),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		},
-		{
-			.pattern = LED_PATTERN(OFF, ORANGE, OFF, ORANGE, OFF, ORANGE, OFF, ORANGE),
-			.flashes = 1,
-			.on = 6,
-			.off = 0,
-		}
-	}
-};
-*/
-
 inline void set_lights(uint8_t status) {
 
 	if (!status && state.ticks)
