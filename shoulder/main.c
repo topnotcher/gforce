@@ -19,8 +19,7 @@
 #include <tasks.h>
 #include <timer.h>
 #include <util.h>
-
-static void mpc_reply_ping(const mpc_pkt *const pkt);
+#include <diag.h>
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -32,7 +31,7 @@ int main(void) {
 	buzz_init();
 	irrx_init();
 	tasks_init();
-	mpc_register_cmd('P', mpc_reply_ping);
+	diag_init();
 
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 	sei();
@@ -43,8 +42,4 @@ int main(void) {
 
 
 	return 0;
-}
-
-static void mpc_reply_ping(const mpc_pkt *const pkt) {
-	mpc_send_cmd(pkt->saddr, 'R');
 }

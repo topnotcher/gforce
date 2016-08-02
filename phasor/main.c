@@ -16,11 +16,11 @@
 #include <mpc.h>
 #include <timer.h>
 #include <util.h>
+#include <diag.h>
 
 #include "irtx.h"
 #include "trigger.h"
 
-static void mpc_reply_ping(const mpc_pkt *const pkt);
 static void ir_cmd_tx(const mpc_pkt *const pkt);
 
 int main(void) {
@@ -33,7 +33,7 @@ int main(void) {
 	mpc_init();
 	init_timers();
 	tasks_init();
-	mpc_register_cmd('P', mpc_reply_ping);
+	diag_init();
 	mpc_register_cmd('T', ir_cmd_tx);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
@@ -49,9 +49,6 @@ int main(void) {
 	return 0;
 }
 
-static void mpc_reply_ping(const mpc_pkt *const pkt) {
-	mpc_send_cmd( pkt->saddr, 'R');
-}
 static void ir_cmd_tx(const mpc_pkt *const pkt) {
 	irtx_send((const irtx_pkt *)pkt->data);
 }

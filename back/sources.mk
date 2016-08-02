@@ -16,3 +16,4 @@ charger.c
 ../common/twi_slave.c
 ../common/util.c
 ../common/queue.c
+../common/diag.c
