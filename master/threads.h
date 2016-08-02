@@ -8,10 +8,17 @@
 #define NUM_THREADS 5
 #endif
 
+#include <queue.h>
+
 typedef struct {
 	uint8_t pid;
 	void * stack;
 	const char * name;
+	enum {
+		THREAD_RUNNING,
+		THREAD_RUNNABLE,
+		THREAD_SUSPENDED,
+	} state;
 } tcb_t;
 
 typedef struct {
@@ -19,6 +26,7 @@ typedef struct {
 	tcb_t * tcb;
 	void * top_of_stack;
 	tcb_t list[NUM_THREADS];	
+	queue_t *run_queue;
 } threads_t;
 
 extern threads_t threads;
@@ -38,22 +46,13 @@ extern threads_t threads;
 
 
 
-#define threads_start_main() do {\
-		threads.tcb = &threads.list[0];\
-		thread_context_in();\
-		asm volatile ("ret");\
-	} while(0)
-
-
-#define threads_switchto(derp) do {\
-		thread_context_out();\
-		threads.tcb = &threads.list[derp];\
-		thread_context_in();\
-		asm volatile ("ret");\
-	} while(0)
-
+void threads_init(void);
+void thread_yield(void) __attribute__((naked));
+void thread_suspend(uint8_t *) __attribute__((naked));
+void threads_start(void) __attribute__((naked));
 uint8_t thread_create(const char * name, void (*task)(void));
-void block(void) __attribute__((naked));
+uint8_t thread_pid(void);
+void thread_wake(uint8_t);
 
 #define thread_context_in()                                \
 	asm volatile(\

@@ -18,20 +18,19 @@
 #define IBUTTON_SLEEP_MS 300
 #endif
 
+static uint8_t ibutton_thread_id;
+
 static ds2483_dev_t *onewiredev;
 static void ibutton_scheduled_wake(void);
 static inline void ibutton_sleep(void);
 static inline int8_t ibutton_detect_cycle(void);
 
-static void ibutton_switchto(void) __attribute__((naked));
-
 void ibutton_init(void) {
 	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, block, ibutton_scheduled_wake);
+	twi_master_set_blocking(twim, thread_suspend, thread_wake);
 	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
-	//this starts the process (300+ms from now).
-	add_timer(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
+	ibutton_thread_id = thread_create("ibutton", ibutton_run);
 }
 
 /**
@@ -77,7 +76,7 @@ static inline int8_t ibutton_detect_cycle(void) {
 
 static inline void ibutton_sleep(void) {
 	add_timer(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
-	block();
+	thread_suspend(&ibutton_thread_id);
 }
 
 /**
@@ -85,15 +84,8 @@ static inline void ibutton_sleep(void) {
  * or when IBUTTON_SLEEP_MS expires
  */
 static void ibutton_scheduled_wake(void) {
-	task_schedule(ibutton_switchto);
+	thread_wake(ibutton_thread_id);
 }
 
-/**
- * Triggers a context switch from the main process
- * to the ibutton process
- */
-void ibutton_switchto(void) {
-	threads_switchto(1);
-}
 
 DS2483_INTERRUPT_HANDLER(ISR(TWIE_TWIM_vect), onewiredev)

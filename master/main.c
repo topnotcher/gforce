@@ -41,7 +41,6 @@ int main(void) {
 	xbee_init();
 	mpc_init();
 	game_init();
-	ibutton_init();
 	display_init();
 	tasks_init();
 
@@ -63,18 +62,25 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
+	threads_init();
 	threads_init_stack();
 	thread_create("main", main_thread);
-	thread_create("ibutton", ibutton_run);
-	threads_start_main();
+	threads_start();
 }
 
 static void main_thread(void) {
-	display_write("foo");
+	ibutton_init();
+
+	/* TODO: when power is applied, there is a race condition between the */
+	/* display board coming up and this task starting. */
+	display_write("GForce Booted");
+
 	while (1) {
 		tasks_run();
 		//	wdt_reset();
 		display_tx();
+
+		thread_yield();
 	}
 }
 

@@ -42,9 +42,9 @@ twi_master_t *twi_master_init(
 	return dev;
 }
 
-void twi_master_set_blocking(twi_master_t *dev, void (*block)(void), void (*resume)(void)) {
-	dev->block = block;
-	dev->resume = resume;
+void twi_master_set_blocking(twi_master_t *dev, void (*block_cb)(uint8_t *), void (*resume_cb)(uint8_t)) {
+	dev->block = block_cb;
+	dev->resume = resume_cb;
 }
 
 void twi_master_write(twi_master_t *dev, uint8_t addr, uint8_t len, uint8_t *buf) {
@@ -68,7 +68,7 @@ void twi_master_write_read(twi_master_t *dev, uint8_t addr, uint8_t txbytes, uin
 	 */
 	twi_master_start_txn(dev);
 	if (dev->block)
-		dev->block();
+		dev->block(&(dev->tid));
 }
 
 
@@ -154,8 +154,9 @@ static inline void twi_master_write_handler(twi_master_t *dev) {
 }
 
 static inline void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
-	if (dev->block)
-		dev->resume();
-	else
+	if (dev->block) {
+		dev->resume(dev->tid);
+	} else {
 		dev->txn_complete(dev->ins, status);
+	}
 }

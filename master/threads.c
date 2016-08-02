@@ -1,10 +1,20 @@
+#include <stdlib.h>
 #include <stdint.h>
+
 #include <util/atomic.h>
 #include "threads.h"
 
 static void *thread_stack_init(uint8_t *stack, void (*task)(void));
+static void schedule(void);
 
 threads_t threads;
+
+void threads_init(void) {
+	threads.num = 0;
+	threads.tcb = NULL;
+	threads.top_of_stack = NULL;
+	threads.run_queue = queue_create(NUM_THREADS);
+}
 
 uint8_t thread_create(const char *name, void (*task)(void)) {
 	tcb_t *tcb;
@@ -14,16 +24,71 @@ uint8_t thread_create(const char *name, void (*task)(void)) {
 		tcb = &threads.list[pid];
 		tcb->name = name;
 		tcb->pid = pid;
+		tcb->state = THREAD_SUSPENDED;
 		//new thread goes on the current top of stack
 		tcb->stack = thread_stack_init(threads.top_of_stack, task);
 		threads.top_of_stack = (void *)((uint16_t)tcb->stack - (uint16_t)THREADS_STACK_SIZE);
 	}
 
+	thread_wake(pid);
+
 	return pid;
 }
 
-void block(void) {
-	threads_switchto(0);
+void threads_start(void) {
+	schedule();
+	thread_context_in();
+	asm volatile ("ret");
+}
+
+static void schedule(void) {
+	threads.tcb = NULL;
+
+	// TODO: this is bad. BAD. (queue_poll will block interrupts)
+	while (!threads.tcb) {
+		threads.tcb = queue_poll(threads.run_queue);
+	}
+
+	threads.tcb->state = THREAD_RUNNING;
+}
+
+void thread_suspend(uint8_t *pid) {
+	*pid = thread_pid();
+
+	thread_context_out();
+
+	threads.tcb->state = THREAD_SUSPENDED;
+
+	schedule();
+
+	thread_context_in();
+	asm volatile ("ret");
+}
+
+void thread_yield(void) {
+	// suspend and wake - the task is still runnable...
+	threads.tcb->state = THREAD_SUSPENDED;
+	thread_wake(threads.tcb->pid);
+
+	thread_context_out();
+
+	schedule();
+
+	thread_context_in();
+	asm volatile ("ret");
+}
+
+void thread_wake(uint8_t tid) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		if (threads.list[tid].state == THREAD_SUSPENDED) {
+			threads.list[tid].state = THREAD_RUNNABLE;
+			queue_offer(threads.run_queue, &(threads.list[tid]));
+		}
+	}
+}
+
+uint8_t thread_pid(void) {
+	return threads.tcb->pid;
 }
 
 void *thread_stack_init(uint8_t *stack, void (*task)(void)) {
