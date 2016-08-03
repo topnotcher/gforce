@@ -4,6 +4,8 @@
 #include "timer.h"
 #include "mempool.h"
 
+#include "threads.h"
+
 #define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
 #ifndef MAX_TIMERS
@@ -252,4 +254,6 @@ TIMER_RUN {
 	}
 
 	set_ticks();
+
+	thread_yield();
 }

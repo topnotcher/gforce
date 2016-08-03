@@ -5,6 +5,7 @@
 #include "threads.h"
 
 static void *thread_stack_init(uint8_t *stack, void (*task)(void));
+static void idle_task(void);
 static void schedule(void);
 
 threads_t threads;
@@ -13,10 +14,20 @@ void threads_init(void) {
 	threads.num = 0;
 	threads.tcb = NULL;
 	threads.top_of_stack = NULL;
-	threads.run_queue = queue_create(NUM_THREADS);
+
+	for (uint8_t i = 0; i <= THREAD_PRIORITY_IDLE; ++i) 
+		threads.run_queue[i] = queue_create(NUM_THREADS);
+
+	threads_init_stack();
+
+	thread_create("idle", idle_task, 32, THREAD_PRIORITY_IDLE);
 }
 
-uint8_t thread_create(const char *name, void (*task)(void)) {
+static void idle_task(void) {
+	while (1);
+}
+
+uint8_t thread_create(const char *name, void (*task)(void), uint16_t stack_size, thread_priority_t priority) {
 	tcb_t *tcb;
 	uint8_t pid;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -25,6 +36,7 @@ uint8_t thread_create(const char *name, void (*task)(void)) {
 		tcb->name = name;
 		tcb->pid = pid;
 		tcb->state = THREAD_SUSPENDED;
+		tcb->priority = priority;
 		//new thread goes on the current top of stack
 		tcb->stack = thread_stack_init(threads.top_of_stack, task);
 		threads.top_of_stack = (void *)((uint16_t)tcb->stack - (uint16_t)THREADS_STACK_SIZE);
@@ -44,9 +56,11 @@ void threads_start(void) {
 static void schedule(void) {
 	threads.tcb = NULL;
 
-	// TODO: this is bad. BAD. (queue_poll will block interrupts)
-	while (!threads.tcb) {
-		threads.tcb = queue_poll(threads.run_queue);
+	for (uint8_t i = 0; i <= THREAD_PRIORITY_IDLE; ++i)  {
+		threads.tcb = queue_poll(threads.run_queue[i]);
+
+		if (threads.tcb)
+			break;
 	}
 
 	threads.tcb->state = THREAD_RUNNING;
@@ -78,11 +92,28 @@ void thread_yield(void) {
 	asm volatile ("ret");
 }
 
+void thread_wake_and_schedule(uint8_t tid) {
+	thread_context_out();
+
+	// dirty as fuck
+	// Put the current thread back on the run queue...
+	// then queue the thread being woken up.
+	// If the new thread is higher priority, we'll switch to it.
+	// Otherwise we'll just go back to the old thread.
+	threads.tcb->state = THREAD_SUSPENDED;
+	thread_wake(threads.tcb->pid);
+	thread_wake(tid);
+
+	schedule();
+
+	thread_context_in();
+}
+
 void thread_wake(uint8_t tid) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if (threads.list[tid].state == THREAD_SUSPENDED) {
 			threads.list[tid].state = THREAD_RUNNABLE;
-			queue_offer(threads.run_queue, &(threads.list[tid]));
+			queue_offer(threads.run_queue[threads.list[tid].priority], &(threads.list[tid]));
 		}
 	}
 }

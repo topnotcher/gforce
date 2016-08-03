@@ -27,10 +27,10 @@ static inline int8_t ibutton_detect_cycle(void);
 
 void ibutton_init(void) {
 	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, thread_suspend, thread_wake);
+	twi_master_set_blocking(twim, thread_suspend, thread_wake_and_schedule);
 	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
-	ibutton_thread_id = thread_create("ibutton", ibutton_run);
+	ibutton_thread_id = thread_create("ibutton", ibutton_run, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
 }
 
 /**

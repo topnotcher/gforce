@@ -63,8 +63,7 @@ int main(void) {
 	mpc_register_cmd('D', xbee_relay_mpc);
 
 	threads_init();
-	threads_init_stack();
-	thread_create("main", main_thread);
+	thread_create("main", main_thread, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
 	threads_start();
 }
 
@@ -79,8 +78,6 @@ static void main_thread(void) {
 		tasks_run();
 		//	wdt_reset();
 		display_tx();
-
-		thread_yield();
 	}
 }
 

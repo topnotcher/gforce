@@ -10,6 +10,13 @@
 
 #include <queue.h>
 
+typedef enum {
+	THREAD_PRIORITY_HIGH = 0,
+	THREAD_PRIORITY_MEDIUM = 1,
+	THREAD_PRIORITY_LOW = 2,
+	THREAD_PRIORITY_IDLE = 3,
+} thread_priority_t;
+
 typedef struct {
 	uint8_t pid;
 	void * stack;
@@ -19,6 +26,8 @@ typedef struct {
 		THREAD_RUNNABLE,
 		THREAD_SUSPENDED,
 	} state;
+
+	thread_priority_t priority;
 } tcb_t;
 
 typedef struct {
@@ -26,7 +35,7 @@ typedef struct {
 	tcb_t * tcb;
 	void * top_of_stack;
 	tcb_t list[NUM_THREADS];	
-	queue_t *run_queue;
+	queue_t *run_queue[THREAD_PRIORITY_IDLE + 1];
 } threads_t;
 
 extern threads_t threads;
@@ -50,8 +59,9 @@ void threads_init(void);
 void thread_yield(void) __attribute__((naked));
 void thread_suspend(uint8_t *) __attribute__((naked));
 void threads_start(void) __attribute__((naked));
-uint8_t thread_create(const char * name, void (*task)(void));
+uint8_t thread_create(const char * name, void (*task)(void), uint16_t stack_size, thread_priority_t priority);
 uint8_t thread_pid(void);
+void thread_wake_and_schedule(uint8_t tid) __attribute__((naked));
 void thread_wake(uint8_t);
 
 #define thread_context_in()                                \

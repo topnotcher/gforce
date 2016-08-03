@@ -2,7 +2,7 @@
 MCU = atxmega256a3
 F_CPU = 32000000
 
-C_DEFS=W_SOUNDS=0 DEBUG=0
+C_DEFS=W_SOUNDS=1 DEBUG=0
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
