@@ -26,15 +26,21 @@
 #define DEBUG 1
 #endif
 
-static uint8_t rst_reason;
+//static uint8_t rst_reason;
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt);
 static void main_thread(void);
-static void why_the_fuck_did_i_reset(void);
+/* static void why_the_fuck_did_i_reset(void); */
 
 int main(void) {
 	sysclk_set_internal_32mhz();
-	why_the_fuck_did_i_reset();
+
+	threads_init();
+	thread_create("main", main_thread, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
+	threads_start();
+}
+
+static void main_thread(void) {
 
 	init_timers();
 	sound_init();
@@ -62,12 +68,6 @@ int main(void) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
-	threads_init();
-	thread_create("main", main_thread, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
-	threads_start();
-}
-
-static void main_thread(void) {
 	ibutton_init();
 
 	/* TODO: when power is applied, there is a race condition between the */
@@ -83,36 +83,4 @@ static void main_thread(void) {
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt) {
 	xbee_send(pkt->cmd, pkt->len + sizeof(*pkt), (uint8_t *)pkt);
-}
-
-static void why_the_fuck_did_i_reset(void) {
-	//spike detection
-	if (RST.STATUS & RST_SDRF_bm)
-		rst_reason = 1;
-	//software reset
-	else if (RST.STATUS & RST_SRF_bm)
-		rst_reason = 2;
-	//PDI reset
-	else if (RST.STATUS & RST_PDIRF_bm)
-		rst_reason = 3;
-	//Watchdog reset
-	else if (RST.STATUS & RST_WDRF_bm)
-		rst_reason = 4;
-	//brown-out reset
-	else if (RST.STATUS & RST_BORF_bm)
-		rst_reason = 5;
-	//external
-	else if (RST.STATUS & RST_EXTRF_bm)
-		rst_reason = 6;
-	//power on reset
-	else if (RST.STATUS & RST_PORF_bm)
-		rst_reason = 7;
-	else
-		rst_reason = 0;
-
-	RST.STATUS = 0;
-}
-
-ISR(BADISR_vect) {
-	while (1);
 }
