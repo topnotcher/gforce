@@ -4,7 +4,8 @@
 #include "timer.h"
 #include "mempool.h"
 
-#include "threads.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
@@ -254,6 +255,5 @@ TIMER_RUN {
 	}
 
 	set_ticks();
-
-	thread_yield();
+	xTaskIncrementTick();
 }

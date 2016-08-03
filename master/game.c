@@ -33,7 +33,7 @@ static struct {
 } game_settings;
 
 
-void ( *countdown_cb )(void);
+void (* countdown_cb )(void);
 
 static inline void handle_shot(const uint8_t, command_t const *const);
 static void process_trigger_pkt(const mpc_pkt *const pkt);
@@ -47,7 +47,7 @@ inline void game_init(void) {
 }
 
 void game_countdown(void) {
-	task_schedule(__game_countdown);
+	task_schedule_isr(__game_countdown);
 }
 
 static void __game_countdown(void) {
@@ -55,6 +55,7 @@ static void __game_countdown(void) {
 
 	if (--game_countdown_time == 0) {
 		countdown_cb();
+		//start_game_activate();
 		data[7] = ' ';
 	} else {
 		data[7] = 0x30 + game_countdown_time;
@@ -86,7 +87,7 @@ void start_game_cmd(command_t const *const cmd) {
 void game_tick(void) {
 	if (--game_settings.game_time == 0)
 		//stop_game modifies timers, which cannot happen in timer context
-		task_schedule(stop_game);
+		task_schedule_isr(stop_game);
 }
 
 void start_game_activate(void) {
@@ -130,7 +131,7 @@ void stop_game(void) {
 }
 
 static void stun_timer(void) {
-	task_schedule(__stun_timer);
+	task_schedule_isr(__stun_timer);
 }
 
 static void __stun_timer(void) {
@@ -232,9 +233,11 @@ void process_ir_pkt(const mpc_pkt *const pkt) {
 }
 
 void process_trigger_pkt(const mpc_pkt *const pkt) {
-	static uint8_t data[] = {16, 3, 255, 56, 127, 138, 103, 83, 0, 15, 15, 68, 72, 0, 44, 1, 88, 113};
+	// size, repeat, data...
+	static uint8_t data[] = {5, 3, 0xff, 0x0c, 0x63, 0x88, 0xa6};
+
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
-		mpc_send(MPC_PHASOR_ADDR, 'T', 18, data);
+		mpc_send(MPC_PHASOR_ADDR, 'T', sizeof(data), data);
 	}
 }

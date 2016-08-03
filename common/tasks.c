@@ -1,29 +1,31 @@
-#include <tasks.h>
-#include <queue.h>
+#include <stdlib.h>
 
-#include "threads.h"
 
-static queue_t *event_queue;
+#include "FreeRTOS.h"
+#include "queue.h"
 
-static uint8_t main_thread_id = 0;
+#include "tasks.h"
+
+static QueueHandle_t event_queue;
 
 void tasks_init(void) {
-	event_queue = queue_create(10);
+	event_queue = xQueueCreate(10, sizeof(void (*)(void)));
 }
 
 void tasks_run(void) {
-	void (*cb)(void) = queue_poll(event_queue);
+	void (*cb)(void) = NULL;
 
-	if (cb == (void *)0) {
-		thread_suspend(&main_thread_id);
+	BaseType_t ret = xQueueReceive(event_queue, &cb, portMAX_DELAY);
+	if (ret != pdTRUE || cb == NULL)
 		return;
-	}
 
 	cb();
 }
 
 void task_schedule(void (*cb)(void)) {
-	queue_offer(event_queue, cb);
-	if (main_thread_id)
-		thread_wake(main_thread_id);
+	xQueueSend(event_queue, &cb, 0);
+}
+
+void task_schedule_isr(void (*cb)(void)) {
+	xQueueSendFromISR(event_queue, &cb, NULL);
 }

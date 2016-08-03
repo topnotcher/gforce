@@ -9,35 +9,41 @@
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
-#include "threads.h"
 #include <tasks.h>
 #include "display.h"
 #include <timer.h>
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #ifndef IBUTTON_SLEEP_MS
 #define IBUTTON_SLEEP_MS 300
 #endif
 
-static uint8_t ibutton_thread_id;
+static TaskHandle_t ibutton_task_handle;
 
 static ds2483_dev_t *onewiredev;
-static void ibutton_scheduled_wake(void);
+static void ibutton_wake(void);
 static inline void ibutton_sleep(void);
+
+static void ibutton_run(void *params);
 static inline int8_t ibutton_detect_cycle(void);
+
+static void ibutton_block(void);
 
 void ibutton_init(void) {
 	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, thread_suspend, thread_wake_and_schedule);
+	twi_master_set_blocking(twim, ibutton_block, ibutton_wake);
 	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
-	ibutton_thread_id = thread_create("ibutton", ibutton_run, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
+	xTaskCreate(ibutton_run, "ibutton", 128, NULL, tskIDLE_PRIORITY + 1, &ibutton_task_handle);
 }
 
 /**
  * This is the main ibutton function that loops
  * continuously polling for an ibutton
  */
-void ibutton_run(void) {
+void ibutton_run(void *params) {
 	ds2483_rst(onewiredev);
 
 	while (1) {
@@ -75,16 +81,20 @@ static inline int8_t ibutton_detect_cycle(void) {
 }
 
 static inline void ibutton_sleep(void) {
-	add_timer(ibutton_scheduled_wake, IBUTTON_SLEEP_MS, 1);
-	thread_suspend(&ibutton_thread_id);
+	add_timer(ibutton_wake, IBUTTON_SLEEP_MS, 1);
+	ibutton_block();
 }
 
 /**
  * Wakes the process when I/O is complete
  * or when IBUTTON_SLEEP_MS expires
  */
-static void ibutton_scheduled_wake(void) {
-	thread_wake(ibutton_thread_id);
+static void ibutton_wake(void) {
+	xTaskNotifyFromISR(ibutton_task_handle, 0, eNoAction, NULL);
+}
+
+static void ibutton_block(void) {
+	xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
 }
 
 

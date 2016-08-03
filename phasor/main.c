@@ -21,13 +21,15 @@
 #include "irtx.h"
 #include "trigger.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 static void ir_cmd_tx(const mpc_pkt *const pkt);
+static portTASK_FUNCTION(main_thread, params);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	led_init();
-	irtx_init();
 	trigger_init();
 	irrx_init();
 	mpc_init();
@@ -37,16 +39,22 @@ int main(void) {
 	mpc_register_cmd('T', ir_cmd_tx);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
-	sei();
+
+	xTaskCreate(main_thread, "main", 128, NULL, tskIDLE_PRIORITY + 5, (TaskHandle_t*)NULL);
+	vTaskStartScheduler();
+
+	return 0;
+}
+
+
+static portTASK_FUNCTION(main_thread, params) {
+	led_init();
+	irrx_init();
+	irtx_init();
 
 	while (1) {
 		tasks_run();
-		if (trigger_pressed())
-			//T = trigger pressed
-			mpc_send_cmd(MPC_MASTER_ADDR, 'T');
 	}
-
-	return 0;
 }
 
 static void ir_cmd_tx(const mpc_pkt *const pkt) {

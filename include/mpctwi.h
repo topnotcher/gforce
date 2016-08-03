@@ -2,12 +2,11 @@
 #include <avr/io.h>
 
 #include "mempool.h"
-#include "queue.h"
+#include "gqueue.h"
 #include "comm.h"
 #include "twi_master.h"
 #include "twi_slave.h"
-
-#include <util.h>
+#include "util.h"
 
 
 #ifndef TWI_H

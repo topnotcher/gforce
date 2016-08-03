@@ -10,6 +10,9 @@
 #include <mempool.h>
 #include <displaycomm.h>
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "display.h"
 
 #define DISPLAY_SPI SPIC
@@ -25,9 +28,11 @@
 
 static comm_driver_t *comm;
 static mempool_t *mempool;
+static TaskHandle_t display_task_handle;
 
 static void tx_begin(void);
 static void tx_end(void);
+static portTASK_FUNCTION(display_tx, params);
 
 inline void display_init(void) {
 	//SS will fuck you over hard per xmegaA, pp226.
@@ -47,6 +52,8 @@ inline void display_init(void) {
 	comm_dev_t *commdev;
 	commdev = serialcomm_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 1 /*dummy address*/);
 	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool, NULL );
+
+	xTaskCreate(display_tx, "display", 128, NULL, tskIDLE_PRIORITY + 2, &display_task_handle);
 }
 
 static void tx_begin(void) {
@@ -61,8 +68,12 @@ static void tx_end(void) {
 	DISPLAY_PORT.OUTSET = _SS_bm;
 }
 
-void display_tx(void) {
+static portTASK_FUNCTION(display_tx, params) {
 	comm_tx(comm);
+	while (1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE)
+			comm_tx(comm);
+	}
 }
 
 inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
@@ -82,6 +93,8 @@ inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 
 	comm_send(comm, mempool_getref(frame));
 	mempool_putref(frame);
+
+	xTaskNotify(display_task_handle, 0, eNoAction);
 }
 
 inline void display_write(char *str) {

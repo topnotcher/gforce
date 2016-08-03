@@ -6,6 +6,11 @@
 #include "trigger.h"
 #include <util.h>
 #include <timer.h>
+#include <tasks.h>
+
+#include <g4config.h>
+
+#include <mpc.h>
 
 #define _TRIGPINCTRL G4_PINCTRL(TRIGGER_PIN)
 #define _TRIGPIN_bm G4_PIN(TRIGGER_PIN)
@@ -13,6 +18,7 @@
 static inline bool trigger_enabled(void);
 static inline void trigger_disable(void);
 static inline void trigger_enable(void);
+static void trigger_pressed(void);
 static void trigger_tick(void);
 
 static volatile bool _trigger_pressed;
@@ -32,14 +38,14 @@ inline void trigger_init(void) {
 	trigger_enable();
 }
 
-inline bool trigger_pressed(void) {
+static void trigger_pressed(void) {
 	if (_trigger_pressed) {
 		_trigger_pressed = false;
 		add_timer(trigger_tick, 500, 1);
-		return true;
+		mpc_send_cmd(MPC_MASTER_ADDR, 'T');
 	}
-	return false;
 }
+
 static inline void trigger_enable(void) {
 	_trigger_enabled = true;
 	TRIGGER_PORT.INTCTRL |= PORT_INT0LVL_MED_gc;
@@ -55,6 +61,7 @@ static inline bool trigger_enabled(void) {
 ISR(PORTA_INT0_vect) {
 	if (!(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/) {
 		_trigger_pressed = true;
+		task_schedule_isr(trigger_pressed);
 		trigger_disable();
 	}
 }

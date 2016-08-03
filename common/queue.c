@@ -1,7 +1,7 @@
 #include <util/atomic.h>
 
 #include <malloc.h>
-#include "queue.h"
+#include "gqueue.h"
 
 queue_t *queue_create(const uint8_t size) {
 	queue_t *q;

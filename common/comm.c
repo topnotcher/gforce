@@ -1,8 +1,8 @@
 #include <stddef.h>
 
 #include "comm.h"
-#include "queue.h"
-#include <malloc.h>
+#include "gqueue.h"
+#include "malloc.h"
 
 /**
  * The comm driver represents a generalized device

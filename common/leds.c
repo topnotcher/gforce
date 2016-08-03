@@ -14,7 +14,14 @@
 
 #include <timer.h>
 #include <mpc.h>
-#include <tasks.h>
+
+#include "FreeRTOS.h"
+#include "task.h"
+
+static void leds_run(void);
+static portTASK_FUNCTION(leds_task, params);
+
+static TaskHandle_t leds_task_handle;
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
@@ -114,9 +121,15 @@ inline void set_lights(uint8_t status) {
 		del_timer(led_timer_tick);
 
 	state.status = status ? start : stop;
-	task_schedule(leds_run);
+	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
 
+static portTASK_FUNCTION(leds_task, params) {
+	while (1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE)
+			leds_run();
+	}
+}
 
 /**
  * I sincerly apologize for this mess...
@@ -125,7 +138,7 @@ inline void set_lights(uint8_t status) {
  * Meh, it's not that dirty, and there's nothing wrong with using
  * gotos carefully.
  */
-inline void leds_run(void) {
+static void leds_run(void) {
 
 	switch (state.status) {
 	//cause we be polllin! we rollin! they hatin'!
@@ -305,6 +318,8 @@ void led_init(void) {
 	mpc_register_cmd('A', set_seq_cmd);
 	mpc_register_cmd('B', lights_off_cmd);
 
+	xTaskCreate(leds_task, "leds", 70, NULL, tskIDLE_PRIORITY + 1, &leds_task_handle);
+
 	//the state is set in its own initializer way up there^
 	led_write();
 }
@@ -315,7 +330,7 @@ static inline void led_timer_start(void) {
 
 void led_timer_tick(void) {
 	state.ticks = 0;
-	task_schedule(leds_run);
+	xTaskNotifyFromISR(leds_task_handle, 0, eNoAction);
 }
 
 static inline void led_write_byte(void) {

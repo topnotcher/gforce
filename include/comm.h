@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include "mempool.h"
-#include "queue.h"
+#include "gqueue.h"
 
 #ifndef COMM_H
 #define COMM_H

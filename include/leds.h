@@ -45,7 +45,6 @@ typedef struct {
 void led_init(void);
 //void set_state(void);
 void set_lights(uint8_t);
-void leds_run(void);
 void led_set_seq(const uint8_t * const,const uint8_t);
 
 #endif

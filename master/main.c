@@ -13,7 +13,6 @@
 #include "xbee.h"
 #include "display.h"
 #include "ibutton.h"
-#include "threads.h"
 #include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
@@ -21,6 +20,9 @@
 #include <util.h>
 
 #include "game.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -35,31 +37,29 @@ static void main_thread(void);
 int main(void) {
 	sysclk_set_internal_32mhz();
 
-	threads_init();
-	thread_create("main", main_thread, THREADS_STACK_SIZE, THREAD_PRIORITY_LOW);
-	threads_start();
+	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
+	//wdt_enable(9);
+	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
+	CCP = CCP_IOREG_gc;
+	WDT.CTRL = temp;
+
+	xTaskCreate(main_thread, "main", 256, NULL, tskIDLE_PRIORITY + 5, (TaskHandle_t*)NULL);
+	vTaskStartScheduler();
 }
 
 static void main_thread(void) {
 
+	tasks_init();
 	init_timers();
 	sound_init();
 	xbee_init();
 	mpc_init();
 	game_init();
+
 	display_init();
-	tasks_init();
 
 	//clear shit by default.
 	lights_off();
-
-	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
-	//interrupts will get enabled when process starts
-	//sei();
-	//wdt_enable(9);
-	uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
-	CCP = CCP_IOREG_gc;
-	WDT.CTRL = temp;
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee.
@@ -76,8 +76,6 @@ static void main_thread(void) {
 
 	while (1) {
 		tasks_run();
-		//	wdt_reset();
-		display_tx();
 	}
 }
 

@@ -8,6 +8,7 @@
 
 #include <util.h>
 #include <leds.h>
+#include <mempool.h>
 
 #include "irtx.h"
 
@@ -38,6 +39,7 @@ typedef struct {
 
 queue_t sendq;
 
+static mempool_t *bufpool;
 
 inline void irtx_init(void) {
 
@@ -72,20 +74,30 @@ inline void irtx_init(void) {
 	sendq.read = sendq.write = 0;
 	sendq.byte = 0;
 	sendq.cnt = 0;
+
+	// 15 = max size of command <-- TODO
+	bufpool = init_mempool(sizeof(irtx_pkt) + 15, 4);
 }
 
 void irtx_send(const irtx_pkt *const pkt) {
 
 	irtx_pkt *npkt;
 
-	npkt = malloc(sizeof(*npkt) + pkt->size);
-	memcpy(npkt, pkt, sizeof(*npkt) + pkt->size);
+	// max size of command <-- TODO
+	if (pkt->size > 15)
+		return;
 
+	npkt = mempool_alloc(bufpool);
+	if (npkt) {
+		memcpy(npkt, pkt, sizeof(*npkt) + pkt->size);
 
-	sendq.pkts[sendq.write] = npkt;
-	sendq.write = (sendq.write == TX_QUEUE_MAX - 1) ? 0 : sendq.write + 1;
+		mpc_send(MPC_MASTER_ADDR, 'D', pkt->size, pkt->data);
 
-	_txc_interrupt_enable();
+		sendq.pkts[sendq.write] = npkt;
+		sendq.write = (sendq.write == TX_QUEUE_MAX - 1) ? 0 : sendq.write + 1;
+
+		_txc_interrupt_enable();
+	}
 }
 
 ISR(PORTC_INT0_vect) {
@@ -114,9 +126,8 @@ ISR(IRTX_USART_DRE_vect) {
 		//last retransmission
 		if (++sendq.cnt == pkt->repeat) {
 			sendq.cnt = 0;
-			free(pkt);
+			mempool_putref(pkt);
 			sendq.read = (sendq.read == TX_QUEUE_MAX - 1) ? 0 : sendq.read + 1;
-
 
 			if (sendq.read == sendq.write)
 				_txc_interrupt_disable();

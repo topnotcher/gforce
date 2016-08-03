@@ -1,5 +1,5 @@
 # MCU name
-MCU = atxmega32a4
+MCU = atxmega32a4u
 F_CPU = 32000000
 
 # Output format. (can be srec, ihex, binary)
@@ -15,6 +15,6 @@ TARGET = $(OUTPUT)/main
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 OPT = 2
 
-EXTRAINCDIRS = ../include
+EXTRAINCDIRS = ../include ../freertos/include
 
 include ../makedefs

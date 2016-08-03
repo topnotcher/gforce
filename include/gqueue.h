@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef GQUEUE_H
+#define GQUEUE_H
 
 typedef struct {
 	uint8_t size;

@@ -1,4 +1,9 @@
 main.c
+../freertos/list.c
+../freertos/queue.c
+../freertos/tasks.c
+../freertos/port.c
+../freertos/mem.c
 
 ../common/buzz.c
 ../common/comm.c
