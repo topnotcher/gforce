@@ -1,26 +1,29 @@
 #include <stdint.h>
 #include <util.h>
+#include <avr/io.h>
 
 void sysclk_set_internal_32mhz(void) {
+
 	// Enable 32 MHz Osc.
 	CLKSYS_Enable( OSC_RC32MEN_bm );
+
 	// Wait for 32 MHz Osc. to stabilize
 	while (CLKSYS_IsReady( OSC_RC32MRDY_bm ) == 0);
-	// was 8  PLL mult. factor ( 2MHz x8 ) and set clk source to PLL.
-	OSC_PLLCTRL = 16;
 
-	//enable PLL
-	OSC_CTRL = 0x10;
+	// enable 32Khz osc
+	CLKSYS_Enable( OSC_RC32KEN_bm );
 
-	//wait for PLL clk to be ready
-	while (!(OSC_STATUS & 0x10));
+	while (CLKSYS_IsReady( OSC_RC32KRDY_bm ) == 0);
 
-	//Unlock seq. to access CLK_CTRL
-	CCP = 0xD8;
+	//Enable 32Mhz DFLL and set the reference clock to the 32Khz osc
+    OSC.DFLLCTRL = OSC_RC32MCREF_RC32K_gc;
+	DFLLRC32M.CTRL |= DFLL_ENABLE_bm;
 
-	// Select PLL as sys. clk. These 2 lines can ONLY go here to engage the PLL ( reverse of what manual A pg 81 says )
-	CLK_CTRL = 0x04;
+	//Unlock seq. to access CLK.CTRL
+	CCP = CCP_IOREG_gc;
 
+	// Select 32Mhz internal as sys. clk. 
+	CLK.CTRL = CLK_SCLKSEL_RC32M_gc;
 }
 
 void crc(uint8_t *const shift, uint8_t byte, const uint8_t poly) {
