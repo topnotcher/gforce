@@ -17,6 +17,6 @@ TARGET = $(OUTPUT)/main
 # (Note: 3 is not always the best optimization level. See avr-libc FAQ.)
 OPT = 2
 
-EXTRAINCDIRS = ../include ../freertos/include
+EXTRAINCDIRS = ../common/include ../freertos/include
 
 include ../makedefs
