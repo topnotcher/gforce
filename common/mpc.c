@@ -109,7 +109,7 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 static void mpc_rx_frame(comm_frame_t *frame);
 
 static void mpc_rx_event(comm_driver_t *evtcomm) {
-	task_schedule_isr(mpc_rx_process);
+	task_schedule(mpc_rx_process);
 }
 
 void mpc_rx_process(void) {

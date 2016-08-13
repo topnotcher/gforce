@@ -330,7 +330,7 @@ static inline void led_timer_start(void) {
 
 void led_timer_tick(void) {
 	state.ticks = 0;
-	xTaskNotifyFromISR(leds_task_handle, 0, eNoAction, NULL);
+	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
 
 static inline void led_write_byte(void) {

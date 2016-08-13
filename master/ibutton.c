@@ -24,6 +24,7 @@ static TaskHandle_t ibutton_task_handle;
 
 static ds2483_dev_t *onewiredev;
 static void ibutton_wake(void);
+static void ibutton_wake_from_isr(void);
 static inline void ibutton_sleep(void);
 
 static void ibutton_run(void *params);
@@ -33,7 +34,7 @@ static void ibutton_block(void);
 
 void ibutton_init(void) {
 	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
-	twi_master_set_blocking(twim, ibutton_block, ibutton_wake);
+	twi_master_set_blocking(twim, ibutton_block, ibutton_wake_from_isr);
 	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
 	xTaskCreate(ibutton_run, "ibutton", 128, NULL, tskIDLE_PRIORITY + 1, &ibutton_task_handle);
@@ -86,10 +87,13 @@ static inline void ibutton_sleep(void) {
 }
 
 /**
- * Wakes the process when I/O is complete
  * or when IBUTTON_SLEEP_MS expires
  */
 static void ibutton_wake(void) {
+	xTaskNotify(ibutton_task_handle, 0, eNoAction);
+}
+
+static void ibutton_wake_from_isr(void) {
 	xTaskNotifyFromISR(ibutton_task_handle, 0, eNoAction, NULL);
 }
 

@@ -47,7 +47,7 @@ inline void game_init(void) {
 }
 
 void game_countdown(void) {
-	task_schedule_isr(__game_countdown);
+	task_schedule(__game_countdown);
 }
 
 static void __game_countdown(void) {
@@ -87,7 +87,7 @@ void start_game_cmd(command_t const *const cmd) {
 void game_tick(void) {
 	if (--game_settings.game_time == 0)
 		//stop_game modifies timers, which cannot happen in timer context
-		task_schedule_isr(stop_game);
+		task_schedule(stop_game);
 }
 
 void start_game_activate(void) {
@@ -131,7 +131,7 @@ void stop_game(void) {
 }
 
 static void stun_timer(void) {
-	task_schedule_isr(__stun_timer);
+	task_schedule(__stun_timer);
 }
 
 static void __stun_timer(void) {

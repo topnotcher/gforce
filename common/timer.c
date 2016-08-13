@@ -3,9 +3,12 @@
 #include <stdbool.h>
 #include "timer.h"
 #include "mempool.h"
+#include "tasks.h"
 
 #include "FreeRTOS.h"
+#include "portmacro.h"
 #include "task.h"
+#include "semphr.h"
 
 #define ATTR_ALWAYS_INLINE __attribute__ ((always_inline))
 
@@ -31,8 +34,13 @@ typedef struct timer_node_st {
 static mempool_t *task_pool;
 static timer_node *task_list;
 static timer_ticks_t ticks;
+static TaskHandle_t timer_task_handle;
+static SemaphoreHandle_t timer_mutex;
 
 static inline void set_ticks(void) ATTR_ALWAYS_INLINE;
+static inline void __timers_run(void);
+static void timer_thread(void *params);
+
 static void __del_timer_node(timer_node *rm_node);
 static void __del_timer(void (*task_cb)(void));
 static void __add_timer_node(timer_node *node, uint8_t adjust);
@@ -45,13 +53,18 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 void init_timers(void) {
 
 	//@TODO
-	RTC.CTRL = RTC_PRESCALER_DIV1_gc;
-	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc /*CLK_RTCSRC_ULP_gc*/ | CLK_RTCEN_bm;
-	RTC.COMP = 1;
-	ticks = 1;
-	RTC.CNT = 0;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		task_pool = init_mempool(sizeof(timer_node), MAX_TIMERS);
+		timer_mutex = xSemaphoreCreateMutex();
 
-	task_pool = init_mempool(sizeof(timer_node), MAX_TIMERS);
+		xTaskCreate(timer_thread, "timers", 128, NULL, tskIDLE_PRIORITY + 10, &timer_task_handle);
+
+		RTC.CTRL = RTC_PRESCALER_DIV1_gc;
+		CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc /*CLK_RTCSRC_ULP_gc*/ | CLK_RTCEN_bm;
+		RTC.COMP = 1;
+		ticks = 1;
+		RTC.CNT = 0;
+	}
 }
 
 /**
@@ -80,8 +93,8 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 }
 
 /**
- * Create and register a timer. Result is _undefined_ if called while executing
- * a timer.
+ * Create and register a timer. Must not be called from an interrupt or while
+ * executing a timer.
  *
  * @param task_cb callback function to run when timer triggers.
  * @param task_freq frequency to trigger the timer.
@@ -90,18 +103,23 @@ static timer_node *init_timer(void (*task_cb)(void), timer_ticks_t task_freq,
 void add_timer(void (*task_cb)(void), timer_ticks_t task_freq, timer_lifetime_t task_lifetime) {
 	timer_node *node = init_timer(task_cb, task_freq, task_lifetime);
 
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	if (node) {
+		xSemaphoreTake(timer_mutex, portMAX_DELAY);
 		__add_timer_node(node, 1);
-		set_ticks();
+		xSemaphoreGive(timer_mutex);
+
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+			set_ticks();
+		}
 	}
 }
 
 /**
- * Register a timer. This function MUST be called with interrupts disabled. If
- * it is called outside of the timer interrupt, adjust should be set to 1 to
- * indicate that the partial tick should be deducted from the timers. List
- * items are inserted in increasing order of # of ticks. It is assumed that the
- * added node has NULL ->next and ->prev.
+ * Register a timer. This function is for internal use only and must be called
+ * while holding timer_mutex. If it is called outside of the timer thread,
+ * adjust should be set to 1 to indicate that the partial tick should be
+ * deducted from the timers. List items are inserted in increasing order of #
+ * of ticks. It is assumed that the added node has NULL ->next and ->prev.
  *
  * @param node the node to add to the list
  * @param adjust whether the current timers need to be adjusted.
@@ -185,13 +203,16 @@ static void __del_timer(void (*task_cb)(void)) {
 }
 
 /**
- * Delete a timer. Result is undefined if called while executing a timer.
+ * Delete a timer. Must not be called from an interrupt or while executing a timer.
  *
  * @param task_cb the callback function registered in the timer.
  */
 void del_timer(void (*task_cb)(void)) {
+	xSemaphoreTake(timer_mutex, portMAX_DELAY);
+	__del_timer(task_cb);
+	xSemaphoreGive(timer_mutex);
+
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		__del_timer(task_cb);
 		set_ticks();
 	}
 }
@@ -223,8 +244,31 @@ static void __del_timer_node(timer_node *rm_node) {
  * timer interrupt context.
  */
 TIMER_RUN {
+	// disable the timer interrupt until the timer thread reschedules
+	TIMER_INTERRUPT_REGISTER &= ~TIMER_INTERRUPT_ENABLE_BITS;
+
+	BaseType_t yield = false;
+
+	xTaskNotifyFromISR(timer_task_handle, 0, eNoAction, &yield);
+
+	//if (yield)
+		//portYIELD_FROM_ISR();
+}
+
+static void timer_thread(void *params) {
+	while (1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE)
+			__timers_run();
+	}
+}
+
+static inline void __timers_run(void) { 
+	xSemaphoreTake(timer_mutex, portMAX_DELAY);
+
 	timer_node *node;
 	timer_node *cur = task_list;
+
+
 	task_list = NULL;
 
 	while (cur != NULL) {
@@ -253,7 +297,9 @@ TIMER_RUN {
 			__add_timer_node(node, 0);
 		}
 	}
+	xSemaphoreGive(timer_mutex);
 
-	set_ticks();
-	xTaskIncrementTick();
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		set_ticks();
+	}
 }
