@@ -6,6 +6,7 @@
 
 #include <serialcomm.h>
 #include <comm.h>
+#include <malloc.h>
 #include <mempool.h>
 #include <mpc.h>
 #include <tasks.h>
@@ -132,6 +133,14 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 		//of the data. That board should then reply...
 	} else if (pkt->cmd == 'P') {
 		mpc_send_cmd(pkt->data[0], 'P');
+
+	} else if (pkt->cmd == 'M') {
+		mpc_send_cmd(pkt->data[0], 'M');
+
+		// this is nasty ...
+		mem_usage_t usage = mem_usage();
+
+		xbee_send('M', sizeof(usage), (uint8_t*)&usage);
 	}
 }
 

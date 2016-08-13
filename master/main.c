@@ -68,6 +68,9 @@ static void main_thread(void *params) {
 	//relay data for debugging
 	mpc_register_cmd('D', xbee_relay_mpc);
 
+	// memory usage reply...
+	mpc_register_cmd('M', xbee_relay_mpc);
+
 	ibutton_init();
 
 	/* TODO: when power is applied, there is a race condition between the */
@@ -80,5 +83,6 @@ static void main_thread(void *params) {
 }
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt) {
+	// TODO: we don't trip the 'R' part of the packet..
 	xbee_send(pkt->cmd, pkt->len + sizeof(*pkt), (uint8_t *)pkt);
 }
