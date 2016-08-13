@@ -31,7 +31,7 @@
 //static uint8_t rst_reason;
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt);
-static void main_thread(void);
+static void main_thread(void *params);
 /* static void why_the_fuck_did_i_reset(void); */
 
 int main(void) {
@@ -47,7 +47,7 @@ int main(void) {
 	vTaskStartScheduler();
 }
 
-static void main_thread(void) {
+static void main_thread(void *params) {
 
 	tasks_init();
 	init_timers();

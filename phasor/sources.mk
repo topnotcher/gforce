@@ -2,12 +2,6 @@ main.c
 irtx.c
 trigger.c
 
-../freertos/mem.c
-../freertos/list.c
-../freertos/port.c
-../freertos/queue.c
-../freertos/tasks.c
-
 ../common/buzz.c
 ../common/comm.c
 ../common/irrx.c

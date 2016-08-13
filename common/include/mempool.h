@@ -13,7 +13,7 @@ typedef struct {
 typedef struct {
 	uint8_t size;
 	uint8_t block_size;
-	mempool_block_t blocks[]; 
+	mempool_block_t *blocks; 
 } mempool_t;
 
 mempool_t * init_mempool(const uint8_t buffsize, const uint8_t blocks);

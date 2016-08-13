@@ -60,7 +60,7 @@ typedef struct {
 	union {
 		led_sequence *seq;
 		uint8_t *seq_data;
-	};
+	} u_seq;
 
 	uint8_t pattern;
 
@@ -104,7 +104,7 @@ led_state state = {
 	.leds = ALL_OFF,
 
 	//pointer sequence being played
-	.seq = NULL,
+	.u_seq.seq = NULL,
 
 	.status = idle,
 
@@ -157,8 +157,8 @@ static void leds_run(void) {
 		 * OR restarting the sequence from the beginning
 		 */
 start:
-		state.ticks = state.seq->patterns[state.pattern].on;
-		state.leds = state.seq->patterns[state.pattern].pattern;
+		state.ticks = state.u_seq.seq->patterns[state.pattern].on;
+		state.leds = state.u_seq.seq->patterns[state.pattern].pattern;
 		state.status = on;
 		led_write();
 		led_timer_start();
@@ -172,12 +172,12 @@ start:
 			return;
 
 		//no off time: jump to the end of the off time.
-		if (state.seq->patterns[state.pattern].off == 0) {
+		if (state.u_seq.seq->patterns[state.pattern].off == 0) {
 			goto off;
 		} else {
 			state.leds = ALL_OFF;
 			state.status = off;
-			state.ticks = state.seq->patterns[state.pattern].off;
+			state.ticks = state.u_seq.seq->patterns[state.pattern].off;
 			led_write();
 			led_timer_start();
 		}
@@ -192,17 +192,17 @@ start:
 		//Jump from case on when off time is zero.
 off:
 		//done flashing.
-		if (++state.flashes == state.seq->patterns[state.pattern].flashes) {
+		if (++state.flashes == state.u_seq.seq->patterns[state.pattern].flashes) {
 			state.flashes = 0;
 			state.pattern++;
 		}
 
-		if (state.pattern >= state.seq->size) {
+		if (state.pattern >= state.u_seq.seq->size) {
 			state.pattern = 0;
-			if (state.seq->repeat_time == 0) {
+			if (state.u_seq.seq->repeat_time == 0) {
 				goto start;
 			} else {
-				state.ticks = state.seq->repeat_time;
+				state.ticks = state.u_seq.seq->repeat_time;
 				state.status = repeat;
 				led_timer_start();
 				return;
@@ -313,7 +313,7 @@ void led_init(void) {
 	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	//state.seq = NULL/*&seq_active*/;
-	state.seq_data = led_sequence_raw;
+	state.u_seq.seq_data = led_sequence_raw;
 
 	mpc_register_cmd('A', set_seq_cmd);
 	mpc_register_cmd('B', lights_off_cmd);

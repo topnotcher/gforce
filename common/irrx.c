@@ -78,16 +78,12 @@ static void ir_rx_task(void *p_queue) {
 	QueueHandle_t rx_queue = p_queue;
 	rx_state_t rx_state;
 	uint16_t data;
-	uint8_t d_buf[3];
-	d_buf[0] = 0x08;
 
 	rx_state.state = RX_STATE_IDLE;
 
 	while (1) {
 		// TODO: use delay to set inter-byte timeout.
 		if (xQueueReceive(rx_queue, &data, portMAX_DELAY)) {
-			d_buf[1] = (data >> 8) & 0xff;
-			d_buf[2] = data & 0xff;
 
 			// bit 8 clear always indicates start of packet.
 			if (data == 0x0FF) {

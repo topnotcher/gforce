@@ -1,0 +1,63 @@
+set(AVR_UPLOADTOOL avrdude)
+set(AVR_PROGRAMMER jtag3pdi)
+set(AVR_UPLOADTOOL_PORT usb)
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+
+set(CMAKE_SYSTEM_INCLUDE_PATH "${CMAKE_FIND_ROOT_PATH}/include")
+set(CMAKE_SYSTEM_LIBRARY_PATH "${CMAKE_FIND_ROOT_PATH}/include")
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY output)
+
+file(STRINGS sources.mk PROJECT_SOURCES)
+
+file(STRINGS ../freertos/sources.mk _FREERTOS_SOURCES)
+set(FREERTOS_SOURCES "")
+foreach(source ${_FREERTOS_SOURCES})
+	list(APPEND FREERTOS_SOURCES "../freertos/${source}")
+endforeach(source)
+
+set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES})
+
+# 
+# Definitions to use when building all sources
+#
+add_definitions(
+	-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums 
+	-finline-functions -finline-functions-called-once -finline-limit=1000
+	-finline-small-functions
+	-ffunction-sections -fdata-sections -Wl,-gc-sections
+	-DF_CPU=${MCU_SPEED} --std=gnu99
+)
+
+#
+# Definitions to use just for GForce sources (i.e. not FreeRTOS)
+#
+set(GFORCE_WARN_FLAGS "\
+	-Wall -Wstrict-prototypes -Wno-unused-parameter -Werror\
+	-Wno-missing-braces -Wextra -Wno-missing-field-initializers -Wformat=2 \
+	-Wswitch-default -Wswitch-enum -Wcast-align -Wpointer-arith \
+	-Wbad-function-cast -Wstrict-overflow=5 -Wstrict-prototypes -Winline \
+	-Wundef -Wnested-externs -Wshadow -Wunreachable-code \
+	-Wlogical-op -Wfloat-equal -Wstrict-aliasing=1 -Wredundant-decls \
+	-pedantic -Wold-style-definition -Wno-overflow\
+")
+
+set_property(SOURCE ${PROJECT_SOURCES} APPEND PROPERTY COMPILE_FLAGS "${GFORCE_WARN_FLAGS}")
+
+#
+# FreeRTOS: shut up.
+#
+set_property(SOURCE ${FREERTOS_SOURCES} APPEND_STRING PROPERTY COMPILE_FLAGS
+	"-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast"
+)
+
+include_directories(
+	"${CMAKE_SOURCE_DIR}/../common/include"
+	"${CMAKE_SOURCE_DIR}/../freertos/include"
+	"${CMAKE_SOURCE_DIR}"
+)
+
+# vim: ft=cmake

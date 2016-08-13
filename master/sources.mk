@@ -7,11 +7,6 @@ lights.c
 ds2483.c
 ibutton.c
 
-../freertos/list.c
-../freertos/queue.c
-../freertos/tasks.c
-../freertos/port.c
-../freertos/mem.c
 
 ../common/comm.c
 ../common/malloc.c

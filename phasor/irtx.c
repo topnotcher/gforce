@@ -91,8 +91,6 @@ void irtx_send(const irtx_pkt *const pkt) {
 	if (npkt) {
 		memcpy(npkt, pkt, sizeof(*npkt) + pkt->size);
 
-		mpc_send(MPC_MASTER_ADDR, 'D', pkt->size, pkt->data);
-
 		sendq.pkts[sendq.write] = npkt;
 		sendq.write = (sendq.write == TX_QUEUE_MAX - 1) ? 0 : sendq.write + 1;
 

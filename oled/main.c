@@ -13,9 +13,13 @@
 #include "display.h"
 #include "mastercomm.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 static inline void shift_string(char *string);
 static inline void display_scroll(char *string);
 
+static void main_thread(void *);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -26,10 +30,14 @@ int main(void) {
 	display_init();
 	mastercomm_init();
 
-	wdt_enable(9);
+	xTaskCreate(main_thread, "main", 256, NULL, tskIDLE_PRIORITY + 5, (TaskHandle_t*)NULL);
+	vTaskStartScheduler();
 
-	sei();
-	//display_putstring("derp");
+	return 0;
+}
+
+static void main_thread(void *params) {
+	wdt_enable(9);
 	while (1) {
 		wdt_reset();
 
@@ -42,16 +50,7 @@ int main(void) {
 		display_putstring((char *)pkt->data);
 
 	}
-//	display_putstring("      eep!");
-//	for ( uint8_t i = 0; i<25; ++i ) display_tick();
-//	_delay_ms(1000);
-//	char string[] = "      eep!      ";
-//	display_scroll(string);
-
-	return 0;
 }
-
-
 
 static inline void display_scroll(char *string) {
 	while (1) {
