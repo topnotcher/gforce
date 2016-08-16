@@ -24,7 +24,6 @@ static void tx_interrupt_disable(void);
 static void xbee_rx_process(void);
 static void xbee_rx_event(comm_driver_t *comm);
 static void xbee_rx_pkt(mpc_pkt const *const pkt);
-static void xbee_tx_process(void);
 static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
 
 void xbee_init(void) {
@@ -81,10 +80,6 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 
 	comm_send(xbee_comm, mempool_getref(frame));
 	mempool_putref(frame);
-	task_schedule(xbee_tx_process);
-}
-
-static void xbee_tx_process(void) {
 	comm_tx(xbee_comm);
 }
 
