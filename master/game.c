@@ -15,6 +15,10 @@
 
 #include <g4config.h>
 
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+
 //volatile uint16_t game_time;
 volatile uint8_t game_countdown_time;
 
@@ -26,12 +30,27 @@ volatile game_state_t game_state = {
 	.active = 0
 };
 
+QueueHandle_t game_evt_queue;
+
 static struct {
 	uint8_t deac_time;
 	uint8_t stun_time;
 	uint16_t game_time;
 } game_settings;
 
+
+enum game_event_type {
+	GAME_EVT_CMD,
+	GAME_EVT_STUN_TIMER,
+	GAME_EVT_STOP_GAME,
+	GAME_EVT_COUNTDOWN,
+	GAME_EVT_TRIGGER,
+};
+
+typedef struct {
+	enum game_event_type type;
+	void *data;
+} game_event;
 
 void (* countdown_cb )(void);
 
@@ -40,14 +59,67 @@ static void process_trigger_pkt(const mpc_pkt *const pkt);
 static void __game_countdown(void);
 static void stun_timer(void);
 static void __stun_timer(void);
+static void send_game_event(enum game_event_type, const void *const);
+static void game_task(void *);
+static void process_game_event(game_event *evt);
+static void process_ir_pkt(const mpc_pkt *const pkt);
+static void queue_ir_pkt(const mpc_pkt *const pkt);
 
 inline void game_init(void) {
-	mpc_register_cmd('I', process_ir_pkt);
+	mpc_register_cmd('I', queue_ir_pkt);
 	mpc_register_cmd('T', process_trigger_pkt);
+
+
+	game_evt_queue = xQueueCreate(8, sizeof(game_event));
+	xTaskCreate(game_task, "game", 128, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
+}
+
+static void game_task(void *params) {
+	QueueHandle_t evt_queue = params;
+	game_event evt;
+
+	while (1) {
+		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
+			process_game_event(&evt);
+		}
+	}
+}
+
+static void process_game_event(game_event *evt) {
+	switch (evt->type) {
+	case GAME_EVT_COUNTDOWN:
+		__game_countdown();
+		break;
+
+	case GAME_EVT_STUN_TIMER:
+		__stun_timer();
+		break;
+
+	case GAME_EVT_CMD:
+		process_ir_pkt(evt->data);
+
+	case GAME_EVT_TRIGGER:
+		break;
+
+	case GAME_EVT_STOP_GAME:
+		stop_game();
+
+	default:
+		break;
+	}
+}
+
+static void send_game_event(enum game_event_type type, const void *const data) {
+	game_event evt = {
+		.type = type,
+		.data = (void*)data
+	};
+
+	xQueueSend(game_evt_queue, &evt, portMAX_DELAY);
 }
 
 void game_countdown(void) {
-	task_schedule(__game_countdown);
+	send_game_event(GAME_EVT_COUNTDOWN, NULL);
 }
 
 static void __game_countdown(void) {
@@ -55,7 +127,6 @@ static void __game_countdown(void) {
 
 	if (--game_countdown_time == 0) {
 		countdown_cb();
-		//start_game_activate();
 		data[7] = ' ';
 	} else {
 		data[7] = 0x30 + game_countdown_time;
@@ -86,8 +157,7 @@ void start_game_cmd(command_t const *const cmd) {
 
 void game_tick(void) {
 	if (--game_settings.game_time == 0)
-		//stop_game modifies timers, which cannot happen in timer context
-		task_schedule(stop_game);
+		send_game_event(GAME_EVT_STOP_GAME, NULL);
 }
 
 void start_game_activate(void) {
@@ -110,7 +180,7 @@ void player_activate(void) {
 	lights_on();
 }
 
-void stop_game_cmd( command_t const *const cmd ) {
+void stop_game_cmd(command_t const *const cmd) {
 	stop_game();
 }
 
@@ -131,11 +201,10 @@ void stop_game(void) {
 }
 
 static void stun_timer(void) {
-	task_schedule(__stun_timer);
+	send_game_event(GAME_EVT_STUN_TIMER, NULL);
 }
 
 static void __stun_timer(void) {
-
 
 	if (!game_state.playing) {
 		del_timer(stun_timer);
@@ -215,7 +284,12 @@ void do_deac(void) {
 	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }
 
-void process_ir_pkt(const mpc_pkt *const pkt) {
+static void queue_ir_pkt(const mpc_pkt *const pkt) {
+	mpc_incref(pkt);
+	send_game_event(GAME_EVT_CMD, pkt);
+}
+
+static void process_ir_pkt(const mpc_pkt *const pkt) {
 
 	const command_t *const cmd = (command_t *)pkt->data;
 
@@ -230,6 +304,8 @@ void process_ir_pkt(const mpc_pkt *const pkt) {
 
 		xbee_send('S', sizeof(*pkt) + pkt->len, (uint8_t *)pkt);
 	}
+
+	mpc_decref(pkt);
 }
 
 void process_trigger_pkt(const mpc_pkt *const pkt) {

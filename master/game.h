@@ -82,6 +82,4 @@ void do_deac(void);
 
 void game_init(void);
 
-void process_ir_pkt(const mpc_pkt *const pkt);
-
 #endif
