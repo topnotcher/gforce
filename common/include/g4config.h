@@ -5,7 +5,7 @@
 #define MPC_TWI_BAUD 35
 #define MPC_CRC_POLY 0x32
 #define MPC_CRC_SHIFT 0x67
-#define MPC_DISABLE_CRC
+#define MPC_DISABLE_CRC 1
 
 #define IR_BAUD 1515.762
 #define IR_USART_BSEL 164

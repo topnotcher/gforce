@@ -16,7 +16,7 @@
 #include "task.h"
 #include "queue.h"
 
-#define mpc_crc(crc, data) _crc_ibutton_update(crc, data)
+#define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
 
 static void mpc_rx_event(comm_driver_t *);
 
@@ -55,6 +55,7 @@ static uint8_t next_mpc_cmd = 0;
 static TaskHandle_t mpc_task_handle;
 static void mpc_rx_frame(comm_frame_t *frame);
 static void mpc_task(void *params);
+static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) __attribute__((always_inline));
 
 /**
  * The shoulders need to differentiate left/right.
@@ -167,24 +168,34 @@ static void mpc_task(void *params) {
 	}
 }
 
+static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) {
+
+	if (!MPC_DISABLE_CRC) {
+		const uint8_t *const data = (uint8_t*)pkt;
+		uint8_t crc = mpc_crc(MPC_CRC_SHIFT, data[0]);
+
+		for (uint8_t i = 0; i < (pkt->len + sizeof(*pkt)); ++i) {
+			if (i != offsetof(mpc_pkt, chksum)) {
+				crc = mpc_crc(crc, data[i] );
+			}
+		}
+
+		return crc == pkt->chksum;
+	} else {
+		return 1;
+	}
+}
+
+
 static void mpc_rx_frame(comm_frame_t *frame) {
 	mpc_pkt *pkt;
 
 	pkt = (mpc_pkt *)frame->data;
 
-#ifndef MPC_DISABLE_CRC
-	uint8_t crc = mpc_crc(MPC_CRC_SHIFT, frame->data[0]);
-	for (uint8_t i = 0; i < frame->size; ++i) {
-		if (i != offsetof(mpc_pkt, chksum)) {
-			crc = mpc_crc( crc, frame->data[i] );
-		}
-
-		if (crc != pkt->chksum) {
-			mempool_putref(frame);
-			return;
-			//	goto: cleanup;
-		}
-#endif
+	if (!mpc_check_crc(pkt)) {
+		mempool_putref(frame);
+		return;
+	}
 
 	for (uint8_t i = 0; i < next_mpc_cmd; ++i) {
 		if (cmds[i].cmd == pkt->cmd) {
@@ -226,7 +237,6 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	pkt->chksum = MPC_CRC_SHIFT;
 
-	// TODO: MPC_DISABLE_CRC...
 	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
 		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
 
