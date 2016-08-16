@@ -11,7 +11,10 @@
 
 #include "comm.h"
 #include "mpctwi.h"
-#include "tasks.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 
 #define mpc_crc(crc, data) _crc_ibutton_update(crc, data)
 
@@ -39,6 +42,9 @@ typedef struct {
 
 static cmd_callback_s cmds[N_MPC_CMDS];
 static uint8_t next_mpc_cmd = 0;
+static TaskHandle_t mpc_task_handle;
+static void mpc_rx_frame(comm_frame_t *frame);
+static void mpc_task(void *params);
 
 /**
  * The shoulders need to differentiate left/right.
@@ -91,6 +97,8 @@ void mpc_init(void) {
 	mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	__mpc_twi_init(mpc_addr);
 	__mpc_phasor_init(mpc_addr);
+
+	xTaskCreate(mpc_task, "mpc", 128, NULL, tskIDLE_PRIORITY + 5, &mpc_task_handle);
 }
 
 /**
@@ -103,28 +111,33 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	next_mpc_cmd++;
 }
 
-/**
- * Process queued bytes into packtes.
- */
-static void mpc_rx_frame(comm_frame_t *frame);
 
 static void mpc_rx_event(comm_driver_t *evtcomm) {
-	task_schedule(mpc_rx_process);
+	// this is dirty: TWI will notify straight from the ISR
+	// But serialcomm will notify from a task.
+	if (evtcomm == comm)
+		xTaskNotifyFromISR(mpc_task_handle, 0, eNoAction, NULL);
+	else
+		xTaskNotify(mpc_task_handle, 0, eNoAction);
 }
 
-void mpc_rx_process(void) {
-	comm_frame_t *frame;
+static void mpc_task(void *params) {
 
-	#ifdef MPC_TWI
-	if ((frame = comm_rx(comm)) != NULL)
-		mpc_rx_frame(frame);
-	#endif
+	while (1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY)) {
+			comm_frame_t *frame;
 
-	#ifdef PHASOR_COMM
-	if ((frame = comm_rx(phasor_comm)) != NULL)
-		mpc_rx_frame(frame);
-	#endif
+			#ifdef MPC_TWI
+			if ((frame = comm_rx(comm)) != NULL)
+				mpc_rx_frame(frame);
+			#endif
 
+			#ifdef PHASOR_COMM
+			if ((frame = comm_rx(phasor_comm)) != NULL)
+				mpc_rx_frame(frame);
+			#endif
+		}
+	}
 }
 
 static void mpc_rx_frame(comm_frame_t *frame) {
