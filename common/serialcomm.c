@@ -1,6 +1,10 @@
-#include <malloc.h>
-#include <comm.h>
+#include "malloc.h"
+#include "comm.h"
 #include "serialcomm.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 
 //header: [start][dest addr][pktlen][check]
 #define SERIAL_FRAME_START 0xFF
@@ -8,6 +12,7 @@
 #define SERIAL_FRAME_HDR_LEN_OFFSET 2
 #define SERIAL_FRAME_HDR_DADDR_OFFSET 1
 #define SERIAL_FRAME_HDR_CHK_OFFSET 3
+
 
 typedef struct {
 	void (*tx_begin)(void);
@@ -38,13 +43,15 @@ typedef struct {
 
 	uint8_t rx_sync_chk;
 	uint8_t rx_sync_size;
-
 	uint8_t rx_size;
-
 	uint8_t addr;
+
+	QueueHandle_t rx_queue;
 } serialcomm_t;
 
 
+static void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data);
+static void serialcomm_rx_task(void *params);
 static void begin_tx(comm_driver_t *comm);
 
 comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx_end)(void), uint8_t addr) {
@@ -54,6 +61,7 @@ comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx
 	commdev = smalloc(sizeof(*commdev));
 	serialcomm = smalloc(sizeof(*serialcomm));
 
+	commdev->comm = NULL;
 	commdev->dev = serialcomm;
 	commdev->begin_tx = begin_tx;
 
@@ -67,7 +75,20 @@ comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx
 	serialcomm->rx_state = SERIAL_RX_IDLE;
 	serialcomm->rx_sync_state = SERIAL_RX_SYNC_IDLE;
 
+	serialcomm->rx_queue = xQueueCreate(24, sizeof(uint8_t));
+	xTaskCreate(serialcomm_rx_task, "serial-rx", 128, commdev, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
+
 	return commdev;
+}
+
+static void serialcomm_rx_task(void *params) {
+	comm_dev_t *commdev = params;
+	uint8_t data;
+
+	while (1) {
+		if (xQueueReceive(((serialcomm_t *)commdev->dev)->rx_queue, &data, portMAX_DELAY) && commdev->comm)
+			serialcomm_rx_byte(commdev->comm, data);
+	}
 }
 
 static void begin_tx(comm_driver_t *comm) {
@@ -104,7 +125,11 @@ void serialcomm_tx_isr(comm_driver_t *comm) {
 
 void serialcomm_rx_isr(comm_driver_t *comm) {
 	serialcomm_t *dev = comm->dev->dev;
-	uint8_t data = *dev->data;
+	xQueueSendFromISR(dev->rx_queue, (const void *const)dev->data, NULL);
+}
+
+static void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
+	serialcomm_t *dev = comm->dev->dev;
 
 	if (data == SERIAL_FRAME_START) {
 		dev->rx_sync_state = SERIAL_RX_SYNC_DADDR;
