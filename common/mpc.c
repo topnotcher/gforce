@@ -31,6 +31,10 @@ static comm_driver_t *comm;
 static comm_driver_t *phasor_comm;
 #endif
 
+#ifdef MPC_PROCESS_XBEE
+#include "xbee.h"
+#endif
+
 static mempool_t *mempool;
 
 //@TODO hard-coded # of elementsghey
@@ -39,6 +43,12 @@ typedef struct {
 	uint8_t cmd;
 	void (*cb)(const mpc_pkt *const);
 } cmd_callback_s;
+
+enum {
+	NOTIFY_XBEE_PROCESS = 1,
+	NOTIFY_PHASOR_PROCESS = 2,
+	NOTIFY_TWI_PROCESS = 4
+};
 
 static cmd_callback_s cmds[N_MPC_CMDS];
 static uint8_t next_mpc_cmd = 0;
@@ -111,31 +121,48 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	next_mpc_cmd++;
 }
 
+void mpc_rx_xbee(void) {
+	xTaskNotify(mpc_task_handle, NOTIFY_XBEE_PROCESS, eSetBits);
+}
 
 static void mpc_rx_event(comm_driver_t *evtcomm) {
 	// this is dirty: TWI will notify straight from the ISR
 	// But serialcomm will notify from a task.
+#ifdef MPC_TWI
 	if (evtcomm == comm)
-		xTaskNotifyFromISR(mpc_task_handle, 0, eNoAction, NULL);
-	else
-		xTaskNotify(mpc_task_handle, 0, eNoAction);
+		xTaskNotifyFromISR(mpc_task_handle, NOTIFY_TWI_PROCESS, eSetBits, NULL);
+#endif
+
+#ifdef PHASOR_COMM
+	if (evtcomm == phasor_comm)
+		xTaskNotify(mpc_task_handle, NOTIFY_PHASOR_PROCESS, eSetBits);
+#endif
 }
 
 static void mpc_task(void *params) {
+	const uint32_t all_notifications = NOTIFY_PHASOR_PROCESS | NOTIFY_PHASOR_PROCESS | NOTIFY_TWI_PROCESS;
+	uint32_t notify;
+	comm_frame_t *frame;
 
 	while (1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY)) {
-			comm_frame_t *frame;
+		notify = 0;
+		if (xTaskNotifyWait(0, all_notifications, &notify, portMAX_DELAY)) {
 
-			#ifdef MPC_TWI
-			if ((frame = comm_rx(comm)) != NULL)
-				mpc_rx_frame(frame);
+			#ifdef MPC_PROCESS_XBEE
+			if (notify & NOTIFY_XBEE_PROCESS)
+				xbee_rx_process();
 			#endif
 
 			#ifdef PHASOR_COMM
-			if ((frame = comm_rx(phasor_comm)) != NULL)
+			if ((notify & NOTIFY_PHASOR_PROCESS) && ((frame = comm_rx(phasor_comm)) != NULL))
 				mpc_rx_frame(frame);
 			#endif
+
+			#ifdef MPC_TWI
+			if ((notify & NOTIFY_TWI_PROCESS) && ((frame = comm_rx(comm)) != NULL))
+				mpc_rx_frame(frame);
+			#endif
+
 		}
 	}
 }

@@ -21,7 +21,6 @@ static mempool_t *xbee_mempool;
 
 static void tx_interrupt_enable(void);
 static void tx_interrupt_disable(void);
-static void xbee_rx_process(void);
 static void xbee_rx_event(comm_driver_t *comm);
 static void xbee_rx_pkt(mpc_pkt const *const pkt);
 static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
@@ -92,10 +91,10 @@ static void tx_interrupt_disable(void) {
 }
 
 static void xbee_rx_event(comm_driver_t *comm) {
-	task_schedule(xbee_rx_process);
+	mpc_rx_xbee();
 }
 
-static void xbee_rx_process(void) {
+void xbee_rx_process(void) {
 	comm_frame_t *frame = comm_rx(xbee_comm);
 
 	if (frame == NULL)
