@@ -17,6 +17,5 @@ void mpc_init(void);
 void mpc_send_cmd(const uint8_t addr, const uint8_t cmd);
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t * const data);
 void mpc_rx_process(void);
-void mpc_tx_process(void);
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const));
 #endif

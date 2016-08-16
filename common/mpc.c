@@ -186,6 +186,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	pkt->chksum = MPC_CRC_SHIFT;
 
+	// TODO: MPC_DISABLE_CRC...
 	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
 		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
 
@@ -197,29 +198,19 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	#ifdef PHASOR_COMM
 	if (addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR)) {
 		comm_send(phasor_comm, mempool_getref(frame));
-		task_schedule(mpc_tx_process);
+		comm_tx(phasor_comm);
 	}
 	#endif
 
 	#ifdef MPC_TWI
 	if (addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR)) {
 		comm_send(comm, mempool_getref(frame));
-		task_schedule(mpc_tx_process);
+		comm_tx(comm);
 	}
+
 	#endif
 
 	mempool_putref(frame);
-}
-
-void mpc_tx_process(void) {
-
-	#ifdef MPC_TWI
-	comm_tx(comm);
-	#endif
-
-	#ifdef PHASOR_COMM
-	comm_tx(phasor_comm);
-	#endif
 }
 
 #ifdef PHASOR_COMM_TXC_ISR
