@@ -25,7 +25,6 @@
 #include "task.h"
 
 static void ir_cmd_tx(const mpc_pkt *const pkt);
-static portTASK_FUNCTION(main_thread, params);
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -40,21 +39,9 @@ int main(void) {
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 
-	xTaskCreate(main_thread, "main", 128, NULL, tskIDLE_PRIORITY + 5, (TaskHandle_t*)NULL);
 	vTaskStartScheduler();
 
 	return 0;
-}
-
-
-static portTASK_FUNCTION(main_thread, params) {
-	led_init();
-	irrx_init();
-	irtx_init();
-
-	while (1) {
-		tasks_run();
-	}
 }
 
 static void ir_cmd_tx(const mpc_pkt *const pkt) {

@@ -11,7 +11,6 @@ trigger.c
 ../common/phasor_comm.c
 ../common/serialcomm.c
 ../common/mpc.c
-../common/ringbuf.c
 ../common/tasks.c
 ../common/timer.c
 ../common/twi_master.c
