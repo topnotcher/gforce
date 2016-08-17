@@ -16,7 +16,6 @@ ibutton.c
 ../common/phasor_comm.c
 ../common/queue.c
 ../common/serialcomm.c
-../common/tasks.c
 ../common/timer.c
 ../common/twi_master.c
 ../common/twi_slave.c

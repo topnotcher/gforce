@@ -31,8 +31,6 @@
 //static uint8_t rst_reason;
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt);
-static void main_thread(void *params);
-/* static void why_the_fuck_did_i_reset(void); */
 
 int main(void) {
 	sysclk_set_internal_32mhz();
@@ -43,13 +41,6 @@ int main(void) {
 	CCP = CCP_IOREG_gc;
 	WDT.CTRL = temp;
 
-	xTaskCreate(main_thread, "main", 256, NULL, tskIDLE_PRIORITY + 5, (TaskHandle_t*)NULL);
-	vTaskStartScheduler();
-}
-
-static void main_thread(void *params) {
-
-	tasks_init();
 	init_timers();
 	sound_init();
 	xbee_init();
@@ -73,13 +64,7 @@ static void main_thread(void *params) {
 
 	ibutton_init();
 
-	/* TODO: when power is applied, there is a race condition between the */
-	/* display board coming up and this task starting. */
-	display_write("GForce Booted");
-
-	while (1) {
-		tasks_run();
-	}
+	vTaskStartScheduler();
 }
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt) {

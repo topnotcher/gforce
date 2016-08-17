@@ -3,8 +3,6 @@
 
 #include <phasor_comm.h>
 #include <mpc.h>
-#include <tasks.h>
-
 
 #include "timer.h"
 #include "display.h"
@@ -77,6 +75,10 @@ inline void game_init(void) {
 static void game_task(void *params) {
 	QueueHandle_t evt_queue = params;
 	game_event evt;
+
+	/* TODO: when power is applied, there is a race condition between the */
+	/* display board coming up and this task starting. */
+	display_write("GForce Booted");
 
 	while (1) {
 		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
