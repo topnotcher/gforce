@@ -17,28 +17,8 @@
 #include <task.h>
 #include <queue.h>
 
-//volatile uint16_t game_time;
-volatile uint8_t game_countdown_time;
-
-//volatile uint8_t game_running = 0;
-
-volatile game_state_t game_state = {
-	.playing = 0,
-	.stunned = 0,
-	.active = 0
-};
-
-QueueHandle_t game_evt_queue;
-
-static struct {
-	uint8_t deac_time;
-	uint8_t stun_time;
-	uint16_t game_time;
-} game_settings;
-
-
 enum game_event_type {
-	GAME_EVT_CMD,
+	GAME_EVT_IR_CMD,
 	GAME_EVT_STUN_TIMER,
 	GAME_EVT_STOP_GAME,
 	GAME_EVT_COUNTDOWN,
@@ -50,24 +30,52 @@ typedef struct {
 	void *data;
 } game_event;
 
+typedef struct {
+	uint8_t playing:1;
+	uint8_t active:1;
+	uint8_t stunned:1;
+} game_state_t;
+
+static uint8_t game_countdown_time;
+static game_state_t game_state;
+static QueueHandle_t game_evt_queue;
+
+static struct {
+	uint8_t deac_time;
+	uint8_t stun_time;
+	uint16_t game_time;
+} game_settings;
+
 void (* countdown_cb )(void);
 
-static inline void handle_shot(const uint8_t, command_t const *const);
-static void process_trigger_pkt(const mpc_pkt *const pkt);
+static void game_task(void *);
+static void send_game_event(enum game_event_type, const void *const);
+static void process_game_event(game_event *evt);
+
+static void process_trigger(void);
+static void trigger_event(const mpc_pkt *const);
+static void process_ir_pkt(const mpc_pkt *const);
+static void queue_ir_pkt(const mpc_pkt *const);
+
+static void start_countdown(const uint8_t, void (*)(void));
+static void game_countdown(void);
 static void __game_countdown(void);
 static void stun_timer(void);
 static void __stun_timer(void);
-static void send_game_event(enum game_event_type, const void *const);
-static void game_task(void *);
-static void process_game_event(game_event *evt);
-static void process_ir_pkt(const mpc_pkt *const pkt);
-static void queue_ir_pkt(const mpc_pkt *const pkt);
 
-inline void game_init(void) {
-	mpc_register_cmd('I', queue_ir_pkt);
-	mpc_register_cmd('T', process_trigger_pkt);
+static void handle_shot(const uint8_t, command_t const *const);
+static void do_stun(void);
+static void do_deac(void);
+static void start_game_cmd(command_t const *const);
+static void stop_game_cmd(command_t const *const);
+static void stop_game(void);
+
+static void game_tick(void);
+static void start_game_activate(void);
+static void player_activate(void);
 
 
+void game_init(void) {
 	game_evt_queue = xQueueCreate(8, sizeof(game_event));
 	xTaskCreate(game_task, "game", 128, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
 }
@@ -75,6 +83,14 @@ inline void game_init(void) {
 static void game_task(void *params) {
 	QueueHandle_t evt_queue = params;
 	game_event evt;
+
+	game_state.playing = 0;
+	game_state.active = 0;
+	game_state.stunned = 0;
+
+	mpc_register_cmd('I', queue_ir_pkt);
+	mpc_register_cmd('T', trigger_event);
+
 
 	/* TODO: when power is applied, there is a race condition between the */
 	/* display board coming up and this task starting. */
@@ -97,10 +113,12 @@ static void process_game_event(game_event *evt) {
 		__stun_timer();
 		break;
 
-	case GAME_EVT_CMD:
+	case GAME_EVT_IR_CMD:
 		process_ir_pkt(evt->data);
+		break;
 
 	case GAME_EVT_TRIGGER:
+		process_trigger();
 		break;
 
 	case GAME_EVT_STOP_GAME:
@@ -120,7 +138,7 @@ static void send_game_event(enum game_event_type type, const void *const data) {
 	xQueueSend(game_evt_queue, &evt, portMAX_DELAY);
 }
 
-void game_countdown(void) {
+static void game_countdown(void) {
 	send_game_event(GAME_EVT_COUNTDOWN, NULL);
 }
 
@@ -129,14 +147,21 @@ static void __game_countdown(void) {
 
 	if (--game_countdown_time == 0) {
 		countdown_cb();
+		countdown_cb = NULL;
+
 		data[7] = ' ';
 	} else {
 		data[7] = 0x30 + game_countdown_time;
 	}
+
 	display_send(0, 9, data);
 }
 
-void start_game_cmd(command_t const *const cmd) {
+/**
+ * Start the game in response to a game start command received from IR. The
+ * command contains the game settings.
+ */
+static void start_game_cmd(command_t const *const cmd) {
 	if (game_state.playing)
 		return;
 
@@ -151,28 +176,32 @@ void start_game_cmd(command_t const *const cmd) {
 	//@TODO disable stun option
 	game_settings.stun_time = game_settings.deac_time / settings->stuns;
 
-	game_countdown_time = settings->prestart + 1;
-	countdown_cb = &start_game_activate;
-
-	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
+	start_countdown(settings->prestart + 1, &start_game_activate);
 }
 
-void game_tick(void) {
-	if (--game_settings.game_time == 0)
+/**
+ * Count the game timer down to 0 then stop the game. We only touch game_time
+ * from timer context (except when initializing).
+ */
+static void game_tick(void) {
+	if (game_settings.game_time > 0 && --game_settings.game_time == 0)
 		send_game_event(GAME_EVT_STOP_GAME, NULL);
 }
 
-void start_game_activate(void) {
+/**
+ * Activate the player at the beginning of the game. This is where we start the
+ * game clock.
+ */
+static void start_game_activate(void) {
 	add_timer(&game_tick, TIMER_HZ, TIMER_RUN_UNLIMITED);
 	player_activate();
 }
 
-void player_activate(void) {
+/**
+ * Activate a player at the beginning of the game, or after a deactivation
+ */
+static void player_activate(void) {
 
-	/**
-	 * Because we'll get fucked sideways if someone gets deaced
-	 * at the end of the game, then the game ends...
-	 */
 	if (!game_state.playing)
 		return;
 
@@ -182,11 +211,17 @@ void player_activate(void) {
 	lights_on();
 }
 
-void stop_game_cmd(command_t const *const cmd) {
+/**
+ * Stop the game via a command from IR
+ */
+static void stop_game_cmd(command_t const *const cmd) {
 	stop_game();
 }
 
-void stop_game(void) {
+/**
+ * Stop the game.
+ */
+static void stop_game(void) {
 	if (!game_state.playing)
 		return;
 
@@ -194,6 +229,7 @@ void stop_game(void) {
 
 	sound_play_effect(SOUND_POWER_DOWN);
 	del_timer(&game_tick);
+	del_timer(&stun_timer);
 
 	display_write("Game Over");
 
@@ -202,10 +238,17 @@ void stop_game(void) {
 	game_state.playing = 0;
 }
 
+/**
+ * Queue __stun_timer.
+ */
 static void stun_timer(void) {
 	send_game_event(GAME_EVT_STUN_TIMER, NULL);
 }
 
+
+/**
+ * Timer to run while stunned.
+ */
 static void __stun_timer(void) {
 
 	if (!game_state.playing) {
@@ -228,7 +271,10 @@ static void __stun_timer(void) {
 	}
 }
 
-static inline void handle_shot(const uint8_t saddr, command_t const *const cmd) {
+/**
+ * Handle a shot command from infrared.
+ */
+static void handle_shot(const uint8_t saddr, command_t const *const cmd) {
 
 	if (!game_state.active || !game_state.playing || game_state.stunned)
 		return;
@@ -266,7 +312,10 @@ static inline void handle_shot(const uint8_t saddr, command_t const *const cmd) 
 }
 
 
-void do_stun(void) {
+/**
+ * Stun. No error checking is done. game_state should be verified before calling.
+ */
+static void do_stun(void) {
 
 	game_state.stunned = 1;
 	game_countdown_time = game_settings.stun_time;
@@ -276,23 +325,29 @@ void do_stun(void) {
 	add_timer(&stun_timer, TIMER_HZ, game_countdown_time);
 }
 
-void do_deac(void) {
+/**
+ * Deactivate. No error checking is done. game_state should be verified before calling.
+ */
+static void do_deac(void) {
 	game_state.active = 0;
 	lights_off();
 	sound_play_effect(SOUND_POWER_DOWN);
 
-	game_countdown_time = game_settings.deac_time;
-	countdown_cb = player_activate;
-	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
+	start_countdown(game_settings.deac_time, player_activate);
 }
 
+/**
+ * Queue a received infrared packet for processing.
+ */
 static void queue_ir_pkt(const mpc_pkt *const pkt) {
 	mpc_incref(pkt);
-	send_game_event(GAME_EVT_CMD, pkt);
+	send_game_event(GAME_EVT_IR_CMD, pkt);
 }
 
+/**
+ * Process a queued infrared packet.
+ */
 static void process_ir_pkt(const mpc_pkt *const pkt) {
-
 	const command_t *const cmd = (command_t *)pkt->data;
 
 	if (cmd->cmd == 0x38) {
@@ -310,12 +365,39 @@ static void process_ir_pkt(const mpc_pkt *const pkt) {
 	mpc_decref(pkt);
 }
 
-void process_trigger_pkt(const mpc_pkt *const pkt) {
-	// size, repeat, data...
+/**
+ * Queue process_trigger()
+ */
+static void trigger_event(const mpc_pkt *const pkt) {
+	send_game_event(GAME_EVT_TRIGGER, NULL);
+}
+
+/**
+ * Cause the phasor to fire. This is unconditional: The phasor *will* fire.
+ */
+static void process_trigger(void) {
 	static uint8_t data[] = {5, 3, 0xff, 0x0c, 0x63, 0x88, 0xa6};
 
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
 		mpc_send(MPC_PHASOR_ADDR, 'T', sizeof(data), data);
 	}
+}
+
+/**
+ * Start a countdown such as the one used for deactivations or game pre-start.
+ * The second remaining in the count will be displayed on the screen
+ *
+ * seconds: The number of seconds.
+ * new_countdown_cb: a callback to run when the count complets.
+ */
+static void start_countdown(const uint8_t seconds, void (*new_countdown_cb)(void)) {
+	if (countdown_cb) {
+		countdown_cb = NULL;
+		del_timer(&game_countdown);
+	}
+
+	game_countdown_time = seconds;
+	countdown_cb = new_countdown_cb;
+	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
 }

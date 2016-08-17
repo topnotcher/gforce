@@ -60,26 +60,6 @@ typedef struct {
 
 } __attribute__((packed)) game_start_cmd;
 
-typedef struct {
-	uint8_t playing:1;
-	uint8_t active:1;
-	uint8_t stunned:1;
-} game_state_t;
-
-void game_countdown(void);
-void stop_game(void);
-void stop_game_cmd(command_t const*const);
-void game_tick(void);
-
-void start_game_cmd(command_t const*const);
-void start_game_activate(void);
-
-void player_activate(void);
-
-void do_stun(void);
-void do_deac(void);
-
-
 void game_init(void);
 
 #endif
