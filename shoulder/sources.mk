@@ -8,8 +8,6 @@ main.c
 ../common/mempool.c
 ../common/mpctwi.c
 ../common/mpc.c
-../common/ringbuf.c
-../common/tasks.c
 ../common/timer.c
 ../common/twi_master.c
 ../common/twi_slave.c
