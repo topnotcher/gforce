@@ -118,7 +118,8 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 	if (pkt == NULL) return;
 
 	if (pkt->cmd == 'I') {
-		mpc_send(MPC_CHEST_ADDR, 'I', pkt->len, (uint8_t *)pkt->data);
+		// first address is the board to send it to.
+		mpc_send(pkt->data[0], 'I', pkt->len - 1, (uint8_t *)pkt->data + 1);
 
 		//hackish thing.
 		//receive a "ping" from the xbee means
