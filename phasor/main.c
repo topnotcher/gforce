@@ -30,7 +30,6 @@ int main(void) {
 	sysclk_set_internal_32mhz();
 
 	trigger_init();
-	irrx_init();
 	mpc_init();
 	init_timers();
 	tasks_init();
@@ -38,6 +37,9 @@ int main(void) {
 	mpc_register_cmd('T', ir_cmd_tx);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
+
+	led_init();
+	irrx_init();
 
 	vTaskStartScheduler();
 
