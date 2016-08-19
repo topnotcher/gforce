@@ -23,6 +23,7 @@ enum game_event_type {
 	GAME_EVT_STOP_GAME,
 	GAME_EVT_COUNTDOWN,
 	GAME_EVT_TRIGGER,
+	GAME_EVT_BOOTED,
 };
 
 typedef struct {
@@ -74,6 +75,8 @@ static void game_tick(void);
 static void start_game_activate(void);
 static void player_activate(void);
 
+static void gforce_booted(void);
+
 
 void game_init(void) {
 	game_evt_queue = xQueueCreate(8, sizeof(game_event));
@@ -88,19 +91,21 @@ static void game_task(void *params) {
 	game_state.active = 0;
 	game_state.stunned = 0;
 
-	mpc_register_cmd('I', queue_ir_pkt);
-	mpc_register_cmd('T', trigger_event);
-
-
-	/* TODO: when power is applied, there is a race condition between the */
-	/* display board coming up and this task starting. */
-	display_write("GForce Booted");
+	/**
+	 * Delay 1 second before we decide we're booted. This is mainly because
+	 * the display probably isn't up yet.
+	 */
+	add_timer(&gforce_booted, TIMER_HZ, 1);
 
 	while (1) {
 		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
 			process_game_event(&evt);
 		}
 	}
+}
+
+static void gforce_booted(void) {
+	send_game_event(GAME_EVT_BOOTED, NULL);
 }
 
 static void process_game_event(game_event *evt) {
@@ -123,6 +128,14 @@ static void process_game_event(game_event *evt) {
 
 	case GAME_EVT_STOP_GAME:
 		stop_game();
+		break;
+
+	case GAME_EVT_BOOTED:
+		mpc_register_cmd('I', queue_ir_pkt);
+		mpc_register_cmd('T', trigger_event);
+
+		display_write("GForce Booted");
+		break;
 
 	default:
 		break;
