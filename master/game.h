@@ -60,6 +60,17 @@ typedef struct {
 
 } __attribute__((packed)) game_start_cmd;
 
+enum game_event_type {
+	GAME_EVT_IR_CMD,
+	GAME_EVT_STUN_TIMER,
+	GAME_EVT_STOP_GAME,
+	GAME_EVT_COUNTDOWN,
+	GAME_EVT_TRIGGER,
+	GAME_EVT_BOOTED,
+	GAME_EVT_MEMBER_LOGIN,
+};
+
 void game_init(void);
+void send_game_event(enum game_event_type, const void *const);
 
 #endif

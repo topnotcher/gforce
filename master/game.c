@@ -17,14 +17,6 @@
 #include <task.h>
 #include <queue.h>
 
-enum game_event_type {
-	GAME_EVT_IR_CMD,
-	GAME_EVT_STUN_TIMER,
-	GAME_EVT_STOP_GAME,
-	GAME_EVT_COUNTDOWN,
-	GAME_EVT_TRIGGER,
-	GAME_EVT_BOOTED,
-};
 
 typedef struct {
 	enum game_event_type type;
@@ -50,7 +42,6 @@ static struct {
 void (* countdown_cb )(void);
 
 static void game_task(void *);
-static void send_game_event(enum game_event_type, const void *const);
 static void process_game_event(game_event *evt);
 
 static void process_trigger(void);
@@ -137,12 +128,16 @@ static void process_game_event(game_event *evt) {
 		display_write("GForce Booted");
 		break;
 
+	case GAME_EVT_MEMBER_LOGIN:
+		display_write("Welcome");
+		break;
+
 	default:
 		break;
 	}
 }
 
-static void send_game_event(enum game_event_type type, const void *const data) {
+void send_game_event(enum game_event_type type, const void *const data) {
 	game_event evt = {
 		.type = type,
 		.data = (void*)data
