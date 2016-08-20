@@ -61,7 +61,7 @@ static inline bool trigger_enabled(void) {
 ISR(PORTA_INT0_vect) {
 	if (!(TRIGGER_PORT.IN & _TRIGPIN_bm) /*&&  trigger_enabled()*/) {
 		_trigger_pressed = true;
-		task_schedule(trigger_pressed);
+		task_schedule_isr(trigger_pressed);
 		trigger_disable();
 	}
 }
