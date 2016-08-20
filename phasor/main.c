@@ -32,6 +32,7 @@ int main(void) {
 	trigger_init();
 	mpc_init();
 	init_timers();
+	irtx_init();
 	tasks_init();
 	diag_init();
 	mpc_register_cmd('T', ir_cmd_tx);
