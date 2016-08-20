@@ -155,6 +155,17 @@ static uint8_t process_rx_byte(rx_state_t *rx_state, uint8_t data) {
 	}
 }
 
+void ir_rx_simulate(const uint8_t size, const uint8_t *const data) {
+	uint16_t rx_byte;
+
+	rx_byte = 0xFF;
+	xQueueSend(g_rx_queue, &rx_byte, portMAX_DELAY);
+
+	for (uint8_t i = 0; i < size; ++i) {
+		rx_byte = *(data + i) | ((i > 2) ? (1 << 8) : 0);
+		xQueueSend(g_rx_queue, &rx_byte, 0);
+	}
+}
 
 ISR(IRRX_USART_RXC_vect) {
 	uint16_t value = ((IRRX_USART.STATUS & USART_RXB8_bm) ? 0x100 : 0x00) |  IRRX_USART.DATA;

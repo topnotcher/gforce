@@ -10,4 +10,6 @@ typedef struct __attribute__((packed)) {
 	uint8_t crc;
 } ir_hdr_t;
 
+void ir_rx_simulate(const uint8_t size, const uint8_t *const data);
+
 #endif
