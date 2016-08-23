@@ -71,7 +71,7 @@ void irrx_init(void) {
 	IRRX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc;
 
 	g_rx_queue = xQueueCreate(24, sizeof(uint16_t));
-	xTaskCreate(ir_rx_task, "ir-rx", 128, g_rx_queue, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
+	xTaskCreate(ir_rx_task, "ir-rx", 128, g_rx_queue, tskIDLE_PRIORITY + 3, (TaskHandle_t*)NULL);
 }
 
 static void ir_rx_task(void *p_queue) {

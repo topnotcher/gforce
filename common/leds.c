@@ -344,7 +344,7 @@ void led_init(void) {
 	mpc_register_cmd('B', lights_off_cmd);
 	mpc_register_cmd('b', led_set_brightness);
 
-	xTaskCreate(leds_task, "leds", 70, NULL, tskIDLE_PRIORITY + 1, &leds_task_handle);
+	xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
 
 	//the state is set in its own initializer way up there^
 	led_write();
