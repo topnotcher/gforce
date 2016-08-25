@@ -3,7 +3,6 @@
 
 #include <avr/io.h>
 #include <util/crc16.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <twi_master.h>
 #include <g4config.h>

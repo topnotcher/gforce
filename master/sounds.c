@@ -6,8 +6,6 @@
 #include "timer.h"
 #include "sounds.h"
 
-#include <util/delay.h>
-
 #if W_SOUNDS == 1
 #include "g4_sounds.h"
 
