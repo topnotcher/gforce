@@ -29,7 +29,7 @@ mem_usage_t mem_usage(void) {
 
 	// XXX: this depends very much on the linker script placing the sections
 	// where we expect.
-	usage.mem_data = (size_t)(&__heap_start - &__data_start) + heap_offset;
+	usage.mem_data = (size_t)(&__heap_start - &__data_start);
 	usage.mem_heap_stack = heap_offset;
 	usage.mem_total = RAMSIZE;
 
