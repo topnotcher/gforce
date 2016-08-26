@@ -7,7 +7,6 @@
 
 #include <g4config.h>
 #include <timer.h>
-#include "lights.h"
 #include "sounds.h"
 #include "xbee.h"
 #include "display.h"
@@ -47,9 +46,6 @@ int main(void) {
 	game_init();
 
 	display_init();
-
-	//clear shit by default.
-	lights_off();
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee.

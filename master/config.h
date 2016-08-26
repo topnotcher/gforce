@@ -12,7 +12,7 @@
  * MPC (general) configuration
  */
 #define MPC_ADDR MPC_MASTER_ADDR
-#define MPC_QUEUE_SIZE 8
+#define MPC_QUEUE_SIZE 12
 
 /**************************************
  * Phasor Communication Configuration

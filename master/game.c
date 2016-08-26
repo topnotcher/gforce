@@ -17,6 +17,8 @@
 #include <task.h>
 #include <queue.h>
 
+// Number of seconds to spend waiting for boards
+#define GFORCE_BOOT_TICKS 10
 
 typedef struct {
 	enum game_event_type type;
@@ -40,6 +42,10 @@ static struct {
 } game_settings;
 
 void (* countdown_cb )(void);
+
+const uint8_t all_boards = MPC_LS_ADDR | MPC_RS_ADDR | MPC_CHEST_ADDR | MPC_BACK_ADDR | MPC_PHASOR_ADDR;
+static uint8_t boards_booted;
+static uint8_t gforce_booted;
 
 static void game_task(void *);
 static void process_game_event(game_event *evt);
@@ -66,12 +72,15 @@ static void game_tick(void);
 static void start_game_activate(void);
 static void player_activate(void);
 
-static void gforce_booted(void);
+static void gforce_boot_tick(void);
+static void _gforce_boot_tick(void);
+static void mpc_hello_received(const mpc_pkt *const);
+static void handle_board_hello(const mpc_pkt *const);
 
 
 void game_init(void) {
 	game_evt_queue = xQueueCreate(8, sizeof(game_event));
-	xTaskCreate(game_task, "game", 128, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
+	xTaskCreate(game_task, "game", 256, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
 }
 
 static void game_task(void *params) {
@@ -82,11 +91,12 @@ static void game_task(void *params) {
 	game_state.active = 0;
 	game_state.stunned = 0;
 
+	mpc_register_cmd('H', mpc_hello_received);
+
 	/**
-	 * Delay 1 second before we decide we're booted. This is mainly because
-	 * the display probably isn't up yet.
+	 * Add a 10 second timer to wait for all boards to come up.
 	 */
-	add_timer(&gforce_booted, TIMER_HZ, 1);
+	add_timer(&gforce_boot_tick, TIMER_HZ, GFORCE_BOOT_TICKS);
 
 	while (1) {
 		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
@@ -95,8 +105,32 @@ static void game_task(void *params) {
 	}
 }
 
-static void gforce_booted(void) {
-	send_game_event(GAME_EVT_BOOTED, NULL);
+static void gforce_boot_tick(void) {
+	send_game_event(GAME_EVT_BOOT_TICK, NULL);
+}
+
+static void _gforce_boot_tick(void) {
+	static uint8_t ticks = GFORCE_BOOT_TICKS;
+
+	if (--ticks == 0) {
+		mpc_register_cmd('I', queue_ir_pkt);
+		mpc_register_cmd('T', trigger_event);
+
+		if (boards_booted == all_boards)
+			display_write("GForce Booted");
+		else
+			display_write("Error: \nBoards missing!");
+
+		lights_off();
+
+		gforce_booted = 1;
+
+	} else {
+		if (all_boards ^ boards_booted)
+			mpc_send_cmd(all_boards ^ boards_booted, 'H');
+
+		display_write("Booting...      ");
+	}
 }
 
 static void process_game_event(game_event *evt) {
@@ -121,15 +155,16 @@ static void process_game_event(game_event *evt) {
 		stop_game();
 		break;
 
-	case GAME_EVT_BOOTED:
-		mpc_register_cmd('I', queue_ir_pkt);
-		mpc_register_cmd('T', trigger_event);
-
-		display_write("GForce Booted");
+	case GAME_EVT_BOOT_TICK:
+		_gforce_boot_tick();
 		break;
 
 	case GAME_EVT_MEMBER_LOGIN:
 		display_write("Welcome");
+		break;
+
+	case GAME_EVT_BOARD_HELLO:
+		handle_board_hello(evt->data);
 		break;
 
 	default:
@@ -408,4 +443,26 @@ static void start_countdown(const uint8_t seconds, void (*new_countdown_cb)(void
 	game_countdown_time = seconds;
 	countdown_cb = new_countdown_cb;
 	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
+}
+
+static void mpc_hello_received(const mpc_pkt *const pkt) {
+	mpc_incref(pkt);
+	send_game_event(GAME_EVT_BOARD_HELLO, pkt);
+}
+
+static void handle_board_hello(const mpc_pkt *const pkt) {
+
+	if (!gforce_booted && !(boards_booted & pkt->saddr))
+		lights_booting(pkt->saddr);
+
+	boards_booted |= pkt->saddr;
+
+	// TODO: send board settings
+	uint8_t settings = 0x03;
+	mpc_send(pkt->saddr, 'c', sizeof(settings), &settings);
+
+	if (game_state.playing && game_state.active)
+		lights_on();
+
+	mpc_decref(pkt);
 }

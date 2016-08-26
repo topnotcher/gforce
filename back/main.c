@@ -31,14 +31,13 @@ int main(void) {
 	init_timers();
 	mpc_init();
 	buzz_init();
-
-	charger_init();
 	diag_init();
 
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 
 	led_init();
 	irrx_init();
+	charger_init();
 
 	vTaskStartScheduler();
 

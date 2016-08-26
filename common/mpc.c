@@ -35,10 +35,15 @@ static comm_driver_t *phasor_comm;
 #include "xbee.h"
 #endif
 
+#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
+static void handle_master_hello(const mpc_pkt *const);
+//static void handle_master_settings(const mpc_pkt *const);
+#endif
+
 static mempool_t *mempool;
 
 //@TODO hard-coded # of elementsghey
-#define N_MPC_CMDS 10
+#define N_MPC_CMDS 15
 typedef struct {
 	uint8_t cmd;
 	void (*cb)(const mpc_pkt *const);
@@ -140,10 +145,28 @@ static void mpc_rx_event(comm_driver_t *evtcomm) {
 #endif
 }
 
+#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
+static void handle_master_hello(const mpc_pkt *const pkt) {
+	if (pkt->saddr == MPC_MASTER_ADDR)
+		mpc_send_cmd(MPC_MASTER_ADDR, 'H');
+}
+
+//static void handle_master_settings(const mpc_pkt *const pkt) {
+	// this space intentionally left blank for now.
+//}
+#endif
+
 static void mpc_task(void *params) {
 	const uint32_t all_notifications = NOTIFY_PHASOR_PROCESS | NOTIFY_PHASOR_PROCESS | NOTIFY_TWI_PROCESS;
 	uint32_t notify;
 	comm_frame_t *frame;
+
+#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
+		mpc_register_cmd('H', handle_master_hello);
+		// TODO
+		// mpc_register_cmd('S', handle_master_settings);
+		mpc_send_cmd(MPC_MASTER_ADDR, 'H');
+#endif
 
 	while (1) {
 		notify = 0;
