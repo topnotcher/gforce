@@ -95,8 +95,10 @@ static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
 
 static void set_seq_cmd(const mpc_pkt *const pkt);
 static void lights_off_cmd(const mpc_pkt *const pkt);
+static void set_active_color_cmd(const mpc_pkt *const pkt);
+static void set_active_color(const uint8_t color);
 
-const uint16_t const colors[][3] = { COLOR_RGB_VALUES };
+uint16_t colors[][3] = { COLOR_RGB_VALUES };
 
 
 static led_values_t ALL_OFF = LED_PATTERN(OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF);
@@ -314,10 +316,20 @@ static void lights_off_cmd(const mpc_pkt *const pkt) {
 	set_lights(0);
 }
 
+static void set_active_color(const uint8_t color) {
+	memcpy(&colors[COLOR_ACTIVE], &colors[color], sizeof(colors[COLOR_ACTIVE]));
+}
+
+static void set_active_color_cmd(const mpc_pkt *const pkt) {
+	uint8_t color = *pkt->data;
+	memcpy(&colors[COLOR_ACTIVE], &colors[color], sizeof(colors[COLOR_ACTIVE]));
+}
+
 void led_set_seq(const uint8_t *const data, const uint8_t len) {
 	if (state.status != idle && state.status != stop)
 		set_lights(0);
 
+	// TODO: len
 	memcpy((void *)led_sequence_raw, data, len);
 
 //	if ( state.seq != NULL ) free(state.seq);
@@ -344,10 +356,15 @@ void led_init(void) {
 	mpc_register_cmd('B', lights_off_cmd);
 	mpc_register_cmd('b', led_set_brightness);
 
+	// TODO: this just happens to be the only setting at the moment...
+	mpc_register_cmd('c', set_active_color_cmd);
+
 	xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
 
 	//the state is set in its own initializer way up there^
 	led_write();
+
+	set_active_color(COLOR_GREEN);
 }
 
 static void led_set_brightness(const mpc_pkt *const pkt) {
