@@ -94,23 +94,23 @@ static void xbee_rx_event(comm_driver_t *comm) {
 }
 
 void xbee_rx_process(void) {
-	comm_frame_t *frame = comm_rx(xbee_comm);
+	comm_frame_t *frame;
 
-	if (frame == NULL)
-		return;
+	while ((frame = comm_rx(xbee_comm)) != NULL) {
 
-	if (frame->size < sizeof(mpc_pkt))
-		goto cleanup;
+		if (frame->size < sizeof(mpc_pkt))
+			goto cleanup;
 
-	mpc_pkt *pkt = (mpc_pkt *)frame->data;
+		mpc_pkt *pkt = (mpc_pkt *)frame->data;
 
-	if (!xbee_pkt_chksum(pkt))
-		goto cleanup;
+		if (!xbee_pkt_chksum(pkt))
+			goto cleanup;
 
-	xbee_rx_pkt(pkt);
+		xbee_rx_pkt(pkt);
 
-cleanup:
-	mempool_putref(frame);
+		cleanup:
+			mempool_putref(frame);
+	}
 }
 
 static void xbee_rx_pkt(mpc_pkt const *const pkt) {

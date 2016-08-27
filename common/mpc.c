@@ -178,15 +178,18 @@ static void mpc_task(void *params) {
 			#endif
 
 			#ifdef PHASOR_COMM
-			if ((notify & NOTIFY_PHASOR_PROCESS) && ((frame = comm_rx(phasor_comm)) != NULL))
-				mpc_rx_frame(frame);
+			if ((notify & NOTIFY_PHASOR_PROCESS)) {
+				while ((frame = comm_rx(phasor_comm)) != NULL)
+					mpc_rx_frame(frame);
+			}
 			#endif
 
 			#ifdef MPC_TWI
-			if ((notify & NOTIFY_TWI_PROCESS) && ((frame = comm_rx(comm)) != NULL))
-				mpc_rx_frame(frame);
+			if ((notify & NOTIFY_TWI_PROCESS)) {
+				while ((frame = comm_rx(comm)) != NULL)
+					mpc_rx_frame(frame);
+			}
 			#endif
-
 		}
 	}
 }
