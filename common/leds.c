@@ -88,7 +88,6 @@ typedef struct {
 static uint8_t led_sequence_raw[58];
 static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
-static inline void sclk_trigger(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
 static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
@@ -258,16 +257,6 @@ off:
 	}
 }
 
-static inline void sclk_trigger(void) {
-	LED_SPI.CTRL &= ~SPI_ENABLE_bm;
-	LED_PORT.OUTSET = _SCLK_bm;
-	_delay_us(1);
-	LED_PORT.OUTCLR = _SCLK_bm;
-	LED_SPI.CTRL |= SPI_ENABLE_bm;
-
-}
-
-
 void led_write(void) {
 
 	uint8_t controller = 0;
@@ -347,7 +336,7 @@ void led_init(void) {
 
 
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
-	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | SPI_CLK2X_bm | SPI_PRESCALER_DIV4_gc;
+	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV128_gc;
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
 	//state.seq = NULL/*&seq_active*/;
 	state.u_seq.seq_data = led_sequence_raw;
@@ -383,7 +372,6 @@ void led_timer_tick(void) {
 static inline void led_write_byte(void) {
 	if (state.byte == LED_TOTAL_BYTES) {
 		if (state.controller == 1) {
-			sclk_trigger(); //does this work?
 			return;
 		} else {
 			state.controller = 1;
