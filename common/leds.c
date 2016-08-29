@@ -19,14 +19,15 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static void leds_run(void);
-static portTASK_FUNCTION(leds_task, params);
-
 static TaskHandle_t leds_task_handle;
 
 #define _SCLK_bm G4_PIN(LED_SCLK_PIN)
 #define _SOUT_bm G4_PIN(LED_SOUT_PIN)
+#define _SCLK_PINCTRL G4_PINCTRL(LED_SCLK_PIN)
+
+#ifdef LED_SS_PIN
 #define _SS_bm G4_PIN(LED_SS_PIN)
+#endif
 
 typedef enum {
 	//lights are off
@@ -86,11 +87,16 @@ typedef struct {
 
 //max sequence size = 58 right now @TODO.
 static uint8_t led_sequence_raw[58];
+
 static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
 static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
+
+static void leds_run(void);
+static portTASK_FUNCTION(leds_task, params);
+static void led_start_tx(void);
 
 static void set_seq_cmd(const mpc_pkt *const pkt);
 static void lights_off_cmd(const mpc_pkt *const pkt);
@@ -278,12 +284,14 @@ void led_write(void) {
 			uint8_t c_real = c;
 
 			// Software fix for backwards R/B on some LEDs
-#ifdef LED_RB_SWAP
+			// This was for shoulder rev1 boards
+			#ifdef LED_RB_SWAP
 			if (led == 2 || led == 3 || led == 6 || led == 7) {
 				if (c == 0) c_real = 2;
 				else if (c == 2) c_real = 0;
 			}
-#endif
+			#endif
+
 			//each component = two bytes (inorite???)
 			state.bytes[controller][byte++] = (color[c_real] >> 8) & 0xFF;
 			state.bytes[controller][byte++] = color[c_real] & 0xFF;
@@ -293,7 +301,15 @@ void led_write(void) {
 	state.byte = 0;
 	state.controller = 0;
 
+	led_start_tx();
+}
+
+static void led_start_tx(void) {
+	#ifdef LED_USART
+	LED_USART.CTRLA |= USART_DREINTLVL_LO_gc;
+	#else
 	led_write_byte();
+	#endif
 }
 
 static void set_seq_cmd(const mpc_pkt *const pkt) {
@@ -325,20 +341,31 @@ void led_set_seq(const uint8_t *const data, const uint8_t len) {
 
 //	state.seq = seq;
 }
-
 void led_init(void) {
+#ifdef LED_USART
+	const uint16_t bsel = 8;
 
+	LED_USART.BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
+	LED_USART.BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);
 
+	LED_PORT.OUTSET = _SOUT_bm | _SCLK_bm;
+	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm;
+
+	LED_PORT._SCLK_PINCTRL |= PORT_INVEN_bm;
+
+	LED_USART.CTRLC |= USART_CMODE_MSPI_gc;
+	LED_USART.CTRLB |= USART_TXEN_bm;
+#else
 	//SS will fuck you over hard per xmegaA, pp226.
 	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm | _SS_bm;
 	LED_PORT.OUTSET = _SCLK_bm | _SOUT_bm;
 	LED_PORT.OUTCLR = _SS_bm;
 
-
 	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
 	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV128_gc;
 	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
-	//state.seq = NULL/*&seq_active*/;
+#endif
+
 	state.u_seq.seq_data = led_sequence_raw;
 
 	mpc_register_cmd('A', set_seq_cmd);
@@ -349,9 +376,6 @@ void led_init(void) {
 	mpc_register_cmd('c', set_active_color_cmd);
 
 	xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
-
-	//the state is set in its own initializer way up there^
-	led_write();
 
 	set_active_color(COLOR_GREEN);
 }
@@ -370,19 +394,30 @@ void led_timer_tick(void) {
 }
 
 static inline void led_write_byte(void) {
+	// this function is disgusting
+	#ifdef LED_USART
+	LED_USART.DATA = state.bytes[state.controller][state.byte++];
+	#endif
+
 	if (state.byte == LED_TOTAL_BYTES) {
 		if (state.controller == 1) {
+			#ifdef LED_USART
+			LED_USART.CTRLA &= ~USART_DREINTLVL_LO_gc;
+			#else
 			return;
+			#endif
 		} else {
 			state.controller = 1;
 			state.byte = 0;
 		}
 	}
 
+	#ifdef LED_SPI
 	LED_SPI.DATA = state.bytes[state.controller][state.byte++];
+	#endif
 }
 
-ISR(LED_SPI_vect) {
+ISR(LED_TX_vect) {
 	led_write_byte();
 }
 

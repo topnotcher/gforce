@@ -5,13 +5,10 @@
  */
 
 #define LED_PORT PORTC
-#define LED_SCLK_PIN 7
-#define LED_SOUT_PIN 5
-#define LED_SS_PIN 4
-#define LED_SPI SPIC
-#define LED_SPI_vect SPIC_INT_vect
-
-#define LED_RB_SWAP 1 
+#define LED_SCLK_PIN 5
+#define LED_SOUT_PIN 7
+#define LED_USART USARTC1
+#define LED_TX_vect USARTC1_DRE_vect
 
 #define MPC_TWI_ADDR_EEPROM_ADDR 0
 #define MPC_TWI_ADDRMASK 0x3F
