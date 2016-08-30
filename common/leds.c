@@ -92,7 +92,9 @@ static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
+#ifdef LED_SPI
 static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
+#endif
 
 static void leds_run(void);
 static portTASK_FUNCTION(leds_task, params);
@@ -306,7 +308,7 @@ void led_write(void) {
 
 static void led_start_tx(void) {
 	#ifdef LED_USART
-	LED_USART.CTRLA |= USART_DREINTLVL_LO_gc;
+	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
 	#else
 	led_write_byte();
 	#endif
@@ -343,7 +345,29 @@ void led_set_seq(const uint8_t *const data, const uint8_t len) {
 }
 void led_init(void) {
 #ifdef LED_USART
-	const uint16_t bsel = 8;
+	const uint16_t bsel = 1;
+
+	DMA.CTRL |= DMA_ENABLE_bm;
+
+	// DMA source address is incremented during transaction and reset at the
+	// end of every transaction; dest address is fixed. 
+	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
+	DMA.CH0.TRIGSRC = LED_DMA_TRIGSRC; // TODO
+	DMA.CH0.CTRLA = DMA_CH_SINGLE_bm;
+
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+	DMA.CH0.SRCADDR0 = ((uint32_t)&state.bytes) & 0xFF;
+	DMA.CH0.SRCADDR1 = (((uint32_t)&state.bytes) >> 8) & 0xFF;
+	DMA.CH0.SRCADDR2 = (((uint32_t)&state.bytes) >> 16) & 0xFF;
+
+	DMA.CH0.DESTADDR0 = ((uint32_t)&LED_USART.DATA) & 0xFF;
+	DMA.CH0.DESTADDR1 = (((uint32_t)&LED_USART.DATA) >> 8) & 0xFF;
+	DMA.CH0.DESTADDR2 = (((uint32_t)&LED_USART.DATA) >> 16) & 0xFF;
+	#pragma GCC diagnostic pop
+
+	DMA.CH0.TRFCNTL = sizeof(state.bytes) & 0xFF;
+	DMA.CH0.TRFCNTH = (sizeof(state.bytes) >> 8) & 0xFF;
 
 	LED_USART.BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
 	LED_USART.BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);
@@ -377,6 +401,8 @@ void led_init(void) {
 
 	xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
 
+	set_lights(0);
+
 	set_active_color(COLOR_GREEN);
 }
 
@@ -393,31 +419,22 @@ void led_timer_tick(void) {
 	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
 
+#ifdef LED_SPI
 static inline void led_write_byte(void) {
-	// this function is disgusting
-	#ifdef LED_USART
-	LED_USART.DATA = state.bytes[state.controller][state.byte++];
-	#endif
-
 	if (state.byte == LED_TOTAL_BYTES) {
 		if (state.controller == 1) {
-			#ifdef LED_USART
-			LED_USART.CTRLA &= ~USART_DREINTLVL_LO_gc;
-			#else
 			return;
-			#endif
 		} else {
 			state.controller = 1;
 			state.byte = 0;
 		}
 	}
 
-	#ifdef LED_SPI
 	LED_SPI.DATA = state.bytes[state.controller][state.byte++];
-	#endif
 }
 
 ISR(LED_TX_vect) {
 	led_write_byte();
 }
+#endif
 
