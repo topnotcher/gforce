@@ -112,7 +112,11 @@ static void gforce_boot_tick(void) {
 static void _gforce_boot_tick(void) {
 	static uint8_t ticks = GFORCE_BOOT_TICKS;
 
-	if (--ticks == 0) {
+	ticks--;
+
+	// timeout when the tick count  expires
+	// but allow boot complete at GFORCE_BOOT_TICKS/2
+	if (ticks == 0 || (ticks < GFORCE_BOOT_TICKS/2 && boards_booted == all_boards)) {
 		mpc_register_cmd('I', queue_ir_pkt);
 		mpc_register_cmd('T', trigger_event);
 
