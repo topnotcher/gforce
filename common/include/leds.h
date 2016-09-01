@@ -1,33 +1,11 @@
 #include <stdint.h>
 
+#include "led_patterns.h"
+
 #ifndef LEDS_H
 #define LEDS_H
 
-#define N_LEDS 8 
-
-#define LED(k) _BV(k)
-
 #define LED_DELAY_TIME 13
-
-#include <colors.h>
-#define LED_PATTERN(A,B,C,D,E,F,G,H) { (COLOR(A)<<4) | COLOR(B), (COLOR(C)<<4) | COLOR(D), (COLOR(E)<<4) | COLOR(F), (COLOR(G)<<4) | COLOR(H) }
-#define SOLID_PATTERN(C) {(COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C))}
-
-
-typedef uint8_t led_values_t[N_LEDS/2];
-
-typedef struct {
-	led_values_t pattern;
-	uint8_t flashes;
-	uint8_t on;
-	uint8_t off;
-} led_pattern;
-
-typedef struct {
-	uint8_t size;
-	uint8_t repeat_time;
-	led_pattern patterns[];
-} led_sequence;
 
 struct led_controller_s;
 typedef struct led_controller_s {
