@@ -34,7 +34,4 @@ led_controller *led_usart_init(
 );
 
 void led_init(void);
-void set_lights(uint8_t);
-void led_set_seq(const uint8_t * const,const uint8_t);
-
 #endif

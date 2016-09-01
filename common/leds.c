@@ -92,6 +92,8 @@ static void set_seq_cmd(const mpc_pkt *const pkt);
 static void lights_off_cmd(const mpc_pkt *const pkt);
 static void set_active_color_cmd(const mpc_pkt *const pkt);
 static void set_active_color(const uint8_t color);
+static inline void set_lights(uint8_t status);
+static void led_set_seq(const uint8_t * const,const uint8_t);
 
 uint16_t colors[][3] = { COLOR_RGB_VALUES };
 static led_controller *controller_dev;
@@ -137,7 +139,7 @@ void led_brightness_adjust(int8_t dir) {
 	state.bytes[1][LED_HEADER_BRIGHTNESS] = level;
 }
 
-inline void set_lights(uint8_t status) {
+static void set_lights(uint8_t status) {
 
 	if (!status && state.ticks)
 		del_timer(led_timer_tick);
@@ -308,7 +310,7 @@ static void set_active_color_cmd(const mpc_pkt *const pkt) {
 	memcpy(&colors[COLOR_ACTIVE], &colors[color], sizeof(colors[COLOR_ACTIVE]));
 }
 
-void led_set_seq(const uint8_t *const data, const uint8_t len) {
+static void led_set_seq(const uint8_t *const data, const uint8_t len) {
 	if (state.status != idle && state.status != stop)
 		set_lights(0);
 
