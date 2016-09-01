@@ -96,7 +96,7 @@ static inline void set_lights(uint8_t status);
 static void led_set_seq(const uint8_t * const,const uint8_t);
 
 uint16_t colors[][3] = { COLOR_RGB_VALUES };
-static led_controller *controller_dev;
+static led_spi_dev *spi;
 
 static led_values_t ALL_OFF = LED_PATTERN(OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF);
 
@@ -289,7 +289,7 @@ void led_write(void) {
 			state.bytes[controller][byte++] = color[c_real] & 0xFF;
 		}
 	}
-	controller_dev->write(controller_dev);
+	spi->write(spi);
 }
 
 static void set_seq_cmd(const mpc_pkt *const pkt) {
@@ -323,15 +323,15 @@ static void led_set_seq(const uint8_t *const data, const uint8_t len) {
 }
 void led_init(void) {
 #ifdef LED_USART
-	controller_dev = led_usart_init(&LED_USART, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_DMA_CH);
+	spi = led_usart_init(&LED_USART, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_DMA_CH);
 #else
-	controller_dev = led_spi_init(&LED_SPI, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_SS_PIN);
+	spi = led_spi_init(&LED_SPI, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_SS_PIN);
 #endif
 
 	state.u_seq.seq_data = led_sequence_raw;
 
 	// note: we do this once - the address or size never changes
-	controller_dev->load(controller_dev, (uint8_t*)&state.bytes, sizeof(state.bytes));
+	spi->load(spi, (uint8_t*)&state.bytes, sizeof(state.bytes));
 
 	mpc_register_cmd('A', set_seq_cmd);
 	mpc_register_cmd('B', lights_off_cmd);
@@ -362,6 +362,6 @@ void led_timer_tick(void) {
 
 #ifdef LED_TX_vect
 ISR(LED_TX_vect) {
-	controller_dev->tx_isr(controller_dev);
+	spi->tx_isr(spi);
 }
 #endif

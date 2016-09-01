@@ -6,27 +6,27 @@
 #include "leds.h"
 
 typedef struct {
-	led_controller controller;
+	led_spi_dev controller;
 
 	const uint8_t *data;
 	uint8_t data_size;
 	uint8_t bytes_written;
 
 	volatile uint8_t *out;
-} led_spi_dev;
+} led_spi_driver;
 
-static void led_spi_load(const led_controller *const, const uint8_t *const, const uint8_t);
-static void led_spi_write(const led_controller *const);
-static void led_spi_tx_isr(const led_controller *const);
+static void led_spi_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
+static void led_spi_write(const led_spi_dev *const);
+static void led_spi_tx_isr(const led_spi_dev *const);
 
-led_controller *led_spi_init(
+led_spi_dev *led_spi_init(
 	SPI_t *const spi, PORT_t *const port, const uint8_t sclk_pin,
 	const uint8_t sout_pin, const uint8_t ss_pin)
 {
 	uint8_t sclk_bm = 1 << sclk_pin;
 	uint8_t ss_bm = 1 << ss_pin;
 	uint8_t sout_bm = 1 << sout_pin;
-	led_spi_dev *dev;
+	led_spi_driver *dev;
 
 	// SS is required even though we're not using it. xmegaA, p226.
 	port->DIRSET = sclk_bm | sout_bm | ss_bm;
@@ -58,23 +58,23 @@ led_controller *led_spi_init(
 	}
 }
 
-static void led_spi_load(const led_controller *const controller, const uint8_t *const data, const uint8_t size) {
-	led_spi_dev *dev = controller->dev;
+static void led_spi_load(const led_spi_dev *const controller, const uint8_t *const data, const uint8_t size) {
+	led_spi_driver *dev = controller->dev;
 	dev->data = data;
 	dev->data_size = size;
 }
 
-static void led_spi_write(const led_controller *const controller) {
+static void led_spi_write(const led_spi_dev *const controller) {
 	// This just writes a junk byte out. If we write a real byte and there's a
 	// write collision (i.e. the module is busy sending data already, then we
 	// need to restart the transfer).
-	led_spi_dev *dev = controller->dev;
+	led_spi_driver *dev = controller->dev;
 	*dev->out = 0xFF;
 	dev->bytes_written = 0;
 }
 
-static void led_spi_tx_isr(const led_controller *const controller) {
-	led_spi_dev *dev = controller->dev;
+static void led_spi_tx_isr(const led_spi_dev *const controller) {
+	led_spi_driver *dev = controller->dev;
 
 	if (dev->bytes_written < dev->data_size)
 		*dev->out = dev->data[dev->bytes_written++];

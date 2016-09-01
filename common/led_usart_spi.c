@@ -7,31 +7,31 @@
 #include "leds.h"
 
 typedef struct {
-	led_controller controller;
+	led_spi_dev controller;
 
 	const uint8_t *data;
 	uint8_t data_size;
 	uint8_t bytes_written;
 
 	USART_t *usart;
-} led_usart_dev;
+} led_usart_driver;
 
 
-static void led_usart_load(const led_controller *const, const uint8_t *const, const uint8_t);
-static void led_usart_write(const led_controller *const);
-static void led_usart_tx_isr(const led_controller *const);
+static void led_usart_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
+static void led_usart_write(const led_spi_dev *const);
+static void led_usart_tx_isr(const led_spi_dev *const);
 
-static void led_usart_dma_load(const led_controller *const, const uint8_t *const, const uint8_t);
-static void led_usart_dma_write(const led_controller *const controller);
+static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
+static void led_usart_dma_write(const led_spi_dev *const controller);
 static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart);
 
-led_controller *led_usart_init(
+led_spi_dev *led_usart_init(
 	USART_t *const usart, PORT_t *const port, const uint8_t sclk_pin,
 	const uint8_t sout_pin, const int8_t dma_ch)
 
 {
 	uint16_t bsel;
-	led_controller *controller = NULL;
+	led_spi_dev *controller = NULL;
 
 	uint8_t sclk_bm = 1 << sclk_pin;
 	uint8_t sout_bm = 1 << sout_pin;
@@ -69,7 +69,7 @@ led_controller *led_usart_init(
 		// Without DMA we might prematurely latch the data
 		bsel = 8;
 
-		led_usart_dev *dev;
+		led_usart_driver *dev;
 		if ((dev = smalloc(sizeof *dev))) {
 			// whoa it's a cirlce!
 			controller = &dev->controller;
@@ -130,22 +130,22 @@ static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart) {
 		return 0;
 }
 
-static void led_usart_load(const led_controller *const controller, const uint8_t *const data, const uint8_t size) {
-	led_usart_dev *dev = controller->dev;
+static void led_usart_load(const led_spi_dev *const controller, const uint8_t *const data, const uint8_t size) {
+	led_usart_driver *dev = controller->dev;
 	dev->data = data;
 	dev->data_size = size;
 }
 
-static void led_usart_write(const led_controller *const controller) {
-	led_usart_dev *dev = controller->dev;
+static void led_usart_write(const led_spi_dev *const controller) {
+	led_usart_driver *dev = controller->dev;
 
 	dev->usart->CTRLA &= ~USART_DREINTLVL_LO_gc;
 	dev->bytes_written = 0;
 	dev->usart->CTRLA |= USART_DREINTLVL_LO_gc;
 }
 
-static void led_usart_tx_isr(const led_controller *const controller) {
-	led_usart_dev *dev = controller->dev;
+static void led_usart_tx_isr(const led_spi_dev *const controller) {
+	led_usart_driver *dev = controller->dev;
 
 	dev->usart->DATA = dev->data[dev->bytes_written++];
 
@@ -153,7 +153,7 @@ static void led_usart_tx_isr(const led_controller *const controller) {
 		dev->usart->CTRLA &= ~USART_DREINTLVL_LO_gc;
 }
 
-static void led_usart_dma_load(const led_controller *const controller, const uint8_t *const data, const uint8_t size) {
+static void led_usart_dma_load(const led_spi_dev *const controller, const uint8_t *const data, const uint8_t size) {
 	DMA_CH_t *dma = controller->dev;
 
 	// TODO: define dev
@@ -170,6 +170,6 @@ static void led_usart_dma_load(const led_controller *const controller, const uin
 	dma->CTRLA |= DMA_CH_ENABLE_bm;
 }
 
-static void led_usart_dma_write(const led_controller *const controller) {
+static void led_usart_dma_write(const led_spi_dev *const controller) {
 	((DMA_CH_t*)(controller->dev))->CTRLA |= DMA_CH_ENABLE_bm;
 }
