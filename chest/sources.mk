@@ -4,6 +4,7 @@ main.c
 ../common/comm.c
 ../common/irrx.c
 ../common/leds.c
+../common/led_spi.c
 ../common/malloc.c
 ../common/mempool.c
 ../common/mpctwi.c

@@ -21,12 +21,8 @@
 
 static TaskHandle_t leds_task_handle;
 
-#define _SCLK_bm G4_PIN(LED_SCLK_PIN)
-#define _SOUT_bm G4_PIN(LED_SOUT_PIN)
-#define _SCLK_PINCTRL G4_PINCTRL(LED_SCLK_PIN)
-
-#ifdef LED_SS_PIN
-#define _SS_bm G4_PIN(LED_SS_PIN)
+#ifndef LED_DMA_CH
+#define LED_DMA_CH -1
 #endif
 
 typedef enum {
@@ -78,10 +74,6 @@ typedef struct {
 	 * State information for writing to the SPI
 	 */
 	uint8_t bytes[2][LED_TOTAL_BYTES];
-
-	uint8_t byte;
-
-	uint8_t controller;
 } led_state;
 
 
@@ -92,13 +84,9 @@ static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static inline void led_write(void) ATTR_ALWAYS_INLINE;
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
-#ifdef LED_SPI
-static inline void led_write_byte(void) ATTR_ALWAYS_INLINE;
-#endif
 
 static void leds_run(void);
 static portTASK_FUNCTION(leds_task, params);
-static void led_start_tx(void);
 
 static void set_seq_cmd(const mpc_pkt *const pkt);
 static void lights_off_cmd(const mpc_pkt *const pkt);
@@ -106,7 +94,7 @@ static void set_active_color_cmd(const mpc_pkt *const pkt);
 static void set_active_color(const uint8_t color);
 
 uint16_t colors[][3] = { COLOR_RGB_VALUES };
-
+static led_controller *controller_dev;
 
 static led_values_t ALL_OFF = LED_PATTERN(OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF);
 
@@ -299,19 +287,7 @@ void led_write(void) {
 			state.bytes[controller][byte++] = color[c_real] & 0xFF;
 		}
 	}
-
-	state.byte = 0;
-	state.controller = 0;
-
-	led_start_tx();
-}
-
-static void led_start_tx(void) {
-	#ifdef LED_USART
-	DMA.CH0.CTRLA |= DMA_CH_ENABLE_bm;
-	#else
-	led_write_byte();
-	#endif
+	controller_dev->write(controller_dev);
 }
 
 static void set_seq_cmd(const mpc_pkt *const pkt) {
@@ -345,52 +321,15 @@ void led_set_seq(const uint8_t *const data, const uint8_t len) {
 }
 void led_init(void) {
 #ifdef LED_USART
-	const uint16_t bsel = 1;
-
-	DMA.CTRL |= DMA_ENABLE_bm;
-
-	// DMA source address is incremented during transaction and reset at the
-	// end of every transaction; dest address is fixed. 
-	DMA.CH0.ADDRCTRL = DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
-	DMA.CH0.TRIGSRC = LED_DMA_TRIGSRC; // TODO
-	DMA.CH0.CTRLA = DMA_CH_SINGLE_bm;
-
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-	DMA.CH0.SRCADDR0 = ((uint32_t)&state.bytes) & 0xFF;
-	DMA.CH0.SRCADDR1 = (((uint32_t)&state.bytes) >> 8) & 0xFF;
-	DMA.CH0.SRCADDR2 = (((uint32_t)&state.bytes) >> 16) & 0xFF;
-
-	DMA.CH0.DESTADDR0 = ((uint32_t)&LED_USART.DATA) & 0xFF;
-	DMA.CH0.DESTADDR1 = (((uint32_t)&LED_USART.DATA) >> 8) & 0xFF;
-	DMA.CH0.DESTADDR2 = (((uint32_t)&LED_USART.DATA) >> 16) & 0xFF;
-	#pragma GCC diagnostic pop
-
-	DMA.CH0.TRFCNTL = sizeof(state.bytes) & 0xFF;
-	DMA.CH0.TRFCNTH = (sizeof(state.bytes) >> 8) & 0xFF;
-
-	LED_USART.BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
-	LED_USART.BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);
-
-	LED_PORT.OUTSET = _SOUT_bm | _SCLK_bm;
-	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm;
-
-	LED_PORT._SCLK_PINCTRL |= PORT_INVEN_bm;
-
-	LED_USART.CTRLC |= USART_CMODE_MSPI_gc;
-	LED_USART.CTRLB |= USART_TXEN_bm;
+	controller_dev = led_usart_init(&LED_USART, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_DMA_CH);
 #else
-	//SS will fuck you over hard per xmegaA, pp226.
-	LED_PORT.DIRSET = _SCLK_bm | _SOUT_bm | _SS_bm;
-	LED_PORT.OUTSET = _SCLK_bm | _SOUT_bm;
-	LED_PORT.OUTCLR = _SS_bm;
-
-	//32MhZ, DIV4 = 8, CLK2X => 16Mhz. = 1/16uS per bit. *8 => 1-2uS break to latch.
-	LED_SPI.CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | /*SPI_CLK2X_bm |*/ SPI_PRESCALER_DIV128_gc;
-	LED_SPI.INTCTRL = SPI_INTLVL_LO_gc;
+	controller_dev = led_spi_init(&LED_SPI, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_SS_PIN);
 #endif
 
 	state.u_seq.seq_data = led_sequence_raw;
+
+	// note: we do this once - the address or size never changes
+	controller_dev->load(controller_dev, (uint8_t*)&state.bytes, sizeof(state.bytes));
 
 	mpc_register_cmd('A', set_seq_cmd);
 	mpc_register_cmd('B', lights_off_cmd);
@@ -419,22 +358,8 @@ void led_timer_tick(void) {
 	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
 
-#ifdef LED_SPI
-static inline void led_write_byte(void) {
-	if (state.byte == LED_TOTAL_BYTES) {
-		if (state.controller == 1) {
-			return;
-		} else {
-			state.controller = 1;
-			state.byte = 0;
-		}
-	}
-
-	LED_SPI.DATA = state.bytes[state.controller][state.byte++];
-}
-
+#ifdef LED_TX_vect
 ISR(LED_TX_vect) {
-	led_write_byte();
+	controller_dev->tx_isr(controller_dev);
 }
 #endif
-

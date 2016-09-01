@@ -14,13 +14,6 @@
 #define SOLID_PATTERN(C) {(COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C)) , (COLOR(C)<<4 | COLOR(C))}
 
 
-/*typedef struct { 
-	PORT_t * port;
-	uint8_t sout;
-	uint8_t sclk;
-} led_config_t;*/
-
-
 typedef uint8_t led_values_t[N_LEDS/2];
 
 typedef struct {
@@ -36,14 +29,33 @@ typedef struct {
 	led_pattern patterns[];
 } led_sequence;
 
+struct led_controller_s;
+typedef struct led_controller_s {
+	// load data to be written into the driver
+	// This is separate from write as a stupid optimization for the DMA case.
+	void (*load)(const struct led_controller_s *const, const uint8_t *const, const uint8_t);
 
+	// start writing out the actual data
+	void (*write)(const struct led_controller_s *const);
 
+	// handle a tx interrupt
+	void (*tx_isr)(const struct led_controller_s *const);
 
+	// underlying device driver
+	void *dev;
+} led_controller;
 
-//void led_on(uint8_t n);
-//void led_off(uint8_t n);
+led_controller *led_spi_init(
+	SPI_t *const, PORT_t *const, const uint8_t,
+	const uint8_t sout_pin, const uint8_t
+);
+
+led_controller *led_usart_init(
+	USART_t *const, PORT_t *const, const uint8_t,
+	const uint8_t, const int8_t
+);
+
 void led_init(void);
-//void set_state(void);
 void set_lights(uint8_t);
 void led_set_seq(const uint8_t * const,const uint8_t);
 
