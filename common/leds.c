@@ -6,15 +6,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <g4config.h>
+#include "g4config.h"
 #include "config.h"
-#include <util.h>
+#include "util.h"
 
-#include <leds.h>
+#include "leds.h"
 #include "colors.h"
+#include "tlc59711.h"
 
-#include <timer.h>
-#include <mpc.h>
+#include "timer.h"
+#include "mpc.h"
+
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -43,13 +45,6 @@ typedef enum {
 	stop
 } led_status;
 
-//last byte = global brightness.
-//9F-BF seems to be a good range. 8F is too low
-#define LED_HEADER 0x94, 0x5F, 0xFF, 0x9F
-#define LED_HEADER_BYTES 4
-#define LED_HEADER_BRIGHTNESS 3
-#define LED_TOTAL_BYTES 28
-
 typedef struct {
 
 	/**
@@ -69,11 +64,6 @@ typedef struct {
 	volatile led_status status;
 
 	uint8_t ticks;
-
-	/**
-	 * State information for writing to the SPI
-	 */
-	uint8_t bytes[2][LED_TOTAL_BYTES];
 } led_state;
 
 
@@ -82,7 +72,7 @@ static uint8_t led_sequence_raw[58];
 
 static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
-static inline void led_write(void) ATTR_ALWAYS_INLINE;
+static void led_write(void);
 static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
 
 static void leds_run(void);
@@ -96,7 +86,8 @@ static inline void set_lights(uint8_t status);
 static void led_set_seq(const uint8_t * const,const uint8_t);
 
 uint16_t colors[][3] = { COLOR_RGB_VALUES };
-static led_spi_dev *spi;
+
+static tlc59711_dev *tlc;
 
 static led_values_t ALL_OFF = LED_PATTERN(OFF, OFF, OFF, OFF, OFF, OFF, OFF, OFF);
 
@@ -109,16 +100,11 @@ led_state state = {
 	.u_seq.seq = NULL,
 
 	.status = idle,
-
-	.bytes = {
-
-		{LED_HEADER, 0},
-		{LED_HEADER, 0}
-	}
 };
 
 void led_brightness_adjust(int8_t dir) {
-	uint8_t level = state.bytes[0][LED_HEADER_BRIGHTNESS];
+//	uint8_t level = state.bytes[0][LED_HEADER_BRIGHTNESS];
+	uint8_t level = 100;
 	const uint8_t min = 0x8F; 
 	const uint8_t max = 0xFF;
 	const uint8_t step = 7;
@@ -135,8 +121,8 @@ void led_brightness_adjust(int8_t dir) {
 			level -= step;
 	}
 
-	state.bytes[0][LED_HEADER_BRIGHTNESS] = level;
-	state.bytes[1][LED_HEADER_BRIGHTNESS] = level;
+//	state.bytes[0][LED_HEADER_BRIGHTNESS] = level;
+	//state.bytes[1][LED_HEADER_BRIGHTNESS] = level;
 }
 
 static void set_lights(uint8_t status) {
@@ -149,6 +135,16 @@ static void set_lights(uint8_t status) {
 }
 
 static portTASK_FUNCTION(leds_task, params) {
+	set_active_color(COLOR_GREEN);
+
+	mpc_register_cmd('A', set_seq_cmd);
+	mpc_register_cmd('B', lights_off_cmd);
+	mpc_register_cmd('b', led_set_brightness);
+
+	// TODO: this just happens to be the only setting at the moment...
+	mpc_register_cmd('c', set_active_color_cmd);
+	set_lights(0);
+
 	while (1) {
 		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE)
 			leds_run();
@@ -256,40 +252,13 @@ off:
 }
 
 void led_write(void) {
-
-	uint8_t controller = 0;
-	uint8_t byte = LED_HEADER_BYTES;
-	//now the actual value of the LED
 	for (uint8_t led = 0, comp = 0; led < N_LEDS; led++) {
+		uint16_t const *color = colors[((led & 0x01) ? state.leds[comp++] : (state.leds[comp] >> 4)) & 0x0F];
 
-		//lol hard coded :D
-		if (led == 4) {
-			controller = 1;
-			byte = LED_HEADER_BYTES;
-		}
-
-		//this is ugly. It should be like... more lines.
-		uint16_t const *color = colors[((led & 0x01) ? state.leds[comp++] : (state.leds[comp] >> 4)) & 0x0F ];
-
-		//for each component of the color: Blue, Green, Red (MSB->LSB)
-		for (int8_t c = 2; c >= 0; --c) {
-			uint8_t c_real = c;
-
-			// Software fix for backwards R/B on some LEDs
-			// This was for shoulder rev1 boards
-			#ifdef LED_RB_SWAP
-			if (led == 2 || led == 3 || led == 6 || led == 7) {
-				if (c == 0) c_real = 2;
-				else if (c == 2) c_real = 0;
-			}
-			#endif
-
-			//each component = two bytes (inorite???)
-			state.bytes[controller][byte++] = (color[c_real] >> 8) & 0xFF;
-			state.bytes[controller][byte++] = color[c_real] & 0xFF;
-		}
+		tlc59711_set_color(tlc, led, color[0], color[1], color[2]);
 	}
-	spi->write(spi);
+
+	tlc59711_write(tlc);
 }
 
 static void set_seq_cmd(const mpc_pkt *const pkt) {
@@ -322,29 +291,24 @@ static void led_set_seq(const uint8_t *const data, const uint8_t len) {
 //	state.seq = seq;
 }
 void led_init(void) {
+	led_spi_dev *spi;
+
+	// why???
+	state.u_seq.seq_data = led_sequence_raw;
+
 #ifdef LED_USART
 	spi = led_usart_init(&LED_USART, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_DMA_CH);
 #else
 	spi = led_spi_init(&LED_SPI, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_SS_PIN);
 #endif
 
-	state.u_seq.seq_data = led_sequence_raw;
+	if (spi) {
+		tlc = tlc59711_init(spi, 2);
 
-	// note: we do this once - the address or size never changes
-	spi->load(spi, (uint8_t*)&state.bytes, sizeof(state.bytes));
-
-	mpc_register_cmd('A', set_seq_cmd);
-	mpc_register_cmd('B', lights_off_cmd);
-	mpc_register_cmd('b', led_set_brightness);
-
-	// TODO: this just happens to be the only setting at the moment...
-	mpc_register_cmd('c', set_active_color_cmd);
-
-	xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
-
-	set_lights(0);
-
-	set_active_color(COLOR_GREEN);
+		if (tlc) {
+			xTaskCreate(leds_task, "leds", 128, NULL, tskIDLE_PRIORITY + 6, &leds_task_handle);
+		}
+	}
 }
 
 static void led_set_brightness(const mpc_pkt *const pkt) {
@@ -362,6 +326,6 @@ void led_timer_tick(void) {
 
 #ifdef LED_TX_vect
 ISR(LED_TX_vect) {
-	spi->tx_isr(spi);
+	tlc->spi->tx_isr(tlc->spi);
 }
 #endif

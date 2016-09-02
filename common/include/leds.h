@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <avr/io.h>
 
 #include "led_patterns.h"
 
