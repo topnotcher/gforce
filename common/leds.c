@@ -102,29 +102,6 @@ led_state state = {
 	.status = idle,
 };
 
-void led_brightness_adjust(int8_t dir) {
-//	uint8_t level = state.bytes[0][LED_HEADER_BRIGHTNESS];
-	uint8_t level = 100;
-	const uint8_t min = 0x8F; 
-	const uint8_t max = 0xFF;
-	const uint8_t step = 7;
-
-	if (dir == 1) {
-		if (level >= (max - step))
-			level = max;
-		else 
-			level += step;
-	} else if (dir == -1) {
-		if (level <= (min + step))
-			level = min;
-		else 
-			level -= step;
-	}
-
-//	state.bytes[0][LED_HEADER_BRIGHTNESS] = level;
-	//state.bytes[1][LED_HEADER_BRIGHTNESS] = level;
-}
-
 static void set_lights(uint8_t status) {
 
 	if (!status && state.ticks)
@@ -312,7 +289,27 @@ void led_init(void) {
 }
 
 static void led_set_brightness(const mpc_pkt *const pkt) {
-	led_brightness_adjust((pkt->data[0] == 1) ? 1 : -1);
+	const uint8_t step = 4;
+	const uint8_t max = TLC59711_BRIGHTNESS_MAX;
+	const uint8_t min = 0x10;
+
+	uint8_t up = pkt->data[0];
+	uint8_t level = tlc59711_get_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE);
+
+	if (up) {
+		if (level < max)
+			level += step;
+		else
+			level = max;
+
+	} else {
+		if (level >= min)
+			level -= step;
+		else
+			level = min;
+	}
+
+	tlc59711_set_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE, level);
 }
 
 static inline void led_timer_start(void) {

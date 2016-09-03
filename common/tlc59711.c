@@ -37,6 +37,34 @@ tlc59711_dev *tlc59711_init(led_spi_dev *const spi, const uint8_t controllers) {
 	return tlc;
 }
 
+uint8_t tlc59711_get_brightness(tlc59711_dev *dev, const uint8_t color) {
+	uint8_t brightness;
+	uint8_t value = 0;
+
+	for (uint8_t i = 0; i < dev->controllers; ++i) {
+		uint8_t *header = dev->__data[i].header;
+
+		if (color & TLC59711_BLUE) {
+			brightness = ((header[1] & 0x1F) << 2) | ((header[2] & 0xC0) >> 6);
+
+			value = (brightness > value) ? brightness : value;
+		}
+
+		if (color & TLC59711_GREEN) {
+			brightness = ((header[2] & 0x3F) << 1) | ((header[3] & 0x80) >> 7);
+
+			value = (brightness > value) ? brightness : value;
+		}
+
+		if (color & TLC59711_RED) {
+			brightness = header[3] & 0x7F;
+
+			value = (brightness > value) ? brightness : value;
+		}
+	}
+
+	return value;
+}
 
 void tlc59711_set_brightness(tlc59711_dev *dev, const uint8_t color, const uint8_t value) {
 	for (uint8_t i = 0; i < dev->controllers; ++i) {

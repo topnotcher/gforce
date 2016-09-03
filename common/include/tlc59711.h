@@ -62,6 +62,7 @@ static inline void tlc59711_write(const tlc59711_dev *const dev) {
 
 tlc59711_dev *tlc59711_init(led_spi_dev *const, const uint8_t);
 void tlc59711_set_brightness(tlc59711_dev *, const uint8_t, const uint8_t);
+uint8_t tlc59711_get_brightness(tlc59711_dev *, const uint8_t);
 void tlc59711_set(tlc59711_dev *, const uint8_t, const uint8_t);
 void tlc59711_controller_set(tlc59711_dev *, const uint8_t, const uint8_t, const uint8_t);
 
