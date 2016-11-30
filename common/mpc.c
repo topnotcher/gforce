@@ -42,21 +42,17 @@ static void handle_master_hello(const mpc_pkt *const);
 
 static mempool_t *mempool;
 
-//@TODO hard-coded # of elementsghey
-#define N_MPC_CMDS 15
-typedef struct {
-	uint8_t cmd;
-	void (*cb)(const mpc_pkt *const);
-} cmd_callback_s;
-
 enum {
 	NOTIFY_XBEE_PROCESS = 1,
 	NOTIFY_PHASOR_PROCESS = 2,
 	NOTIFY_TWI_PROCESS = 4
 };
 
-static cmd_callback_s cmds[N_MPC_CMDS];
-static uint8_t next_mpc_cmd = 0;
+
+// TODO: some form of error handling
+static void mpc_nop(const mpc_pkt *const pkt) {}
+static void (*cmds[MPC_CMD_MAX])(const mpc_pkt *const);
+
 static TaskHandle_t mpc_task_handle;
 static void mpc_rx_frame(comm_frame_t *frame);
 static void mpc_task(void *params);
@@ -114,6 +110,13 @@ void mpc_init(void) {
 	__mpc_twi_init(mpc_addr);
 	__mpc_phasor_init(mpc_addr);
 
+	for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
+		// Just in case anything calls mpc_register before mpc_init()
+		if (cmds[i] == NULL)
+			cmds[i] = mpc_nop;
+	}
+
+
 	xTaskCreate(mpc_task, "mpc", 128, NULL, tskIDLE_PRIORITY + 5, &mpc_task_handle);
 }
 
@@ -122,9 +125,7 @@ void mpc_init(void) {
  *
  */
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
-	cmds[next_mpc_cmd].cmd = cmd;
-	cmds[next_mpc_cmd].cb = cb;
-	next_mpc_cmd++;
+	cmds[cmd] = cb;
 }
 
 void mpc_rx_xbee(void) {
@@ -223,12 +224,7 @@ static void mpc_rx_frame(comm_frame_t *frame) {
 		return;
 	}
 
-	for (uint8_t i = 0; i < next_mpc_cmd; ++i) {
-		if (cmds[i].cmd == pkt->cmd) {
-			cmds[i].cb(pkt);
-			break;
-		}
-	}
+	cmds[pkt->cmd](pkt);
 
 	//cleanup:
 	mempool_putref(frame);

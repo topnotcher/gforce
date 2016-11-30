@@ -18,8 +18,6 @@ class GFCommand(enum.IntEnum):
     BOARD_HELLO = 0x48
     BOARD_CONFIG = 0x63
 
-    MAX_CMD_CODE = 0x7F
-
     @property
     def c_name(self):
         return 'MPC_CMD_' + self.name
@@ -32,6 +30,8 @@ def _generate_defines(out_file):
 
         for cmd in GFCommand:
             fh.write('#define %s 0x%02X\n' % (cmd.c_name, cmd.value))
+
+        fh.write('#define MPC_CMD_MAX %d\n' % max(GFCommand))
 
         fh.write('#endif\n')
 
