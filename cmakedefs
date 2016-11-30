@@ -19,7 +19,16 @@ foreach(source ${_FREERTOS_SOURCES})
 	list(APPEND FREERTOS_SOURCES "../freertos/${source}")
 endforeach(source)
 
-set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES})
+#
+# Generate the GForce MPC CMD header
+#
+add_custom_command(
+	OUTPUT "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
+	COMMAND /usr/bin/env python "${CMAKE_SOURCE_DIR}/../extra/cmds.py" "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
+	DEPENDS "${CMAKE_SOURCE_DIR}/../extra/cmds.py"
+)
+
+set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h")
 
 # 
 # Definitions to use when building all sources

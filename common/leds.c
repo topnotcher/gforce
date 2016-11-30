@@ -114,12 +114,12 @@ static void set_lights(uint8_t status) {
 static portTASK_FUNCTION(leds_task, params) {
 	set_active_color(COLOR_GREEN);
 
-	mpc_register_cmd('A', set_seq_cmd);
-	mpc_register_cmd('B', lights_off_cmd);
-	mpc_register_cmd('b', led_set_brightness);
+	mpc_register_cmd(MPC_CMD_LED_SET_SEQ, set_seq_cmd);
+	mpc_register_cmd(MPC_CMD_LED_OFF, lights_off_cmd);
+	mpc_register_cmd(MPC_CMD_LED_SET_BRIGHTNESS, led_set_brightness);
 
 	// TODO: this just happens to be the only setting at the moment...
-	mpc_register_cmd('c', set_active_color_cmd);
+	mpc_register_cmd(MPC_CMD_BOARD_CONFIG, set_active_color_cmd);
 	set_lights(0);
 
 	while (1) {

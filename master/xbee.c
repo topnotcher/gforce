@@ -117,26 +117,27 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 
 	if (pkt == NULL) return;
 
-	if (pkt->cmd == 'I') {
+	// IR echo
+	if (pkt->cmd == MPC_CMD_IR_RX) {
 		// first address is the board to send it to.
-		mpc_send(pkt->data[0], 'I', pkt->len - 1, (uint8_t *)pkt->data + 1);
+		mpc_send(pkt->data[0], MPC_CMD_IR_RX, pkt->len - 1, (uint8_t *)pkt->data + 1);
 
 		//hackish thing.
 		//receive a "ping" from the xbee means
 		//send a ping to the board specified by byte 0
 		//of the data. That board should then reply...
-	} else if (pkt->cmd == 'P') {
-		mpc_send_cmd(pkt->data[0], 'P');
+	} else if (pkt->cmd == MPC_CMD_DIAG_PING) {
+		mpc_send_cmd(pkt->data[0], MPC_CMD_DIAG_PING);
 
-	} else if (pkt->cmd == 'M') {
-		mpc_send_cmd(pkt->data[0], 'M');
+	} else if (pkt->cmd == MPC_CMD_DIAG_MEM_USAGE) {
+		mpc_send_cmd(pkt->data[0], MPC_CMD_DIAG_MEM_USAGE);
 
 		// this is nasty ...
 		mem_usage_t usage = mem_usage();
 
-		xbee_send('M', sizeof(usage), (uint8_t*)&usage);
+		xbee_send(MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 
-	} else if (pkt->cmd == 'b') {
+	} else if (pkt->cmd == MPC_CMD_LED_SET_BRIGHTNESS) {
 		mpc_send(MPC_CHEST_ADDR | MPC_PHASOR_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
 
 	}

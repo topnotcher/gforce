@@ -1,4 +1,5 @@
 output/
+common/include/mpc_cmds.h
 Makefile
 stuff/
 make.rules

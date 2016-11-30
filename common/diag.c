@@ -9,9 +9,9 @@ static void mpc_echo_ir(const mpc_pkt *const);
 static void mpc_mem_usage(const mpc_pkt *const pkt);
 
 void diag_init(void) {
-	mpc_register_cmd('P', mpc_reply_ping);
-	mpc_register_cmd('I', mpc_echo_ir);
-	mpc_register_cmd('M', mpc_mem_usage);
+	mpc_register_cmd(MPC_CMD_DIAG_PING, mpc_reply_ping);
+	mpc_register_cmd(MPC_CMD_IR_RX, mpc_echo_ir);
+	mpc_register_cmd(MPC_CMD_DIAG_MEM_USAGE, mpc_mem_usage);
 }
 
 /**
@@ -19,7 +19,7 @@ void diag_init(void) {
  * an R command.
  */
 static void mpc_reply_ping(const mpc_pkt *const pkt) {
-	mpc_send_cmd(pkt->saddr, 'R');
+	mpc_send_cmd(pkt->saddr, MPC_CMD_DIAG_RELAY);
 }
 
 /**
@@ -35,5 +35,5 @@ static void mpc_mem_usage(const mpc_pkt *const pkt) {
 	mem_usage_t usage = mem_usage();
 
 	if (pkt->saddr == MPC_MASTER_ADDR)
-		mpc_send(pkt->saddr, 'M', sizeof(usage), (uint8_t*)&usage);
+		mpc_send(pkt->saddr, MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 }

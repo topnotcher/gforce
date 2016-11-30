@@ -35,7 +35,7 @@ int main(void) {
 	irtx_init();
 	tasks_init();
 	diag_init();
-	mpc_register_cmd('T', ir_cmd_tx);
+	mpc_register_cmd(MPC_CMD_IR_TX, ir_cmd_tx);
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
 

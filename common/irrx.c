@@ -112,7 +112,7 @@ static void ir_rx_task(void *p_queue) {
 static void process_rx_data(rx_state_t *rx_state) {
 	// The last byte should always be the CRC of the whole packet
 	if (rx_state->crc == rx_state->buf[rx_state->bytes - 1])
-		mpc_send(MPC_MASTER_ADDR, 'I', rx_state->bytes, rx_state->buf);
+		mpc_send(MPC_MASTER_ADDR, MPC_CMD_IR_RX, rx_state->bytes, rx_state->buf);
 
 	rx_state->state = RX_STATE_IDLE;
 }

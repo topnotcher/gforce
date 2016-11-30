@@ -91,7 +91,7 @@ static void game_task(void *params) {
 	game_state.active = 0;
 	game_state.stunned = 0;
 
-	mpc_register_cmd('H', mpc_hello_received);
+	mpc_register_cmd(MPC_CMD_BOARD_HELLO, mpc_hello_received);
 
 	/**
 	 * Add a 10 second timer to wait for all boards to come up.
@@ -117,8 +117,8 @@ static void _gforce_boot_tick(void) {
 	// timeout when the tick count  expires
 	// but allow boot complete at GFORCE_BOOT_TICKS/2
 	if (ticks == 0 || (ticks < GFORCE_BOOT_TICKS/2 && boards_booted == all_boards)) {
-		mpc_register_cmd('I', queue_ir_pkt);
-		mpc_register_cmd('T', trigger_event);
+		mpc_register_cmd(MPC_CMD_IR_RX, queue_ir_pkt);
+		mpc_register_cmd(MPC_CMD_IR_TX, trigger_event);
 
 		if (boards_booted == all_boards)
 			display_write("GForce Booted");
@@ -131,7 +131,7 @@ static void _gforce_boot_tick(void) {
 
 	} else {
 		if (all_boards ^ boards_booted)
-			mpc_send_cmd(all_boards ^ boards_booted, 'H');
+			mpc_send_cmd(all_boards ^ boards_booted, MPC_CMD_BOARD_HELLO);
 
 		display_write("Booting...      ");
 	}
@@ -406,7 +406,7 @@ static void process_ir_pkt(const mpc_pkt *const pkt) {
 	} else if (cmd->cmd == 0x0c) {
 		handle_shot(pkt->saddr, cmd);
 
-		xbee_send('S', sizeof(*pkt) + pkt->len, (uint8_t *)pkt);
+		xbee_send(MPC_CMD_SHOT, sizeof(*pkt) + pkt->len, (uint8_t *)pkt);
 	}
 
 	mpc_decref(pkt);
@@ -427,7 +427,7 @@ static void process_trigger(void) {
 
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
-		mpc_send(MPC_PHASOR_ADDR, 'T', sizeof(data), data);
+		mpc_send(MPC_PHASOR_ADDR, MPC_CMD_IR_TX, sizeof(data), data);
 	}
 }
 
@@ -463,7 +463,7 @@ static void handle_board_hello(const mpc_pkt *const pkt) {
 
 	// TODO: send board settings
 	uint8_t settings = 0x03;
-	mpc_send(pkt->saddr, 'c', sizeof(settings), &settings);
+	mpc_send(pkt->saddr, MPC_CMD_BOARD_CONFIG, sizeof(settings), &settings);
 
 	if (game_state.playing && game_state.active)
 		lights_on();

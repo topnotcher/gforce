@@ -1,4 +1,6 @@
 #include "comm.h"
+#include "mpc_cmds.h"
+
 #ifndef MPC_H
 #define MPC_H
 

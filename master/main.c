@@ -49,13 +49,13 @@ int main(void) {
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee.
-	mpc_register_cmd('R', xbee_relay_mpc);
+	mpc_register_cmd(MPC_CMD_DIAG_RELAY, xbee_relay_mpc);
 
 	//relay data for debugging
-	mpc_register_cmd('D', xbee_relay_mpc);
+	mpc_register_cmd(MPC_CMD_DIAG_DEBUG, xbee_relay_mpc);
 
 	// memory usage reply...
-	mpc_register_cmd('M', xbee_relay_mpc);
+	mpc_register_cmd(MPC_CMD_DIAG_MEM_USAGE, xbee_relay_mpc);
 
 	ibutton_init();
 
