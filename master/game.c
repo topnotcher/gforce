@@ -43,7 +43,7 @@ static struct {
 
 void (* countdown_cb )(void);
 
-const uint8_t all_boards = MPC_LS_ADDR | MPC_RS_ADDR | MPC_CHEST_ADDR | MPC_BACK_ADDR | MPC_PHASOR_ADDR;
+const uint8_t all_boards = MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_CHEST | MPC_ADDR_BACK | MPC_ADDR_PHASOR;
 static uint8_t boards_booted;
 static uint8_t gforce_booted;
 
@@ -328,19 +328,19 @@ static void handle_shot(const uint8_t saddr, command_t const *const cmd) {
 
 	char *sensor;
 	switch (saddr) {
-	case MPC_CHEST_ADDR:
+	case MPC_ADDR_CHEST:
 		sensor = "Tagged: CH";
 		break;
-	case MPC_LS_ADDR:
+	case MPC_ADDR_LS:
 		sensor = "Tagged: LS";
 		break;
-	case MPC_BACK_ADDR:
+	case MPC_ADDR_BACK:
 		sensor = "Tagged: BA";
 		break;
-	case MPC_RS_ADDR:
+	case MPC_ADDR_RS:
 		sensor = "Tagged: RS";
 		break;
-	case MPC_PHASOR_ADDR:
+	case MPC_ADDR_PHASOR:
 		sensor = "Tagged: PH";
 		break;
 	default:
@@ -348,7 +348,7 @@ static void handle_shot(const uint8_t saddr, command_t const *const cmd) {
 		break;
 	}
 
-	if (saddr & (MPC_BACK_ADDR | MPC_CHEST_ADDR))
+	if (saddr & (MPC_ADDR_BACK | MPC_ADDR_CHEST))
 		do_deac();
 	else
 		do_stun();
@@ -427,7 +427,7 @@ static void process_trigger(void) {
 
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
-		mpc_send(MPC_PHASOR_ADDR, MPC_CMD_IR_TX, sizeof(data), data);
+		mpc_send(MPC_ADDR_PHASOR, MPC_CMD_IR_TX, sizeof(data), data);
 	}
 }
 

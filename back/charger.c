@@ -68,7 +68,7 @@ static void charger_task(void *params) {
 			charger_read_reg(read_regs[i]);
 		}
 
-		mpc_send(MPC_MASTER_ADDR, MPC_CMD_DIAG_DEBUG, 3, &registers[BQ24193_SYS_STAT_REG]);
+		mpc_send(MPC_ADDR_MASTER, MPC_CMD_DIAG_DEBUG, 3, &registers[BQ24193_SYS_STAT_REG]);
 
 		// TODO
 		charger_block();

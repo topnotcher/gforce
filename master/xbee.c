@@ -44,8 +44,8 @@ void xbee_init(void) {
 	XBEE_PORT.OUTSET = PIN7_bm /*~sleep*/;
 
 	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_MASTER_ADDR);
-	xbee_comm = comm_init(commdev, MPC_MASTER_ADDR, MPC_PKT_MAX_SIZE, xbee_mempool, xbee_rx_event);
+	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_ADDR_MASTER);
+	xbee_comm = comm_init(commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE, xbee_mempool, xbee_rx_event);
 
 }
 
@@ -138,7 +138,7 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 		xbee_send(MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 
 	} else if (pkt->cmd == MPC_CMD_LED_SET_BRIGHTNESS) {
-		mpc_send(MPC_CHEST_ADDR | MPC_PHASOR_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
+		mpc_send(MPC_ADDR_CHEST | MPC_ADDR_PHASOR | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
 
 	}
 }

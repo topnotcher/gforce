@@ -95,7 +95,7 @@ static void handle_cmd(char *cmd) {
 	uint8_t shot_data[] = { 0x0c, 0x63, 0x88, 0xA6 };
 	int shot_data_len = 4;
 
-	uint8_t ping_data[] = { MPC_PHASOR_ADDR | MPC_BACK_ADDR | MPC_CHEST_ADDR | MPC_RS_ADDR | MPC_LS_ADDR};
+	uint8_t ping_data[] = { MPC_ADDR_PHASOR | MPC_ADDR_BACK | MPC_ADDR_CHEST | MPC_ADDR_RS | MPC_ADDR_LS};
 	uint8_t ping_data_len = 1;
 
 	if (!strcmp(cmd, "stop"))
@@ -190,17 +190,17 @@ int mpc_pkt_crc_ok(mpc_pkt *pkt) {
 
 char *mpc_board_name(const uint8_t board_id) {
 	switch (board_id) {
-	case MPC_CHEST_ADDR:
+	case MPC_ADDR_CHEST:
 		return "chest";
-	case MPC_LS_ADDR:
+	case MPC_ADDR_LS:
 		return "left shoulder";
-	case MPC_BACK_ADDR:
+	case MPC_ADDR_BACK:
 		return "back";
-	case MPC_RS_ADDR:
+	case MPC_ADDR_RS:
 		return "right shoulder";
-	case MPC_MASTER_ADDR:
+	case MPC_ADDR_MASTER:
 		return "master";
-	case MPC_PHASOR_ADDR:
+	case MPC_ADDR_PHASOR:
 		return "phasor";
 	default:
 		return "???";

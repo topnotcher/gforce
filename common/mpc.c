@@ -35,10 +35,8 @@ static comm_driver_t *phasor_comm;
 #include "xbee.h"
 #endif
 
-#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
 static void handle_master_hello(const mpc_pkt *const);
 //static void handle_master_settings(const mpc_pkt *const);
-#endif
 
 static mempool_t *mempool;
 
@@ -69,7 +67,7 @@ static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) __attribute__((alw
 #define __mpc_addr() \
 	eeprom_read_byte((uint8_t *)MPC_TWI_ADDR_EEPROM_ADDR)
 #else
-#define __mpc_addr() ((uint8_t)MPC_ADDR)
+#define __mpc_addr() ((uint8_t)MPC_ADDR_BOARD)
 #endif
 
 /**
@@ -146,28 +144,27 @@ static void mpc_rx_event(comm_driver_t *evtcomm) {
 #endif
 }
 
-#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
 static void handle_master_hello(const mpc_pkt *const pkt) {
-	if (pkt->saddr == MPC_MASTER_ADDR)
-		mpc_send_cmd(MPC_MASTER_ADDR, MPC_CMD_BOARD_HELLO);
+	if (pkt->saddr == MPC_ADDR_MASTER)
+		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_BOARD_HELLO);
 }
 
 //static void handle_master_settings(const mpc_pkt *const pkt) {
 	// this space intentionally left blank for now.
 //}
-#endif
 
 static void mpc_task(void *params) {
 	const uint32_t all_notifications = NOTIFY_PHASOR_PROCESS | NOTIFY_PHASOR_PROCESS | NOTIFY_TWI_PROCESS;
 	uint32_t notify;
 	comm_frame_t *frame;
 
-#if !defined(MPC_ADDR) || MPC_ADDR != MPC_MASTER_ADDR
+	if (!(MPC_ADDR_BOARD & MPC_ADDR_MASTER)) {
 		mpc_register_cmd(MPC_CMD_BOARD_HELLO, handle_master_hello);
+
 		// TODO
 		// mpc_register_cmd('S', handle_master_settings);
-		mpc_send_cmd(MPC_MASTER_ADDR, MPC_CMD_BOARD_HELLO);
-#endif
+		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_BOARD_HELLO);
+	}
 
 	while (1) {
 		notify = 0;
@@ -268,14 +265,14 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	}
 
 	#ifdef PHASOR_COMM
-	if (addr & (MPC_MASTER_ADDR | MPC_PHASOR_ADDR)) {
+	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_PHASOR)) {
 		comm_send(phasor_comm, mempool_getref(frame));
 		comm_tx(phasor_comm);
 	}
 	#endif
 
 	#ifdef MPC_TWI
-	if (addr & (MPC_MASTER_ADDR | MPC_CHEST_ADDR | MPC_LS_ADDR | MPC_RS_ADDR | MPC_BACK_ADDR)) {
+	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK)) {
 		comm_send(comm, mempool_getref(frame));
 		comm_tx(comm);
 	}

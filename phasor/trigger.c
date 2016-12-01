@@ -42,7 +42,7 @@ static void trigger_pressed(void) {
 	if (_trigger_pressed) {
 		_trigger_pressed = false;
 		add_timer(trigger_tick, 500, 1);
-		mpc_send_cmd(MPC_MASTER_ADDR, MPC_CMD_IR_TX);
+		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_IR_TX);
 	}
 }
 

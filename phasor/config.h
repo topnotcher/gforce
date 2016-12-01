@@ -1,7 +1,5 @@
 #ifndef BOARD_CONFIG_H
 
-#define MPC_TWI_ADDR 16
-
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm
 
@@ -66,7 +64,7 @@
 #define PHASOR_COMM_TXC_ISR ISR(USARTE0_DRE_vect)
 #define PHASOR_COMM_RXC_ISR ISR(USARTE0_RXC_vect)
 
-#define MPC_ADDR 0x10
+#define MPC_ADDR_BOARD MPC_ADDR_PHASOR
 #define MPC_QUEUE_SIZE 4
 
 #endif

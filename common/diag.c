@@ -27,13 +27,13 @@ static void mpc_reply_ping(const mpc_pkt *const pkt) {
  * IR receiver task to be processed in the exact same way as incoming IR.
  */
 static void mpc_echo_ir(const mpc_pkt *const pkt) {
-	if (pkt->saddr == MPC_MASTER_ADDR)
+	if (pkt->saddr == MPC_ADDR_MASTER)
 		ir_rx_simulate(pkt->len, pkt->data);
 }
 
 static void mpc_mem_usage(const mpc_pkt *const pkt) {
 	mem_usage_t usage = mem_usage();
 
-	if (pkt->saddr == MPC_MASTER_ADDR)
+	if (pkt->saddr == MPC_ADDR_MASTER)
 		mpc_send(pkt->saddr, MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 }

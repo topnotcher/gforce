@@ -28,7 +28,7 @@
 #define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
 #define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
 
-#define MPC_ADDR MPC_CHEST_ADDR
+#define MPC_ADDR_BOARD MPC_ADDR_CHEST
 
 /********************************************
  * Configuration for the vibrator
