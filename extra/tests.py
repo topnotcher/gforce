@@ -73,6 +73,7 @@ class GForce:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         self.sock.bind(('0.0.0.0', port))
+        self.unpacker = StreamUnpacker(framed_pkt)
 
 
     def _send(self, data):
@@ -104,33 +105,23 @@ class GForce:
 
             if self.sock in r:
 
-                data, addr = self.sock.recvfrom(1024)
+                data, addr = self.sock.recvfrom(65535)
                 if addr != (self.host, self.port):
                     continue
 
-                while len(data):
-                    f = framed_pkt()
+                last_act = time.monotonic()
 
-                    try:
-                        consumed = f.unpack(data)
+                try:
+                    pkts.extend(frame.pkt for frame in self.unpacker.unpack(data))
 
-                        # TODO: this should probably treat the datagram like a
-                        # byte stream. The xbee may not be so friendly in how
-                        # it packetizes data...
+                except FrameFormatError as e:
+                    print('Error receiving frame:', str(e))
+                    print(data)
 
-                        # print('received %d, consumed %d' % (len(data), consumed))
-                        data = data[consumed:]
+                except ChecksumMismatchError as e:
+                    print('Checksum mismatch:', str(e))
+                    print(data)
 
-                    except FrameFormatError as e:
-                        print('Error receiving frame:', str(e))
-                        print(data)
-
-                    except ChecksumMismatchError as e:
-                        print('Checksum mismatch:', str(e))
-                        print(data)
-
-                    else:
-                        pkts.append(f.pkt)
 
         return pkts
 
