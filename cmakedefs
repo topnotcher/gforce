@@ -28,6 +28,7 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
 
 	DEPENDS "${CMAKE_SOURCE_DIR}/../util/cmds.py"
+	DEPENDS "${CMAKE_SOURCE_DIR}/../python/gforce/mpc.py"
 )
 
 set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h")

@@ -8,61 +8,10 @@ import socket
 import binascii
 import select
 
-from tamp import *
-from gforce.mpc import MPC_CMD, MPC_ADDR, MPC_CRC_POLY, MPC_CRC_SHIFT
-
-
-class ChecksumMismatchError(ValueError):
-    pass
-
-
-class FrameFormatError(ValueError):
-    pass
-
-
-class FrameStartError(FrameFormatError):
-    def __init__(self, *args):
-        super(FrameStartError, self).__init__('Invalid start byte')
-
-
-class FrameSyncError(FrameFormatError):
-    def __init__(self, msg):
-        super(FrameSyncError, self).__init__('chk byte mismatch: ' + msg)
-
-
-class mpc_pkt(Structure):
-    _fields_ = [
-        ('len', uint8_t),
-        ('cmd', EnumWrap(MPC_CMD, uint8_t)),
-        ('saddr', uint8_t),
-        ('chksum', Computed(uint8_t, '_compute_chksum', mismatch_exc=ChecksumMismatchError)),
-        ('data', uint8_t[LengthField('len')]),
-    ]
-
-    def _compute_chksum(self):
-        chksum = MPC_CRC_SHIFT
-
-        hdr_fields = ['len', 'cmd', 'saddr']
-        for field in hdr_fields:
-            chksum = crc_ibutton_update(chksum, getattr(self, field))
-
-        for byte in self.data:
-            chksum = crc_ibutton_update(chksum, byte)
-
-        return chksum
-
-
-class framed_pkt(Structure):
-    _fields_ = [
-        ('start', Const(uint8_t, 0xFF, mismatch_exc=FrameStartError)),
-        ('daddr', uint8_t),
-        ('len', uint8_t),
-        ('chk', Computed(uint8_t, '_compute_chk', mismatch_exc=FrameSyncError)),
-        ('pkt', PackedLength(mpc_pkt, 'len')),
-    ]
-
-    def _compute_chk(self):
-        return (self.daddr ^ self.len) & 0xFE
+from tamp import StreamUnpacker
+from gforce.mpc import MPC_CMD, MPC_ADDR, MPC_CRC_POLY, MPC_CRC_SHIFT, mpc_pkt,\
+                       FrameFormatError, ChecksumMismatchError, framed_pkt,\
+                       mpc_pkt
 
 
 class GForceClient:
@@ -149,20 +98,6 @@ class GForceServer:
 
     def active_clients(self, timeout=25.0):
         return (conn.client for conn in self._clients.values() if conn.client.last_rx >= time.monotonic() - timeout)
-
-
-def crc_ibutton_update(crc, data):
-    crc = (crc ^ data) & 0xFF
-
-    for i in range(8):
-        if crc & 0x01 == 0x01:
-            crc = (crc >> 1) ^ 0x8C
-        else:
-            crc >>= 1
-
-        crc &= 0xFF
-
-    return crc
 
 
 async def start(gf):
