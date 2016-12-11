@@ -9,8 +9,7 @@ import binascii
 import select
 
 from tamp import *
-
-from cmds import MPC_CMD, MPC_ADDR, MPC_CRC_POLY, MPC_CRC_SHIFT
+from gforce.mpc import MPC_CMD, MPC_ADDR, MPC_CRC_POLY, MPC_CRC_SHIFT
 
 
 class ChecksumMismatchError(ValueError):

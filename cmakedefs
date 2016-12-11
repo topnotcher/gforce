@@ -24,8 +24,10 @@ endforeach(source)
 #
 add_custom_command(
 	OUTPUT "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
-	COMMAND /usr/bin/env python "${CMAKE_SOURCE_DIR}/../extra/cmds.py" "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
-	DEPENDS "${CMAKE_SOURCE_DIR}/../extra/cmds.py"
+	COMMAND /usr/bin/env PYTHONPATH="${CMAKE_SOURCE_DIR}/../python" python "${CMAKE_SOURCE_DIR}/../util/cmds.py"
+		"${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
+
+	DEPENDS "${CMAKE_SOURCE_DIR}/../util/cmds.py"
 )
 
 set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h")
