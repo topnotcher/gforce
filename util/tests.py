@@ -14,12 +14,56 @@ from gforce.mpc import MPC_CMD, MPC_ADDR, MPC_CRC_POLY, MPC_CRC_SHIFT, mpc_pkt,\
                        mpc_pkt
 
 
+class _EventCollector:
+    def __init__(self, gf, event=None):
+        self.gf = gf
+        self.event = event
+        self._queue = asyncio.Queue(loop=self.gf.loop)
+
+    def __enter__(self):
+        self.gf.subscribe(self._handle_event, cmd=self.event)
+
+        return self
+
+    def __exit__(self, _, __, ___):
+        self.gf.unsubscribe(self._handle_event, self.event)
+
+    def __call__(self):
+        return asyncio.ensure_future(self._queue.get(), loop=self.gf.loop)
+
+    def _handle_event(self, pkt, _, *args):
+        if len(args) == 0:
+            self._queue.put_nowait(pkt)
+        else:
+            self._queue.put_nowait((pkt, *args))
+
+
+class _EventBroker:
+    def __init__(self):
+        self._subs = {}
+
+    def dispatch(self, pkt, *args):
+        for cmd in (pkt.cmd, None):
+            for callback in self._subs.get(cmd, []):
+                callback(pkt, *args)
+
+    def subscribe(self, callback, cmd=None):
+        subs = self._subs.setdefault(cmd, set())
+        subs.add(callback)
+
+    def unsubscribe(self, callback, cmd=None):
+        subs = self._subs.setdefault(cmd, set())
+        subs.remove(callback)
+
+
 class GForceClient:
     def __init__(self, server, ip):
         self.server = server
         self.ip = ip
-        self.queue = asyncio.Queue(loop=self.server.loop)
+        self.loop = server.loop
         self.last_rx = 0
+
+        self._broker = _EventBroker()
 
     async def get_pkt(self, timeout=1.0):
         return (await asyncio.wait_for(self.queue.get(), timeout, loop=self.server.loop))
@@ -28,8 +72,17 @@ class GForceClient:
         self.server.send_cmd(self.ip, cmd, data)
 
     def pkt_received(self, pkt):
-        self.queue.put_nowait(pkt)
         self.last_rx = time.monotonic()
+        self._broker.dispatch(pkt, self)
+
+    def collect(self, event=None):
+        return _EventCollector(self, event=event)
+
+    def subscribe(self, callback, cmd=None):
+        self._broker.subscribe(callback, cmd)
+
+    def unsubscribe(self, callback, cmd=None):
+        self._broker.unsubscribe(callback, cmd)
 
 
 class GForceServer:
@@ -41,6 +94,7 @@ class GForceServer:
         self.loop = loop
 
         self._clients = {}
+        self._broker = _EventBroker()
 
         listen = self.loop.create_datagram_endpoint(lambda: self, local_addr=(self.bind_host, self.port))
         self._transport, _ = self.loop.run_until_complete(listen)
@@ -81,6 +135,8 @@ class GForceServer:
                 for frame in stream.unpack(data):
                     client.pkt_received(frame.pkt)
 
+                    self._broker.dispatch(frame.pkt, self, addr[0])
+
                 # TODO:
                 # This is some shitty bullshit. If there's an exception in
                 # unpack, there may be unprocessed bytes in the internal
@@ -99,6 +155,15 @@ class GForceServer:
     def active_clients(self, timeout=25.0):
         return (conn.client for conn in self._clients.values() if conn.client.last_rx >= time.monotonic() - timeout)
 
+    def collect(self, event=None):
+        return _EventCollector(self, event=event)
+
+    def subscribe(self, callback, cmd=None):
+        self._broker.subscribe(callback, cmd)
+
+    def unsubscribe(self, callback, cmd=None):
+        self._broker.unsubscribe(callback, cmd)
+
 
 async def start(gf):
     start_data = [MPC_ADDR.CHEST, 56, 127, 138, 103, 83, 0, 15, 15, 68, 72, 0, 44, 1, 88, 113]
@@ -115,44 +180,70 @@ async def stop(gf):
 
 
 async def ping(gf):
-    # TODO: what horrible things have I done that I can't include master in
-    # here?  (not that it matters anyway, since master relays the other
-    # replies.)
-    gf.send_cmd(MPC_CMD.DIAG_PING, [functools.reduce(operator.or_, set(MPC_ADDR) - set([MPC_ADDR.MASTER]))])
+    ping_addrs = functools.reduce(operator.or_, set(MPC_ADDR) - set([MPC_ADDR.MASTER]))
+    replies = 0
 
-    def handle_reply(outer_reply):
-        reply = mpc_pkt()
+    with gf.collect(MPC_CMD.DIAG_RELAY) as collect:
+        gf.send_cmd(MPC_CMD.DIAG_PING, [ping_addrs])
 
         try:
-            reply.unpack(bytes(outer_reply.data))
+            while ping_addrs != 0:
+                outer = await asyncio.wait_for(collect(), 1.0)
+                reply = unpack_inner(outer)
 
-        except ChecksumMismatchError:
-            checksum = False
-        else:
-            checksum = True
+                print('ping reply from %s' % (reply.saddr))
 
-        print('ping reply from %s (fwd: %s), checksum=%s' %
-                (MPC_ADDR(reply.saddr), MPC_ADDR(outer_reply.saddr), 'good' if checksum else 'bad'))
+                replies += 1
+                ping_addrs &= ~reply.saddr
 
-    replies = 0
+        except asyncio.TimeoutError:
+            pass
+
+    if replies == 0:
+        print('no replies received')
+
+    else:
+        print('%d replies' % replies)
+
+
+def unpack_inner(outer):
+    pkt = mpc_pkt()
+
     try:
-        while True:
-            handle_reply(await gf.get_pkt())
-            replies += 1
+        pkt.unpack(bytes(outer.data))
+
+    except ChecksumMismatchError:
+        pass
+
+    return pkt
+
+
+async def shot(gf):
+    try:
+        with gf.collect(MPC_CMD.SHOT) as collect:
+            gf.send_cmd(MPC_CMD.IR_RX, [MPC_ADDR.CHEST, 0x0c, 0x63, 0x88, 0xA6])
+
+            outer = await asyncio.wait_for(collect(), timeout=1.0)
+            shot = unpack_inner(outer)
+
+            print('SHOT', shot.saddr)
+
+    except asyncio.TimeoutError:
+        print('No shot received')
+
+
+async def discover(gf):
+    try:
+        with gf.collect(MPC_CMD.DIAG_RELAY) as collect:
+            gf.send_cmd('255.255.255.255', MPC_CMD.DIAG_PING, [MPC_ADDR.CHEST])
+
+            while True:
+                pkt, addr = await asyncio.wait_for(collect(), 5.0)
+                print(addr)
 
     except asyncio.TimeoutError:
         pass
 
-    if replies == 0:
-        print('no replies!')
-
-
-async def discover(gf):
-    gf.send_cmd('255.255.255.255', MPC_CMD.DIAG_PING, [MPC_ADDR.CHEST])
-    await asyncio.sleep(5.0)
-
-    for client in gf.active_clients(timeout=10.0):
-        print(client.ip)
 
 
 def main():
@@ -172,6 +263,9 @@ def main():
 
         elif sys.argv[1] == 'stop':
             fn = stop
+
+        elif sys.argv[1] == 'shot':
+            fn = shot
 
         loop.run_until_complete(fn(vest))
 

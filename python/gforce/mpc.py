@@ -70,7 +70,7 @@ class mpc_pkt(Structure):
     _fields_ = [
         ('len', uint8_t),
         ('cmd', EnumWrap(MPC_CMD, uint8_t)),
-        ('saddr', uint8_t),
+        ('saddr', EnumWrap(MPC_ADDR, uint8_t)),
         ('chksum', Computed(uint8_t, '_compute_chksum', mismatch_exc=ChecksumMismatchError)),
         ('data', uint8_t[LengthField('len')]),
     ]
