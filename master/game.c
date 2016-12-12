@@ -61,7 +61,7 @@ static void __game_countdown(void);
 static void stun_timer(void);
 static void __stun_timer(void);
 
-static void handle_shot(const uint8_t, command_t const *const);
+static void handle_shot(const mpc_pkt *const);
 static void do_stun(void);
 static void do_deac(void);
 static void start_game_cmd(command_t const *const);
@@ -326,13 +326,15 @@ static void __stun_timer(void) {
 /**
  * Handle a shot command from infrared.
  */
-static void handle_shot(const uint8_t saddr, command_t const *const cmd) {
+static void handle_shot(const mpc_pkt *const pkt) {
 
 	if (!game_state.active || !game_state.playing || game_state.stunned)
 		return;
 
+	xbee_send_pkt(pkt);
+
 	char *sensor;
-	switch (saddr) {
+	switch (pkt->saddr) {
 	case MPC_ADDR_CHEST:
 		sensor = "Tagged: CH";
 		break;
@@ -353,14 +355,12 @@ static void handle_shot(const uint8_t saddr, command_t const *const cmd) {
 		break;
 	}
 
-	if (saddr & (MPC_ADDR_BACK | MPC_ADDR_CHEST))
+	if (pkt->saddr & (MPC_ADDR_BACK | MPC_ADDR_CHEST))
 		do_deac();
 	else
 		do_stun();
 
 	display_write(sensor);
-
-	//derpderpderp
 }
 
 
@@ -409,9 +409,7 @@ static void process_ir_pkt(const mpc_pkt *const pkt) {
 		stop_game_cmd(cmd);
 
 	} else if (cmd->cmd == 0x0c) {
-		handle_shot(pkt->saddr, cmd);
-
-		xbee_send(MPC_CMD_SHOT, sizeof(*pkt) + pkt->len, (uint8_t *)pkt);
+		handle_shot(pkt);
 	}
 
 	mpc_decref(pkt);

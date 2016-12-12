@@ -220,11 +220,10 @@ def unpack_inner(outer):
 
 async def shot(gf):
     try:
-        with gf.collect(MPC_CMD.SHOT) as collect:
-            gf.send_cmd(MPC_CMD.IR_RX, [MPC_ADDR.CHEST, 0x0c, 0x63, 0x88, 0xA6])
+        with gf.collect(MPC_CMD.IR_RX) as collect:
+            gf.send_cmd(MPC_CMD.IR_RX, [MPC_ADDR.LS, 0x0c, 0x63, 0x88, 0xA6])
 
-            outer = await asyncio.wait_for(collect(), timeout=1.0)
-            shot = unpack_inner(outer)
+            shot = await asyncio.wait_for(collect(), timeout=1.0)
 
             print('SHOT', shot.saddr)
 

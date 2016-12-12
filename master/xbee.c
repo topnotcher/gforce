@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include <util/crc16.h>
 
 #include <g4config.h>
@@ -47,6 +48,35 @@ void xbee_init(void) {
 	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_ADDR_MASTER);
 	xbee_comm = comm_init(commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE, xbee_mempool, xbee_rx_event);
 
+}
+
+void xbee_send_pkt(const mpc_pkt *const spkt) {
+	comm_frame_t *frame = mempool_alloc(xbee_mempool);
+
+	//@TODO
+	if (frame == NULL)
+		return;
+
+	mpc_pkt *pkt;
+
+	frame->size = sizeof(*pkt) + spkt->len;
+	frame->daddr = 0;
+
+	pkt = (mpc_pkt *)frame->data;
+	memcpy(pkt, spkt, sizeof(*spkt) + spkt->len);
+
+	pkt->chksum = MPC_CRC_SHIFT;
+
+	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
+		pkt->chksum = xbee_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
+
+	for (uint8_t i = 0; i < spkt->len; ++i) {
+		pkt->chksum = xbee_crc(pkt->chksum, pkt->data[i]);
+	}
+
+	comm_send(xbee_comm, mempool_getref(frame));
+	mempool_putref(frame);
+	comm_tx(xbee_comm);
 }
 
 void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
