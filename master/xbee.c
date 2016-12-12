@@ -23,7 +23,7 @@ static void tx_interrupt_enable(void);
 static void tx_interrupt_disable(void);
 static void xbee_rx_event(comm_driver_t *comm);
 static void xbee_rx_pkt(mpc_pkt const *const pkt);
-static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
+static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
 
 void xbee_init(void) {
 
@@ -47,7 +47,6 @@ void xbee_init(void) {
 	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_ADDR_MASTER);
 	xbee_comm = comm_init(commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE, xbee_mempool, xbee_rx_event);
-
 }
 
 void xbee_send_pkt(const mpc_pkt *const spkt) {
@@ -65,14 +64,8 @@ void xbee_send_pkt(const mpc_pkt *const spkt) {
 	pkt = (mpc_pkt *)frame->data;
 	memcpy(pkt, spkt, sizeof(*spkt) + spkt->len);
 
-	pkt->chksum = MPC_CRC_SHIFT;
-
-	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
-		pkt->chksum = xbee_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
-
-	for (uint8_t i = 0; i < spkt->len; ++i) {
-		pkt->chksum = xbee_crc(pkt->chksum, pkt->data[i]);
-	}
+	// TODO: crc code is disabled on all other boards
+	pkt->chksum = xbee_pkt_chksum(pkt);
 
 	comm_send(xbee_comm, mempool_getref(frame));
 	mempool_putref(frame);
@@ -96,15 +89,9 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	pkt->len = size;
 	pkt->cmd = cmd;
 	pkt->saddr = xbee_comm->addr;
-	pkt->chksum = MPC_CRC_SHIFT;
 
-	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
-		pkt->chksum = xbee_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
-
-	for (uint8_t i = 0; i < size; ++i) {
-		pkt->data[i] = data[i];
-		pkt->chksum = xbee_crc(pkt->chksum, data[i]);
-	}
+	memcpy(&pkt->data, data, size);  // TODO validate size
+	pkt->chksum = xbee_pkt_chksum(pkt);
 
 	comm_send(xbee_comm, mempool_getref(frame));
 	mempool_putref(frame);
@@ -133,7 +120,7 @@ void xbee_rx_process(void) {
 
 		mpc_pkt *pkt = (mpc_pkt *)frame->data;
 
-		if (!xbee_pkt_chksum(pkt))
+		if (pkt->chksum != xbee_pkt_chksum(pkt))
 			goto cleanup;
 
 		xbee_rx_pkt(pkt);
@@ -169,11 +156,10 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 
 	} else if (pkt->cmd == MPC_CMD_LED_SET_BRIGHTNESS) {
 		mpc_send(MPC_ADDR_CHEST | MPC_ADDR_PHASOR | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
-
 	}
 }
 
-static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
+static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 	uint8_t *data = (uint8_t *)pkt;
 
 	uint8_t crc = xbee_crc(MPC_CRC_SHIFT, data[0]);
@@ -182,11 +168,7 @@ static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 			crc = xbee_crc(crc, data[i]);
 	}
 
-	if (crc != pkt->chksum) {
-		return 0;
-	} else {
-		return 1;
-	}
+	return crc;
 }
 
 XBEE_TXC_ISR {
