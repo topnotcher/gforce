@@ -33,7 +33,6 @@ class MPC_CMD(Enum):
 
     IR_TX = 0x54
     IR_RX = 0x49
-    SHOT = 0x53
 
     BOARD_HELLO = 0x48
     BOARD_CONFIG = 0x63
