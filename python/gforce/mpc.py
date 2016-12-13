@@ -31,6 +31,8 @@ class MPC_CMD(Enum):
     DIAG_DEBUG = 0x44
     DIAG_RELAY = 0x52
 
+    MEMBER_LOGIN = 0x6D
+
     IR_TX = 0x54
     IR_RX = 0x49
 

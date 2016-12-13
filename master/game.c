@@ -169,7 +169,7 @@ static void process_game_event(game_event *evt) {
 		break;
 
 	case GAME_EVT_MEMBER_LOGIN:
-		display_write("Welcome");
+		xbee_send(MPC_CMD_MEMBER_LOGIN, 8, evt->data);
 		break;
 
 	case GAME_EVT_BOARD_HELLO:

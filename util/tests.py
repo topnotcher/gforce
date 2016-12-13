@@ -4,7 +4,7 @@ import functools
 import operator
 import time
 
-from tamp import Structure, uint16_t
+from tamp import Structure, uint16_t, uint8_t
 from gforce.mpc import MPC_CMD, MPC_ADDR, mpc_pkt
 from gforce.comm import GForceServer
 
@@ -14,6 +14,12 @@ class MemUsage(Structure):
         ('data', uint16_t.le),
         ('heap', uint16_t.le),
         ('total', uint16_t.le),
+    ]
+
+
+class MemberLogin(Structure):
+    _fields_ = [
+        ('uuid', uint8_t[8]),
     ]
 
 
@@ -149,6 +155,14 @@ async def discover(gf):
         pass
 
 
+async def listen(gf):
+    while True:
+        with gf.collect() as collect:
+            event = await collect()
+
+            print('RX', event.cmd, event.saddr, event.data)
+
+
 def main():
     loop = asyncio.get_event_loop()
     gf = GForceServer(9750, loop)
@@ -175,6 +189,9 @@ def main():
 
         elif sys.argv[1] == 'mem':
             fn = mem_usage
+
+        elif sys.argv[1] == 'listen':
+            fn = listen
 
         loop.run_until_complete(fn(vest))
 
