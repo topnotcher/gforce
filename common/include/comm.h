@@ -56,7 +56,10 @@ typedef struct comm_dev_struct {
 	void (* begin_tx)(comm_driver_t *);
 } comm_dev_t;
 
-comm_driver_t * comm_init( comm_dev_t * dev, const uint8_t addr, const uint8_t mtu, mempool_t * pool, void (*end_rx)(comm_driver_t*) );
+comm_driver_t *comm_init(
+		comm_dev_t *dev, const uint8_t addr, const uint8_t mtu,
+		mempool_t *pool, void (*end_rx)(comm_driver_t*),
+		const uint8_t, const uint8_t);
 void comm_tx(comm_driver_t * comm);
 comm_frame_t * comm_rx(comm_driver_t * comm);
 void comm_end_tx(comm_driver_t * comm);

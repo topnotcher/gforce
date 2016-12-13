@@ -85,7 +85,7 @@ static inline void __mpc_twi_init(uint8_t mpc_addr) {
 
 	comm_dev_t *twi;
 	twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event);
+	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event, MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);
 #else
 #endif
 }

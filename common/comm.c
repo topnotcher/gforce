@@ -23,7 +23,11 @@
  * sending a "group" of bytes.
  */
 
-comm_driver_t *comm_init( comm_dev_t *dev, const uint8_t addr, const uint8_t mtu, mempool_t *pool, void (*end_rx)(comm_driver_t *)) {
+comm_driver_t *comm_init(
+		comm_dev_t *dev, const uint8_t addr, const uint8_t mtu, 
+		mempool_t *pool, void (*end_rx)(comm_driver_t *),
+		const uint8_t rx_queue_size, const uint8_t tx_queue_size
+	) {
 
 	comm_driver_t *comm;
 	comm = smalloc(sizeof *comm);
@@ -39,11 +43,11 @@ comm_driver_t *comm_init( comm_dev_t *dev, const uint8_t addr, const uint8_t mtu
 	/**
 	 * @TODO hard-coded queue sizes
 	 */
-	comm->rx.queue = queue_create(4);
+	comm->rx.queue = queue_create(rx_queue_size);
 	comm->rx.frame = NULL;
 
 	comm->tx.state = COMM_TX_STATE_IDLE;
-	comm->tx.queue = queue_create(4);
+	comm->tx.queue = queue_create(tx_queue_size);
 	comm->tx.frame = NULL;
 
 	return comm;

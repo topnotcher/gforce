@@ -46,7 +46,7 @@ inline void display_init(void) {
 
 	comm_dev_t *commdev;
 	commdev = serialcomm_init(&DISPLAY_SPI.DATA, tx_begin, tx_end, 1 /*dummy address*/);
-	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool, NULL );
+	comm = comm_init( commdev, 1 /*dummy address*/, DISPLAY_PKT_MAX_SIZE, mempool, NULL , 0, 4);
 }
 
 static void tx_begin(void) {

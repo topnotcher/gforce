@@ -63,6 +63,5 @@ int main(void) {
 }
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt) {
-	// TODO: we don't trip the 'R' part of the packet..
-	xbee_send(pkt->cmd, pkt->len + sizeof(*pkt), (uint8_t *)pkt);
+	xbee_send_pkt(pkt);
 }

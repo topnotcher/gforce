@@ -37,7 +37,7 @@ comm_driver_t *phasor_comm_init(mempool_t *mempool, uint8_t mpc_addr, void (*end
 	PHASOR_COMM_USART_PORT.DIRSET = _TXPIN_bm;
 
 	commdev = serialcomm_init(&PHASOR_COMM_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, mpc_addr);
-	return comm_init( commdev, mpc_addr, MPC_PKT_MAX_SIZE, mempool, end_rx);
+	return comm_init( commdev, mpc_addr, MPC_PKT_MAX_SIZE, mempool, end_rx, MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);  // TODO
 }
 
 

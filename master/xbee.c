@@ -46,7 +46,10 @@ void xbee_init(void) {
 
 	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_ADDR_MASTER);
-	xbee_comm = comm_init(commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE, xbee_mempool, xbee_rx_event);
+	xbee_comm = comm_init(
+			commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE,
+			xbee_mempool, xbee_rx_event,
+			MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);
 }
 
 void xbee_send_pkt(const mpc_pkt *const spkt) {
