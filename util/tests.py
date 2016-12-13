@@ -156,8 +156,8 @@ async def discover(gf):
 
 
 async def listen(gf):
-    while True:
-        with gf.collect() as collect:
+    with gf.collect() as collect:
+        while True:
             event = await collect()
 
             print('RX', event.cmd, event.saddr, event.data)
