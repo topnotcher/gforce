@@ -144,7 +144,11 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 		//send a ping to the board specified by byte 0
 		//of the data. That board should then reply...
 	} else if (pkt->cmd == MPC_CMD_DIAG_PING) {
-		mpc_send_cmd(pkt->data[0], MPC_CMD_DIAG_PING);
+		if (pkt->data[0] & MPC_ADDR_MASTER)
+			xbee_send(MPC_CMD_DIAG_RELAY, 0, NULL);
+
+		if (pkt->data[0] != MPC_ADDR_MASTER)
+			mpc_send_cmd(pkt->data[0] & ~MPC_ADDR_MASTER, MPC_CMD_DIAG_PING);
 
 	} else if (pkt->cmd == MPC_CMD_DIAG_MEM_USAGE) {
 		mpc_send_cmd(pkt->data[0], MPC_CMD_DIAG_MEM_USAGE);

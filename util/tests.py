@@ -180,7 +180,7 @@ async def stop(gf):
 
 
 async def ping(gf):
-    ping_addrs = functools.reduce(operator.or_, set(MPC_ADDR) - set([MPC_ADDR.MASTER]))
+    ping_addrs = functools.reduce(operator.or_, MPC_ADDR)
     replies = 0
 
     with gf.collect(MPC_CMD.DIAG_RELAY) as collect:
@@ -188,8 +188,7 @@ async def ping(gf):
 
         try:
             while ping_addrs != 0:
-                outer = await asyncio.wait_for(collect(), 1.0)
-                reply = unpack_inner(outer)
+                reply = await asyncio.wait_for(collect(), 1.0)
 
                 print('ping reply from %s' % (reply.saddr))
 
@@ -234,7 +233,7 @@ async def shot(gf):
 async def discover(gf):
     try:
         with gf.collect(MPC_CMD.DIAG_RELAY) as collect:
-            gf.send_cmd('255.255.255.255', MPC_CMD.DIAG_PING, [MPC_ADDR.CHEST])
+            gf.send_cmd('255.255.255.255', MPC_CMD.DIAG_PING, [MPC_ADDR.MASTER])
 
             while True:
                 pkt, addr = await asyncio.wait_for(collect(), 5.0)
