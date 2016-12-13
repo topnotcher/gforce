@@ -4,8 +4,17 @@ import functools
 import operator
 import time
 
+from tamp import Structure, uint16_t
 from gforce.mpc import MPC_CMD, MPC_ADDR, mpc_pkt
 from gforce.comm import GForceServer
+
+
+class MemUsage(Structure):
+    _fields_ = [
+        ('data', uint16_t.le),
+        ('heap', uint16_t.le),
+        ('total', uint16_t.le),
+    ]
 
 
 async def start(gf):
@@ -46,6 +55,31 @@ async def ping(gf):
 
     else:
         print('%d replies' % replies)
+
+
+async def mem_usage(gf):
+    addrs = functools.reduce(operator.or_, MPC_ADDR)
+
+    with gf.collect(MPC_CMD.DIAG_MEM_USAGE) as collect:
+        gf.send_cmd(MPC_CMD.DIAG_MEM_USAGE, [addrs])
+
+        try:
+            while addrs != 0:
+                reply = await asyncio.wait_for(collect(), 1.0)
+
+                usage = MemUsage()
+                usage.unpack(bytes(reply.data))
+
+                mem_used = usage.data + usage.heap
+                mem_percent = float(mem_used) / usage.total * 100.0
+
+                print('MEM USAGE: %s data: %d; heap %d; %d/%d %0.2f%%' %
+                      (reply.saddr, usage.data, usage.heap, mem_used, usage.total, mem_percent))
+
+                addrs &= ~reply.saddr
+
+        except asyncio.TimeoutError:
+            pass
 
 
 def unpack_inner(outer):
@@ -138,6 +172,9 @@ def main():
 
         elif sys.argv[1] == 'test-shot':
             fn = test_shot
+
+        elif sys.argv[1] == 'mem':
+            fn = mem_usage
 
         loop.run_until_complete(fn(vest))
 

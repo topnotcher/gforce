@@ -154,12 +154,13 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 			mpc_send_cmd(pkt->data[0] & ~MPC_ADDR_MASTER, MPC_CMD_DIAG_PING);
 
 	} else if (pkt->cmd == MPC_CMD_DIAG_MEM_USAGE) {
-		mpc_send_cmd(pkt->data[0], MPC_CMD_DIAG_MEM_USAGE);
+		if (pkt->data[0] & MPC_ADDR_MASTER) {
+			mem_usage_t usage = mem_usage();
+			xbee_send(MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
+		}
 
-		// this is nasty ...
-		mem_usage_t usage = mem_usage();
-
-		xbee_send(MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
+		if (pkt->data[0] != MPC_ADDR_MASTER)
+			mpc_send_cmd(pkt->data[0] & ~MPC_ADDR_MASTER, MPC_CMD_DIAG_MEM_USAGE);
 
 	} else if (pkt->cmd == MPC_CMD_LED_SET_BRIGHTNESS) {
 		mpc_send(MPC_ADDR_CHEST | MPC_ADDR_PHASOR | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
