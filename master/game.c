@@ -91,7 +91,7 @@ static void game_task(void *params) {
 	game_state.active = 0;
 	game_state.stunned = 0;
 
-	mpc_register_cmd(MPC_CMD_BOARD_HELLO, mpc_hello_received);
+	mpc_register_cmd(MPC_CMD_HELLO, mpc_hello_received);
 
 	/**
 	 * Add a 10 second timer to wait for all boards to come up.
@@ -132,11 +132,13 @@ static void _gforce_boot_tick(void) {
 
 		lights_off();
 
+		xbee_send(MPC_CMD_HELLO, 0, NULL);
+
 		gforce_booted = 1;
 
 	} else {
 		if (all_boards ^ boards_booted)
-			mpc_send_cmd(all_boards ^ boards_booted, MPC_CMD_BOARD_HELLO);
+			mpc_send_cmd(all_boards ^ boards_booted, MPC_CMD_HELLO);
 
 		display_write("Booting...      ");
 	}
@@ -466,7 +468,7 @@ static void handle_board_hello(const mpc_pkt *const pkt) {
 
 	// TODO: send board settings
 	uint8_t settings = 0x03;
-	mpc_send(pkt->saddr, MPC_CMD_BOARD_CONFIG, sizeof(settings), &settings);
+	mpc_send(pkt->saddr, MPC_CMD_CONFIG, sizeof(settings), &settings);
 
 	if (game_state.playing && game_state.active)
 		lights_on();

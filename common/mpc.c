@@ -146,7 +146,7 @@ static void mpc_rx_event(comm_driver_t *evtcomm) {
 
 static void handle_master_hello(const mpc_pkt *const pkt) {
 	if (pkt->saddr == MPC_ADDR_MASTER)
-		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_BOARD_HELLO);
+		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_HELLO);
 }
 
 //static void handle_master_settings(const mpc_pkt *const pkt) {
@@ -159,11 +159,11 @@ static void mpc_task(void *params) {
 	comm_frame_t *frame;
 
 	if (!(MPC_ADDR_BOARD & MPC_ADDR_MASTER)) {
-		mpc_register_cmd(MPC_CMD_BOARD_HELLO, handle_master_hello);
+		mpc_register_cmd(MPC_CMD_HELLO, handle_master_hello);
 
 		// TODO
 		// mpc_register_cmd('S', handle_master_settings);
-		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_BOARD_HELLO);
+		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_HELLO);
 	}
 
 	while (1) {

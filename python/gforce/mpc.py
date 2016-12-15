@@ -36,8 +36,8 @@ class MPC_CMD(Enum):
     IR_TX = 0x54
     IR_RX = 0x49
 
-    BOARD_HELLO = 0x48
-    BOARD_CONFIG = 0x63
+    HELLO = 0x48
+    CONFIG = 0x63
 
 
 class MPC_ADDR(Enum):
