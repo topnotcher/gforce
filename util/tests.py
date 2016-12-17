@@ -7,6 +7,7 @@ import time
 from tamp import Structure, uint16_t, uint8_t
 from gforce.mpc import MPC_CMD, MPC_ADDR, mpc_pkt
 from gforce.comm import GForceServer
+from gforce.testing import run_module
 
 
 class MemUsage(Structure):
@@ -100,35 +101,6 @@ def unpack_inner(outer):
     return pkt
 
 
-async def test_shot(gf):
-
-    start_timeout = 15.0
-    inter_shot = 10.0
-
-    await start(gf)
-
-    # TODO
-    await asyncio.sleep(start_timeout)
-
-    sensors = [MPC_ADDR.LS, MPC_ADDR.RS, MPC_ADDR.CHEST, MPC_ADDR.BACK, MPC_ADDR.PHASOR]
-
-    for sensor in sensors:
-        try:
-            with gf.collect(MPC_CMD.IR_RX) as collect:
-                gf.send_cmd(MPC_CMD.IR_RX, [sensor, 0x0c, 0x63, 0x88, 0xA6])
-
-                shot = await asyncio.wait_for(collect(), timeout=1.0)
-                print('SHOT', shot.saddr)
-
-                if shot.saddr != sensor:
-                    print('Shot %s but hit on %s' % (sennsor, shot.saddr))
-
-        except asyncio.TimeoutError:
-            print('Timeout waiting for shot on', sensor)
-
-        await asyncio.sleep(inter_shot)
-
-
 async def shot(gf):
     try:
         with gf.collect(MPC_CMD.IR_RX) as collect:
@@ -184,14 +156,15 @@ def main():
         elif sys.argv[1] == 'shot':
             fn = shot
 
-        elif sys.argv[1] == 'test-shot':
-            fn = test_shot
-
         elif sys.argv[1] == 'mem':
             fn = mem_usage
 
         elif sys.argv[1] == 'listen':
             fn = listen
+
+        elif sys.argv[1] == 'test':
+            mod = sys.argv[2]
+            fn = lambda gf: run_module(gf, mod)
 
         loop.run_until_complete(fn(vest))
 

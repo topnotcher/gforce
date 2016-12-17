@@ -10,7 +10,7 @@ __all__ = ['MPC_CRC_POLY', 'MPC_CRC_SHIFT', 'MPC_CMD', 'MPC_ADDR', 'Enum',
            'IR_CRC_POLY', 'IR_CRC_SHIFT']
 
 
-MPC_CRC_POLY = 0x32
+MPC_CRC_POLY = 0x0C
 MPC_CRC_SHIFT = 0x67
 
 IR_CRC_SHIFT = 0x55
@@ -111,10 +111,23 @@ def crc_ibutton_update(crc, data):
 
     for i in range(8):
         if crc & 0x01 == 0x01:
-            crc = (crc >> 1) ^ 0x8C
+            crc = ((crc >> 1) ^ 0x8c)
         else:
             crc >>= 1
 
         crc &= 0xFF
+
+    return crc
+
+
+def ir_crc(crc, data, poly=IR_CRC_POLY):
+    for i in range(8):
+        fb = (crc ^ data) & 0x01
+
+        if fb == 1:
+            crc = 0x80 | ((crc ^ poly) >> 1)
+        else:
+            crc >>= 1
+        data >>= 1
 
     return crc
