@@ -1,16 +1,20 @@
 import enum
 
 from tamp import Structure, uint8_t, LengthField, Computed, Const, EnumWrap,\
-                 PackedLength
+                 PackedLength, Byte
 
 
 __all__ = ['MPC_CRC_POLY', 'MPC_CRC_SHIFT', 'MPC_CMD', 'MPC_ADDR', 'Enum',
            'crc_ibutton_update', 'framed_pkt', 'mpc_pkt', 'ChecksumMismatchError',
-           'FrameSyncError', 'FrameStartError', 'FrameFormatError']
+           'FrameSyncError', 'FrameStartError', 'FrameFormatError',
+           'IR_CRC_POLY', 'IR_CRC_SHIFT']
 
 
 MPC_CRC_POLY = 0x32
 MPC_CRC_SHIFT = 0x67
+
+IR_CRC_SHIFT = 0x55
+IR_CRC_POLY = 0x24
 
 
 @enum.unique
@@ -73,7 +77,7 @@ class mpc_pkt(Structure):
         ('cmd', EnumWrap(MPC_CMD, uint8_t)),
         ('saddr', EnumWrap(MPC_ADDR, uint8_t)),
         ('chksum', Computed(uint8_t, '_compute_chksum', mismatch_exc=ChecksumMismatchError)),
-        ('data', uint8_t[LengthField('len')]),
+        ('data', Byte[LengthField('len')]),
     ]
 
     def _compute_chksum(self):

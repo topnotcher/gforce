@@ -9,9 +9,6 @@
 #define IR_USART_BSEL 164
 #define IR_USART_BSCALE 3
 
-#define IR_CRC_POLY 0x24
-#define IR_CRC_SHIFT 0x55
-
 //#define PHASOR_COMM_BSEL_VALUE 12
 //#define PHASOR_COMM_BSCALE_VALUE 4
 
