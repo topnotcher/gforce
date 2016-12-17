@@ -119,7 +119,7 @@ static portTASK_FUNCTION(leds_task, params) {
 	mpc_register_cmd(MPC_CMD_LED_SET_BRIGHTNESS, led_set_brightness);
 
 	// TODO: this just happens to be the only setting at the moment...
-	mpc_register_cmd(MPC_CMD_BOARD_CONFIG, set_active_color_cmd);
+	mpc_register_cmd(MPC_CMD_CONFIG, set_active_color_cmd);
 	set_lights(0);
 
 	while (1) {
