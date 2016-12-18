@@ -7,7 +7,7 @@ from tamp import Structure, uint8_t, LengthField, Computed, Const, EnumWrap,\
 __all__ = ['MPC_CRC_POLY', 'MPC_CRC_SHIFT', 'MPC_CMD', 'MPC_ADDR', 'Enum',
            'crc_ibutton_update', 'framed_pkt', 'mpc_pkt', 'ChecksumMismatchError',
            'FrameSyncError', 'FrameStartError', 'FrameFormatError',
-           'IR_CRC_POLY', 'IR_CRC_SHIFT']
+           'IR_CRC_POLY', 'IR_CRC_SHIFT', 'IR_CMD']
 
 
 MPC_CRC_POLY = 0x0C
@@ -51,6 +51,12 @@ class MPC_ADDR(Enum):
     RS = 0x08
     PHASOR = 0x10
     MASTER = 0x40
+
+
+class IR_CMD(Enum):
+    GAME_START = 0x38
+    GAME_STOP = 0x08
+    SHOT = 0x0c
 
 
 class ChecksumMismatchError(ValueError):

@@ -404,14 +404,22 @@ static void queue_ir_pkt(const mpc_pkt *const pkt) {
 static void process_ir_pkt(const mpc_pkt *const pkt) {
 	const command_t *const cmd = (command_t *)pkt->data;
 
-	if (cmd->cmd == 0x38) {
+	switch (cmd->cmd) {
+
+	case IR_CMD_GAME_START:
 		start_game_cmd(cmd);
+		break;
 
-	} else if (cmd->cmd == 0x08) {
+	case IR_CMD_GAME_STOP:
 		stop_game_cmd(cmd);
+		break;
 
-	} else if (cmd->cmd == 0x0c) {
+	case IR_CMD_SHOT:
 		handle_shot(pkt);
+		break;
+
+	default:
+		break;
 	}
 
 	mpc_decref(pkt);

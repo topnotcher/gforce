@@ -26,7 +26,8 @@ def _generate_defines(out_file):
         'MPC_CRC_SHIFT',
         'MPC_ADDR',
         'IR_CRC_POLY',
-        'IR_CRC_SHIFT'
+        'IR_CRC_SHIFT',
+        'IR_CMD',
     ]
 
     with open(out_file, 'w') as fh:
