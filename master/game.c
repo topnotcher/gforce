@@ -227,8 +227,13 @@ static void start_game_cmd(command_t const *const cmd) {
 
 	game_settings.game_time = settings->seconds;
 	game_settings.deac_time = settings->deac + 4;
-	//@TODO disable stun option
-	game_settings.stun_time = game_settings.deac_time / settings->stuns;
+
+	uint8_t stun = 4 - settings->stuns;
+
+	if (stun)
+		game_settings.stun_time = game_settings.deac_time / stun;
+	else
+		game_settings.stun_time = 0;
 
 	start_countdown(settings->prestart + 1, &start_game_activate);
 }
@@ -312,16 +317,15 @@ static void __stun_timer(void) {
 
 	--game_countdown_time;
 
-	//fuck shit remove this.
-	if (game_countdown_time == (game_settings.stun_time >> 1))
-		lights_halfstun();
-
-	else if (game_countdown_time == 0) {
+	if (game_countdown_time == 0) {
 		lights_unstun();
 		game_state.stunned = 0;
 		game_state.active = 1;
 		del_timer(&stun_timer);
 		display_send(0, 2, (uint8_t *)" ");
+
+	} else if (game_countdown_time == (game_settings.stun_time >> 1)) {
+		lights_halfstun();
 	}
 }
 
@@ -357,7 +361,8 @@ static void handle_shot(const mpc_pkt *const pkt) {
 		break;
 	}
 
-	if (pkt->saddr & (MPC_ADDR_BACK | MPC_ADDR_CHEST))
+	// tagged in back or chest, or stuns disabled.
+	if ((pkt->saddr & (MPC_ADDR_BACK | MPC_ADDR_CHEST)) || !game_settings.stun_time)
 		do_deac();
 	else
 		do_stun();
