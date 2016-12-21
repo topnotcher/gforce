@@ -118,4 +118,15 @@ void comm_send(comm_driver_t * comm, comm_frame_t * frame);
 #define comm_rx_buf(comm) ((comm)->rx.frame->data)
 
 #define comm_rx_max_size(comm) ((comm)->mtu)
+
+#define __comm_frame_data_buf(buf) ((void*)(&((uint8_t*)buf)[-1 * offsetof(comm_frame_t, data)]))
+
+static inline void comm_getref(void *buf) {
+	mempool_getref(__comm_frame_data_buf(buf));
+}
+
+static inline void comm_putref(void *buf) {
+	mempool_putref(__comm_frame_data_buf(buf));
+}
+
 #endif

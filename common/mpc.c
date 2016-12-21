@@ -282,18 +282,6 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	mempool_putref(frame);
 }
 
-#ifdef PHASOR_COMM_TXC_ISR
-PHASOR_COMM_TXC_ISR {
-	serialcomm_tx_isr(phasor_comm);
-}
-#endif
-
-#ifdef PHASOR_COMM_RXC_ISR
-PHASOR_COMM_RXC_ISR {
-	serialcomm_rx_isr(phasor_comm);
-}
-#endif
-
 #ifdef MPC_TWI_MASTER_ISR
 #include "twi_master.h"
 MPC_TWI_MASTER_ISR {

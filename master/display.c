@@ -23,6 +23,8 @@
 #define _SOUT_bm G4_PIN(DISPLAY_PIN_SOUT)
 #define _SS_bm G4_PIN(DISPLAY_PIN_SS)
 
+#if 0
+
 static comm_driver_t *comm;
 static mempool_t *mempool;
 
@@ -89,3 +91,10 @@ inline void display_write(char *str) {
 ISR(DISPLAY_SPI_vect) {
 	serialcomm_tx_isr(comm);
 }
+#else
+inline void display_write(char *str) {}
+inline void display_init(void) {}
+inline void display_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {}
+
+#endif
+

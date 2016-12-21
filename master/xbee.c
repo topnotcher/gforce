@@ -5,6 +5,7 @@
 #include <g4config.h>
 #include "config.h"
 
+#include "uart.h"
 #include <serialcomm.h>
 #include <comm.h>
 #include <malloc.h>
@@ -13,39 +14,33 @@
 #include "xbee.h"
 #include "util.h"
 
-#define _TXPIN_bm G4_PIN(XBEE_TX_PIN)
 #define xbee_crc(crc, data) _crc_ibutton_update(crc, data)
 
 static comm_driver_t *xbee_comm;
 static mempool_t *xbee_mempool;
+static uart_dev_t *xbee_uart_dev;
 
-static void tx_interrupt_enable(void);
-static void tx_interrupt_disable(void);
 static void xbee_rx_event(comm_driver_t *comm);
 static void xbee_rx_pkt(mpc_pkt const *const pkt);
 static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
 
 void xbee_init(void) {
+	xbee_uart_dev = uart_init(&XBEE_USART, MPC_QUEUE_SIZE * 2, 24, XBEE_BSEL_VALUE, XBEE_BSCALE_VALUE);
 
-	XBEE_USART.BAUDCTRLA = (uint8_t)(XBEE_BSEL_VALUE & 0x00FF);
-	XBEE_USART.BAUDCTRLB = (XBEE_BSCALE_VALUE << USART_BSCALE_gp)
-	                       | (uint8_t)((XBEE_BSEL_VALUE >> 8) & 0x0F);
-
-	XBEE_USART.CTRLC = XBEE_CSRC_VALUE;
-	XBEE_USART.CTRLA = XBEE_CSRA_VALUE;
-	XBEE_USART.CTRLB = XBEE_CSRB_VALUE;
-
-	//Manual, page 237.
-	XBEE_PORT.OUTSET = _TXPIN_bm;
-	XBEE_PORT.DIRSET = _TXPIN_bm;
 	XBEE_PORT.DIRSET = PIN7_bm /*on/sleep*/ | PIN1_bm /*xbee~RTS*/;
 	//xbeesleep - status output on xbee
 	XBEE_PORT.DIRCLR = PIN5_bm /*xbeesleep*/ | PIN4_bm /*xbee~CTS*/;
 	XBEE_PORT.OUTCLR = PIN1_bm /*~RTS is high => Xbee will not send*/;
 	XBEE_PORT.OUTSET = PIN7_bm /*~sleep*/;
 
+	serialcomm_driver driver = {
+		.dev = xbee_uart_dev,
+		.rx_func = (uint8_t (*)(void*))uart_getchar,
+		.tx_func = (void (*)(void *, uint8_t *, uint8_t, void (*)(void *)))uart_write,
+	};
+
 	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	comm_dev_t *commdev = serialcomm_init(&XBEE_USART.DATA, tx_interrupt_enable, tx_interrupt_disable, MPC_ADDR_MASTER);
+	comm_dev_t *commdev = serialcomm_init(driver, MPC_ADDR_MASTER);
 	xbee_comm = comm_init(
 			commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE,
 			xbee_mempool, xbee_rx_event,
@@ -99,14 +94,6 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	comm_send(xbee_comm, mempool_getref(frame));
 	mempool_putref(frame);
 	comm_tx(xbee_comm);
-}
-
-static void tx_interrupt_enable(void) {
-	xbee_txc_interrupt_enable();
-}
-
-static void tx_interrupt_disable(void) {
-	xbee_txc_interrupt_disable();
 }
 
 static void xbee_rx_event(comm_driver_t *comm) {
@@ -180,9 +167,9 @@ static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 }
 
 XBEE_TXC_ISR {
-	serialcomm_tx_isr(xbee_comm);
+	uart_tx_isr(xbee_uart_dev);
 }
 
 XBEE_RXC_ISR {
-	serialcomm_rx_isr(xbee_comm);
+	uart_rx_isr(xbee_uart_dev);
 }

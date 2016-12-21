@@ -4,7 +4,6 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
 
 //header: [start][dest addr][pktlen][check]
 #define SERIAL_FRAME_START 0xFF
@@ -15,19 +14,9 @@
 
 
 typedef struct {
-	void (*tx_begin)(void);
-	void (*tx_end)(void);
+	serialcomm_driver driver;
 
-	register8_t *data;
-
-	enum {
-		SERIAL_TX_START,
-		SERIAL_TX_TRANSMIT,
-		SERIAL_TX_IDLE,
-	} tx_state;
-
-	uint8_t tx_hdr[SERIAL_FRAME_HDR_SIZE];
-	uint8_t tx_hdr_byte;
+	mempool_t *tx_hdr_pool;
 
 	enum {
 		SERIAL_RX_SYNC_IDLE,
@@ -45,16 +34,14 @@ typedef struct {
 	uint8_t rx_sync_size;
 	uint8_t rx_size;
 	uint8_t addr;
-
-	QueueHandle_t rx_queue;
 } serialcomm_t;
 
 
-static void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data);
+static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data);
 static void serialcomm_rx_task(void *params);
 static void begin_tx(comm_driver_t *comm);
 
-comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx_end)(void), uint8_t addr) {
+comm_dev_t *serialcomm_init(const serialcomm_driver driver, uint8_t addr) {
 	comm_dev_t *commdev;
 	serialcomm_t *serialcomm;
 
@@ -65,17 +52,14 @@ comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx
 	commdev->dev = serialcomm;
 	commdev->begin_tx = begin_tx;
 
-	serialcomm->tx_begin = tx_begin;
-	serialcomm->tx_end = tx_end;
-	serialcomm->data = data;
-	serialcomm->tx_state = SERIAL_TX_IDLE;
-	serialcomm->tx_hdr[0] = SERIAL_FRAME_START;
+	serialcomm->driver = driver;
 	serialcomm->addr = addr;
 
 	serialcomm->rx_state = SERIAL_RX_IDLE;
 	serialcomm->rx_sync_state = SERIAL_RX_SYNC_IDLE;
 
-	serialcomm->rx_queue = xQueueCreate(24, sizeof(uint8_t));
+	// TODO: this queue size doesn't necessarily match anything
+	serialcomm->tx_hdr_pool = init_mempool(SERIAL_FRAME_HDR_SIZE, 10);
 	xTaskCreate(serialcomm_rx_task, "serial-rx", 128, commdev, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
 
 	return commdev;
@@ -83,52 +67,40 @@ comm_dev_t *serialcomm_init(register8_t *data, void (*tx_begin)(void), void (*tx
 
 static void serialcomm_rx_task(void *params) {
 	comm_dev_t *commdev = params;
-	uint8_t data;
+	serialcomm_t *serialdev  = commdev->dev;
 
 	while (1) {
-		if (xQueueReceive(((serialcomm_t *)commdev->dev)->rx_queue, &data, portMAX_DELAY) && commdev->comm)
+		uint8_t data = serialdev->driver.rx_func(serialdev->driver.dev);
+
+		// why?
+		if (commdev->comm)
 			serialcomm_rx_byte(commdev->comm, data);
 	}
 }
 
 static void begin_tx(comm_driver_t *comm) {
 	serialcomm_t *dev = comm->dev->dev;
-	dev->tx_hdr_byte = 0;
-	dev->tx_state = SERIAL_TX_START;
-	dev->tx_hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = comm_tx_daddr(comm);
-	dev->tx_hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_len(comm);
-	//1 bit is masked out to ensure that the check will never be 0xFF = start byte
-	dev->tx_hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm_tx_daddr(comm) ^ comm_tx_len(comm)) & 0xFE;
-	dev->tx_begin();
-}
 
-void serialcomm_tx_isr(comm_driver_t *comm) {
-	serialcomm_t *dev = comm->dev->dev;
+	uint8_t *hdr = mempool_alloc(dev->tx_hdr_pool);
 
-	if (dev->tx_state == SERIAL_TX_START) {
-		*(dev->data) = dev->tx_hdr[dev->tx_hdr_byte++];
-		if (dev->tx_hdr_byte == SERIAL_FRAME_HDR_SIZE)
-			dev->tx_state = SERIAL_TX_TRANSMIT;
-	} else if (dev->tx_state == SERIAL_TX_TRANSMIT) {
-		if (comm_tx_has_more(comm)) {
-			(*dev->data) = comm_tx_next(comm);
-		} else {
-			dev->tx_end();
-			dev->tx_state = SERIAL_TX_IDLE;
+	if (hdr) {
+		hdr[0] = SERIAL_FRAME_START;
+		hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = comm_tx_daddr(comm);
+		hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_len(comm);
+		//1 bit is masked out to ensure that the check will never be 0xFF = start byte
+		hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm_tx_daddr(comm) ^ comm_tx_len(comm)) & 0xFE;
 
-			//NOTE: This could cause execution to reenter this function.
-			//(when there is another packet pending)
-			comm_end_tx(comm);
-		}
+		dev->driver.tx_func(dev->driver.dev, hdr, SERIAL_FRAME_HDR_SIZE, mempool_putref);
+		dev->driver.tx_func(dev->driver.dev, comm_tx_data(comm), comm_tx_len(comm), comm_putref);
 	}
+
+	comm_getref(comm_tx_data(comm));
+
+	// TODO: UGLY as fuck
+	comm_end_tx(comm);
 }
 
-void serialcomm_rx_isr(comm_driver_t *comm) {
-	serialcomm_t *dev = comm->dev->dev;
-	xQueueSendFromISR(dev->rx_queue, (const void *const)dev->data, NULL);
-}
-
-static void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
+static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
 	serialcomm_t *dev = comm->dev->dev;
 
 	if (data == SERIAL_FRAME_START) {

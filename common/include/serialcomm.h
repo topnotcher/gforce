@@ -4,8 +4,12 @@
 #ifndef SERIALCOMM_H
 #define SERIALCOMM_H
 
-comm_dev_t * serialcomm_init(register8_t * data, void (*tx_begin)(void), void (*tx_end)(void),uint8_t addr);
-void serialcomm_tx_isr(comm_driver_t * comm);
-void serialcomm_rx_isr(comm_driver_t * comm);
+typedef struct {
+	void *dev;
+	uint8_t (*rx_func)(void *);
+	void (*tx_func)(void *, uint8_t *, uint8_t, void (*)(void *));
+} serialcomm_driver;
+
+comm_dev_t *serialcomm_init(const serialcomm_driver, uint8_t);
 
 #endif
