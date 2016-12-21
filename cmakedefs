@@ -12,6 +12,7 @@ set(CMAKE_SYSTEM_LIBRARY_PATH "${CMAKE_FIND_ROOT_PATH}/include")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY output)
 
 file(STRINGS sources.mk PROJECT_SOURCES)
+set_source_files_properties(${PROJECT_SOURCES} PROPERTIES OBJECT_DEPENDS "sources.mk")
 
 file(STRINGS ../freertos/sources.mk _FREERTOS_SOURCES)
 set(FREERTOS_SOURCES "")
