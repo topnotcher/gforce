@@ -3,7 +3,6 @@
 
 #include <mpc.h>
 
-#include "timer.h"
 #include "display.h"
 #include "sounds.h"
 #include "game.h"
@@ -15,6 +14,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <queue.h>
+#include "timers.h"
 
 // Number of seconds to spend waiting for boards
 #define GFORCE_BOOT_TICKS 10
@@ -46,6 +46,10 @@ const uint8_t all_boards = MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_CHEST | MPC_ADDR
 static uint8_t boards_booted;
 static uint8_t gforce_booted;
 
+static TimerHandle_t countdown_timer;
+static TimerHandle_t stun_timer;
+static TimerHandle_t game_timer;
+
 static void game_task(void *);
 static void process_game_event(game_event *evt);
 
@@ -55,10 +59,10 @@ static void process_ir_pkt(const mpc_pkt *const);
 static void queue_ir_pkt(const mpc_pkt *const);
 
 static void start_countdown(const uint8_t, void (*)(void));
-static void game_countdown(void);
+static void game_countdown(TimerHandle_t);
 static void __game_countdown(void);
-static void stun_timer(void);
-static void __stun_timer(void);
+static void stun_tick(TimerHandle_t);
+static void __stun_tick(void);
 
 static void handle_shot(const mpc_pkt *const);
 static void do_stun(void);
@@ -67,11 +71,11 @@ static void start_game_cmd(command_t const *const);
 static void stop_game_cmd(command_t const *const);
 static void stop_game(void);
 
-static void game_tick(void);
+static void game_tick(TimerHandle_t);
 static void start_game_activate(void);
 static void player_activate(void);
 
-static void gforce_boot_tick(void);
+static void gforce_boot_tick(TimerHandle_t);
 static void _gforce_boot_tick(void);
 static void mpc_hello_received(const mpc_pkt *const);
 static void handle_board_hello(const mpc_pkt *const);
@@ -79,7 +83,7 @@ static void handle_board_hello(const mpc_pkt *const);
 
 void game_init(void) {
 	game_evt_queue = xQueueCreate(8, sizeof(game_event));
-	xTaskCreate(game_task, "game", 256, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
+	xTaskCreate(game_task, "game", 384, game_evt_queue, tskIDLE_PRIORITY + 6, (TaskHandle_t*)NULL);
 }
 
 static void game_task(void *params) {
@@ -92,10 +96,14 @@ static void game_task(void *params) {
 
 	mpc_register_cmd(MPC_CMD_HELLO, mpc_hello_received);
 
+	game_timer = xTimerCreate("game tick", configTICK_RATE_HZ, 1, NULL, game_tick); 
+	stun_timer = xTimerCreate("stun tick", configTICK_RATE_HZ, 1, NULL, stun_tick); 
+
 	/**
 	 * Add a 10 second timer to wait for all boards to come up.
 	 */
-	add_timer(&gforce_boot_tick, TIMER_HZ, GFORCE_BOOT_TICKS);
+	countdown_timer = xTimerCreate("boot tick", configTICK_RATE_HZ, 1, NULL, gforce_boot_tick); 
+	xTimerStart(countdown_timer, portMAX_DELAY);
 
 	while (1) {
 		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
@@ -104,7 +112,7 @@ static void game_task(void *params) {
 	}
 }
 
-static void gforce_boot_tick(void) {
+static void gforce_boot_tick(TimerHandle_t _) {
 	send_game_event(GAME_EVT_BOOT_TICK, NULL);
 }
 
@@ -119,7 +127,8 @@ static void _gforce_boot_tick(void) {
 	// timeout when the tick count  expires
 	// but allow boot complete at GFORCE_BOOT_TICKS/2
 	if (ticks == 0 || (ticks < GFORCE_BOOT_TICKS/2 && boards_booted == all_boards)) {
-		del_timer(&gforce_boot_tick);
+		xTimerDelete(countdown_timer, portMAX_DELAY);
+		countdown_timer = xTimerCreate("game countdown", configTICK_RATE_HZ, 1, NULL, game_countdown); 
 
 		mpc_register_cmd(MPC_CMD_IR_RX, queue_ir_pkt);
 		mpc_register_cmd(MPC_CMD_IR_TX, trigger_event);
@@ -150,7 +159,7 @@ static void process_game_event(game_event *evt) {
 		break;
 
 	case GAME_EVT_STUN_TIMER:
-		__stun_timer();
+		__stun_tick();
 		break;
 
 	case GAME_EVT_IR_CMD:
@@ -191,14 +200,16 @@ void send_game_event(enum game_event_type type, const void *const data) {
 	xQueueSend(game_evt_queue, &evt, portMAX_DELAY);
 }
 
-static void game_countdown(void) {
+static void game_countdown(TimerHandle_t _) {
 	send_game_event(GAME_EVT_COUNTDOWN, NULL);
 }
 
 static void __game_countdown(void) {
 	static uint8_t data[] = "        ";
 
-	if (--game_countdown_time == 0) {
+	if (game_countdown_time == 0 || --game_countdown_time == 0) {
+		xTimerStop(countdown_timer, portMAX_DELAY);
+
 		countdown_cb();
 		countdown_cb = NULL;
 
@@ -241,7 +252,7 @@ static void start_game_cmd(command_t const *const cmd) {
  * Count the game timer down to 0 then stop the game. We only touch game_time
  * from timer context (except when initializing).
  */
-static void game_tick(void) {
+static void game_tick(TimerHandle_t _) {
 	if (game_settings.game_time > 0 && --game_settings.game_time == 0)
 		send_game_event(GAME_EVT_STOP_GAME, NULL);
 }
@@ -251,7 +262,7 @@ static void game_tick(void) {
  * game clock.
  */
 static void start_game_activate(void) {
-	add_timer(&game_tick, TIMER_HZ, TIMER_RUN_UNLIMITED);
+	xTimerStart(game_timer, portMAX_DELAY);
 	player_activate();
 }
 
@@ -286,20 +297,20 @@ static void stop_game(void) {
 	lights_off();
 
 	sound_play_effect(SOUND_POWER_DOWN);
-	del_timer(&game_tick);
-	del_timer(&stun_timer);
+	xTimerStop(game_timer, portMAX_DELAY);
+	xTimerStop(stun_timer, portMAX_DELAY);
 
 	display_write("Game Over");
 
 	//slight issue here: if we stop game during countdown.
-	del_timer(&game_countdown);
+	xTimerStop(countdown_timer, portMAX_DELAY);
 	game_state.playing = 0;
 }
 
 /**
  * Queue __stun_timer.
  */
-static void stun_timer(void) {
+static void stun_tick(TimerHandle_t _) {
 	send_game_event(GAME_EVT_STUN_TIMER, NULL);
 }
 
@@ -307,20 +318,21 @@ static void stun_timer(void) {
 /**
  * Timer to run while stunned.
  */
-static void __stun_timer(void) {
+static void __stun_tick(void) {
 
 	if (!game_state.playing) {
-		del_timer(stun_timer);
+		xTimerStop(stun_timer, portMAX_DELAY);
 		return;
 	}
 
-	--game_countdown_time;
+	if (game_countdown_time > 0)
+		--game_countdown_time;
 
 	if (game_countdown_time == 0) {
 		lights_unstun();
 		game_state.stunned = 0;
 		game_state.active = 1;
-		del_timer(&stun_timer);
+		xTimerStop(stun_timer, portMAX_DELAY);
 		display_send(0, 2, (uint8_t *)" ");
 
 	} else if (game_countdown_time == (game_settings.stun_time >> 1)) {
@@ -380,7 +392,7 @@ static void do_stun(void) {
 
 	lights_stun();
 
-	add_timer(&stun_timer, TIMER_HZ, game_countdown_time);
+	xTimerStart(stun_timer, portMAX_DELAY);
 }
 
 /**
@@ -456,14 +468,10 @@ static void process_trigger(void) {
  * new_countdown_cb: a callback to run when the count complets.
  */
 static void start_countdown(const uint8_t seconds, void (*new_countdown_cb)(void)) {
-	if (countdown_cb) {
-		countdown_cb = NULL;
-		del_timer(&game_countdown);
-	}
-
 	game_countdown_time = seconds;
 	countdown_cb = new_countdown_cb;
-	add_timer(&game_countdown, TIMER_HZ, game_countdown_time);
+
+	xTimerStart(countdown_timer, portMAX_DELAY);
 }
 
 static void mpc_hello_received(const mpc_pkt *const pkt) {

@@ -6,7 +6,7 @@
 #ifndef LEDS_H
 #define LEDS_H
 
-#define LED_DELAY_TIME 13
+#define LED_DELAY_TIME 3
 
 struct led_spi_dev_s;
 typedef struct led_spi_dev_s {

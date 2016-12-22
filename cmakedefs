@@ -17,6 +17,7 @@ SET(FREERTOS_SOURCES
 	../freertos/tasks.c
 	../freertos/port.c
 	../freertos/mem.c
+	../freertos/timers.c
 )
 
 #

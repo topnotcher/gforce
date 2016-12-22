@@ -5,12 +5,13 @@
 #include "config.h"
 #include "trigger.h"
 #include <util.h>
-#include <timer.h>
-#include <tasks.h>
 
 #include <g4config.h>
-
 #include <mpc.h>
+#include "tasks.h"
+
+#include "FreeRTOS.h"
+#include "timers.h"
 
 #define _TRIGPINCTRL G4_PINCTRL(TRIGGER_PIN)
 #define _TRIGPIN_bm G4_PIN(TRIGGER_PIN)
@@ -19,10 +20,11 @@ static inline bool trigger_enabled(void);
 static inline void trigger_disable(void);
 static inline void trigger_enable(void);
 static void trigger_pressed(void);
-static void trigger_tick(void);
+static void trigger_tick(TimerHandle_t);
 
 static volatile bool _trigger_pressed;
 static volatile bool _trigger_enabled;
+static TimerHandle_t trigger_timer;
 
 //static volatile uint8_t ticks = 0;
 
@@ -33,6 +35,9 @@ inline void trigger_init(void) {
 	_trigger_pressed = false;
 	_trigger_enabled = true;
 
+	// TODO period.
+	trigger_timer = xTimerCreate("trigger", configTICK_RATE_HZ/2, 0, NULL, trigger_tick);
+
 	//configure interrupts
 	TRIGGER_PORT.INT0MASK = _TRIGPIN_bm;
 	trigger_enable();
@@ -41,7 +46,7 @@ inline void trigger_init(void) {
 static void trigger_pressed(void) {
 	if (_trigger_pressed) {
 		_trigger_pressed = false;
-		add_timer(trigger_tick, 500, 1);
+		xTimerStart(trigger_timer, 0);
 		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_IR_TX);
 	}
 }
@@ -66,6 +71,6 @@ ISR(PORTA_INT0_vect) {
 	}
 }
 
-void trigger_tick(void) {
+void trigger_tick(TimerHandle_t _) {
 	trigger_enable();
 }

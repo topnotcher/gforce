@@ -14,14 +14,15 @@
 #include "colors.h"
 #include "tlc59711.h"
 
-#include "timer.h"
 #include "mpc.h"
 
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
 
 static TaskHandle_t leds_task_handle;
+static TimerHandle_t led_timer;
 
 #ifndef LED_DMA_CH
 #define LED_DMA_CH -1
@@ -73,7 +74,7 @@ static uint8_t led_sequence_raw[58];
 static void led_set_brightness(const mpc_pkt * const pkt);
 static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
 static void led_write(void);
-static inline void led_timer_tick(void) ATTR_ALWAYS_INLINE;
+static void led_timer_tick(TimerHandle_t);
 
 static void leds_run(void);
 static portTASK_FUNCTION(leds_task, params);
@@ -105,13 +106,15 @@ led_state state = {
 static void set_lights(uint8_t status) {
 
 	if (!status && state.ticks)
-		del_timer(led_timer_tick);
+		xTimerStop(led_timer, configTICK_RATE_HZ/4);
 
 	state.status = status ? start : stop;
 	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
 
 static portTASK_FUNCTION(leds_task, params) {
+	led_timer = xTimerCreate("led", LED_DELAY_TIME, 0, NULL, led_timer_tick);
+
 	set_active_color(COLOR_GREEN);
 
 	mpc_register_cmd(MPC_CMD_LED_SET_SEQ, set_seq_cmd);
@@ -313,10 +316,11 @@ static void led_set_brightness(const mpc_pkt *const pkt) {
 }
 
 static inline void led_timer_start(void) {
-	add_timer(led_timer_tick, LED_DELAY_TIME * state.ticks, 1);
+	xTimerChangePeriod(led_timer, LED_DELAY_TIME * state.ticks, 0);
+	xTimerStart(led_timer, 0);
 }
 
-void led_timer_tick(void) {
+void led_timer_tick(TimerHandle_t _) {
 	state.ticks = 0;
 	xTaskNotify(leds_task_handle, 0, eNoAction);
 }

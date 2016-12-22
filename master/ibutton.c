@@ -10,24 +10,17 @@
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
-#include "display.h"
-#include <timer.h>
 
 #include "game.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
-
-#ifndef IBUTTON_SLEEP_MS
-#define IBUTTON_SLEEP_MS 300
-#endif
+#include "timer.h"
 
 static TaskHandle_t ibutton_task_handle;
 
 static ds2483_dev_t *onewiredev;
-static void ibutton_wake(void);
 static void ibutton_wake_from_isr(void);
-static inline void ibutton_sleep(void);
 
 static void ibutton_run(void *params);
 static inline int8_t ibutton_detect_cycle(uint8_t uuid[8]);
@@ -63,7 +56,7 @@ void ibutton_run(void *params) {
 			send_game_event(GAME_EVT_MEMBER_LOGIN, &ibutton_uuid);
 		}
 
-		ibutton_sleep();
+		vTaskDelay(configTICK_RATE_HZ/2);
 	}
 }
 
@@ -93,18 +86,6 @@ static inline int8_t ibutton_detect_cycle(uint8_t uuid[8]) {
 		return -2; //invalid crc
 }
 
-static inline void ibutton_sleep(void) {
-	add_timer(ibutton_wake, IBUTTON_SLEEP_MS, 1);
-	ibutton_block();
-}
-
-/**
- * or when IBUTTON_SLEEP_MS expires
- */
-static void ibutton_wake(void) {
-	xTaskNotify(ibutton_task_handle, 0, eNoAction);
-}
-
 static void ibutton_wake_from_isr(void) {
 	xTaskNotifyFromISR(ibutton_task_handle, 0, eNoAction, NULL);
 }
@@ -112,6 +93,5 @@ static void ibutton_wake_from_isr(void) {
 static void ibutton_block(void) {
 	xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
 }
-
 
 DS2483_INTERRUPT_HANDLER(ISR(TWIE_TWIM_vect), onewiredev)
