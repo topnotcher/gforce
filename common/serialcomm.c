@@ -76,7 +76,7 @@ static void serialcomm_rx_task(void *params) {
 	}
 }
 
-void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uint8_t *buf) {
+void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uint8_t *buf, void (*complete)(void *)) {
 	serialcomm_t *dev = comm->dev->dev;
 
 	uint8_t *hdr = mempool_alloc(dev->tx_hdr_pool);
@@ -89,9 +89,9 @@ void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uin
 		hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (daddr ^ size) & 0xFE;
 
 		dev->driver.tx_func(dev->driver.dev, hdr, SERIAL_FRAME_HDR_SIZE, mempool_putref);
-		// TODO
-		comm_getref(buf);
-		dev->driver.tx_func(dev->driver.dev, buf, size, comm_putref);
+		dev->driver.tx_func(dev->driver.dev, buf, size, complete);
+	} else {
+		complete(buf);
 	}
 }
 

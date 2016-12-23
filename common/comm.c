@@ -40,15 +40,14 @@ comm_driver_t *comm_init(
 	comm->pool = pool;
 	comm->end_rx = end_rx;
 
-	/**
-	 * @TODO hard-coded queue sizes
-	 */
 	comm->rx.queue = queue_create(rx_queue_size);
 	comm->rx.frame = NULL;
 
-	comm->tx.state = COMM_TX_STATE_IDLE;
-	comm->tx.queue = queue_create(tx_queue_size);
-	comm->tx.frame = NULL;
+	if (tx_queue_size) {
+		comm->tx.state = COMM_TX_STATE_IDLE;
+		comm->tx.queue = queue_create(tx_queue_size);
+		comm->tx.frame = NULL;
+	}
 
 	return comm;
 }

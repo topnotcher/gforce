@@ -266,7 +266,8 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 
 	#ifdef PHASOR_COMM
 	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_PHASOR)) {
-		phasor_comm_send(phasor_comm, frame->daddr, frame->size, frame->data);
+		mempool_getref(frame);
+		phasor_comm_send(phasor_comm, frame->daddr, frame->size, frame->data, comm_putref);
 	}
 	#endif
 

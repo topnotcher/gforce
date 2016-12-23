@@ -126,8 +126,10 @@ void uart_write(const uart_dev_t *const dev, const uint8_t *const data, const ui
 		.complete = complete
 	};
 
-	xQueueSend(dev->tx_queue, &vec, 0);
-	uart_tx_interrupt_enable(dev);
+	if (xQueueSend(dev->tx_queue, &vec, 0))
+		uart_tx_interrupt_enable(dev);
+	else
+		complete((void*)data);
 }
 
 uint8_t uart_getchar(const uart_dev_t *const dev) {
