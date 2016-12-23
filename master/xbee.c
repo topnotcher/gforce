@@ -65,9 +65,8 @@ void xbee_send_pkt(const mpc_pkt *const spkt) {
 	// TODO: crc code is disabled on all other boards
 	pkt->chksum = xbee_pkt_chksum(pkt);
 
-	comm_send(xbee_comm, mempool_getref(frame));
+	serialcomm_send(xbee_comm, 0, frame->size, frame->data);
 	mempool_putref(frame);
-	comm_tx(xbee_comm);
 }
 
 void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
@@ -91,9 +90,7 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	memcpy(&pkt->data, data, size);  // TODO validate size
 	pkt->chksum = xbee_pkt_chksum(pkt);
 
-	comm_send(xbee_comm, mempool_getref(frame));
-	mempool_putref(frame);
-	comm_tx(xbee_comm);
+	serialcomm_send(xbee_comm, 0, frame->size, frame->data);
 }
 
 static void xbee_rx_event(comm_driver_t *comm) {

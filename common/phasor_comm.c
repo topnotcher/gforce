@@ -33,6 +33,11 @@ comm_driver_t *phasor_comm_init(mempool_t *mempool, uint8_t mpc_addr, void (*end
 	return comm_init(commdev, mpc_addr, MPC_PKT_MAX_SIZE, mempool, end_rx, MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);  // TODO
 }
 
+
+void phasor_comm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uint8_t *buf) {
+	serialcomm_send(comm, daddr, size, buf);
+}
+
 PHASOR_COMM_TXC_ISR {
 	uart_tx_isr(phasor_uart_dev);
 }

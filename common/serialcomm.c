@@ -39,7 +39,6 @@ typedef struct {
 
 static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data);
 static void serialcomm_rx_task(void *params);
-static void begin_tx(comm_driver_t *comm);
 
 comm_dev_t *serialcomm_init(const serialcomm_driver driver, uint8_t addr) {
 	comm_dev_t *commdev;
@@ -50,7 +49,6 @@ comm_dev_t *serialcomm_init(const serialcomm_driver driver, uint8_t addr) {
 
 	commdev->comm = NULL;
 	commdev->dev = serialcomm;
-	commdev->begin_tx = begin_tx;
 
 	serialcomm->driver = driver;
 	serialcomm->addr = addr;
@@ -78,26 +76,23 @@ static void serialcomm_rx_task(void *params) {
 	}
 }
 
-static void begin_tx(comm_driver_t *comm) {
+void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uint8_t *buf) {
 	serialcomm_t *dev = comm->dev->dev;
 
 	uint8_t *hdr = mempool_alloc(dev->tx_hdr_pool);
 
 	if (hdr) {
 		hdr[0] = SERIAL_FRAME_START;
-		hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = comm_tx_daddr(comm);
-		hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = comm_tx_len(comm);
+		hdr[SERIAL_FRAME_HDR_DADDR_OFFSET] = daddr;
+		hdr[SERIAL_FRAME_HDR_LEN_OFFSET] = size;
 		//1 bit is masked out to ensure that the check will never be 0xFF = start byte
-		hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (comm_tx_daddr(comm) ^ comm_tx_len(comm)) & 0xFE;
+		hdr[SERIAL_FRAME_HDR_CHK_OFFSET] = (daddr ^ size) & 0xFE;
 
 		dev->driver.tx_func(dev->driver.dev, hdr, SERIAL_FRAME_HDR_SIZE, mempool_putref);
-		dev->driver.tx_func(dev->driver.dev, comm_tx_data(comm), comm_tx_len(comm), comm_putref);
+		// TODO
+		comm_getref(buf);
+		dev->driver.tx_func(dev->driver.dev, buf, size, comm_putref);
 	}
-
-	comm_getref(comm_tx_data(comm));
-
-	// TODO: UGLY as fuck
-	comm_end_tx(comm);
 }
 
 static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {

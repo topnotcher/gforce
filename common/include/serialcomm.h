@@ -11,5 +11,5 @@ typedef struct {
 } serialcomm_driver;
 
 comm_dev_t *serialcomm_init(const serialcomm_driver, uint8_t);
-
+void serialcomm_send(comm_driver_t *, uint8_t, const uint8_t, uint8_t *);
 #endif
