@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <mpc.h>
-#include <phasor_comm.h>
 #include "lights.h"
 
 #include <g4config.h>

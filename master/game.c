@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <avr/io.h>
 
-#include <phasor_comm.h>
 #include <mpc.h>
 
 #include "timer.h"

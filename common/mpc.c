@@ -26,9 +26,11 @@ static comm_driver_t *comm;
 
 #ifdef PHASOR_COMM_USART
 #define PHASOR_COMM 1
-#include <phasor_comm.h>
+#include "uart.h"
 #include "serialcomm.h"
-static comm_driver_t *phasor_comm;
+static serialcomm_t *phasor_comm;
+static uart_dev_t *phasor_uart_dev;
+#else
 #endif
 
 #ifdef MPC_PROCESS_XBEE
@@ -39,11 +41,18 @@ static void handle_master_hello(const mpc_pkt *const);
 //static void handle_master_settings(const mpc_pkt *const);
 
 static mempool_t *mempool;
+static QueueHandle_t mpc_rx_queue;
+static QueueHandle_t mpc_xbee_rx_queue;
 
 enum {
 	NOTIFY_XBEE_PROCESS = 1,
 	NOTIFY_PHASOR_PROCESS = 2,
 	NOTIFY_TWI_PROCESS = 4
+};
+
+struct _mpc_rx_data {
+	uint8_t size;
+	uint8_t *buf;
 };
 
 
@@ -52,9 +61,11 @@ static void mpc_nop(const mpc_pkt *const pkt) {}
 static void (*cmds[MPC_CMD_MAX])(const mpc_pkt *const);
 
 static TaskHandle_t mpc_task_handle;
-static void mpc_rx_frame(comm_frame_t *frame);
+static void mpc_rx_frame(uint8_t, uint8_t *);
 static void mpc_task(void *params);
 static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) __attribute__((always_inline));
+
+static inline void phasor_comm_init(uint8_t);
 
 /**
  * The shoulders need to differentiate left/right.
@@ -86,17 +97,6 @@ static inline void __mpc_twi_init(uint8_t mpc_addr) {
 	comm_dev_t *twi;
 	twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
 	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event, MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);
-#else
-#endif
-}
-
-/**
- * Initalize the mpc phasor driver if this board is phasor/master
- */
-static inline void __mpc_phasor_init(uint8_t mpc_addr) {
-#ifdef PHASOR_COMM
-	phasor_comm = phasor_comm_init(mempool, mpc_addr, mpc_rx_event);
-#else
 #endif
 }
 
@@ -106,7 +106,10 @@ void mpc_init(void) {
 
 	mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
 	__mpc_twi_init(mpc_addr);
-	__mpc_phasor_init(mpc_addr);
+
+	mpc_rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpc_rx_data));
+	mpc_xbee_rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpc_rx_data));
+	phasor_comm_init(mpc_addr);
 
 	for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
 		// Just in case anything calls mpc_register before mpc_init()
@@ -114,9 +117,45 @@ void mpc_init(void) {
 			cmds[i] = mpc_nop;
 	}
 
-
-	xTaskCreate(mpc_task, "mpc", 128, NULL, tskIDLE_PRIORITY + 5, &mpc_task_handle);
+	// TODO: stack size
+	xTaskCreate(mpc_task, "mpc", 256, NULL, tskIDLE_PRIORITY + 5, &mpc_task_handle);
 }
+
+// TODO
+#ifdef PHASOR_COMM
+static void *alloc_rx_buf(uint8_t *size) {
+	*size = mempool->block_size;
+
+	return ((comm_frame_t*)mempool_alloc(mempool))->data;
+}
+
+void mpc_rx_phasor(uint8_t size, uint8_t *buf) {
+	if (buf) {
+		struct _mpc_rx_data rx_data = {
+			.size = size,
+			.buf = buf,
+		};
+
+		if (xQueueSend(mpc_rx_queue, &rx_data, 0))
+			xTaskNotify(mpc_task_handle, NOTIFY_PHASOR_PROCESS, eSetBits);
+	}
+}
+#endif
+
+static inline void phasor_comm_init(uint8_t mpc_addr) {
+#ifdef PHASOR_COMM
+	phasor_uart_dev = uart_init(&PHASOR_COMM_USART, MPC_QUEUE_SIZE * 2, 24, PHASOR_COMM_BSEL_VALUE, PHASOR_COMM_BSCALE_VALUE);
+
+	serialcomm_driver driver = {
+		.dev = phasor_uart_dev,
+		.rx_func = (uint8_t (*)(void*))uart_getchar,
+		.tx_func = (void (*)(void *, uint8_t *, uint8_t, void (*)(void *)))uart_write,
+	};
+
+	phasor_comm = serialcomm_init(driver, alloc_rx_buf, mpc_rx_phasor, mpc_addr);
+#endif
+}
+
 
 /**
  * @TODO this will silently fail on table full
@@ -126,8 +165,16 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	cmds[cmd] = cb;
 }
 
-void mpc_rx_xbee(void) {
-	xTaskNotify(mpc_task_handle, NOTIFY_XBEE_PROCESS, eSetBits);
+void mpc_rx_xbee(uint8_t size, uint8_t *buf) {
+	if (buf) {
+		struct _mpc_rx_data rx_data = {
+			.size = size,
+			.buf = buf,
+		};
+
+		if (xQueueSend(mpc_xbee_rx_queue, &rx_data, 0))
+			xTaskNotify(mpc_task_handle, NOTIFY_XBEE_PROCESS, eSetBits);
+	}
 }
 
 static void mpc_rx_event(comm_driver_t *evtcomm) {
@@ -136,11 +183,6 @@ static void mpc_rx_event(comm_driver_t *evtcomm) {
 #ifdef MPC_TWI
 	if (evtcomm == comm)
 		xTaskNotifyFromISR(mpc_task_handle, NOTIFY_TWI_PROCESS, eSetBits, NULL);
-#endif
-
-#ifdef PHASOR_COMM
-	if (evtcomm == phasor_comm)
-		xTaskNotify(mpc_task_handle, NOTIFY_PHASOR_PROCESS, eSetBits);
 #endif
 }
 
@@ -171,21 +213,25 @@ static void mpc_task(void *params) {
 		if (xTaskNotifyWait(0, all_notifications, &notify, portMAX_DELAY)) {
 
 			#ifdef MPC_PROCESS_XBEE
-			if (notify & NOTIFY_XBEE_PROCESS)
-				xbee_rx_process();
+			if (notify & NOTIFY_XBEE_PROCESS) {
+				struct _mpc_rx_data rx;
+				if (xQueueReceive(mpc_xbee_rx_queue, &rx, 0))
+					xbee_rx_process(rx.size, rx.buf);
+			}
 			#endif
 
 			#ifdef PHASOR_COMM
 			if ((notify & NOTIFY_PHASOR_PROCESS)) {
-				while ((frame = comm_rx(phasor_comm)) != NULL)
-					mpc_rx_frame(frame);
+				struct _mpc_rx_data rx;
+				if (xQueueReceive(mpc_rx_queue, &rx, 0))
+					mpc_rx_frame(rx.size, rx.buf);
 			}
 			#endif
 
 			#ifdef MPC_TWI
 			if ((notify & NOTIFY_TWI_PROCESS)) {
 				while ((frame = comm_rx(comm)) != NULL)
-					mpc_rx_frame(frame);
+					mpc_rx_frame(frame->size, frame->data);
 			}
 			#endif
 		}
@@ -211,27 +257,23 @@ static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) {
 }
 
 
-static void mpc_rx_frame(comm_frame_t *frame) {
-	mpc_pkt *pkt;
-
-	pkt = (mpc_pkt *)frame->data;
+static void mpc_rx_frame(uint8_t size, uint8_t *buf) {
+	mpc_pkt *pkt = (mpc_pkt *)buf;
 
 	if (!mpc_check_crc(pkt)) {
-		mempool_putref(frame);
+		comm_putref(buf);
 		return;
 	}
 
 	cmds[pkt->cmd](pkt);
 
-	//cleanup:
-	mempool_putref(frame);
+	comm_putref(buf);
 }
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 	mpc_send(addr, cmd, 0, NULL);
 }
 
-//CALLER MUST FREE() data*
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t *const data) {
 
 	comm_frame_t *frame;
@@ -267,7 +309,7 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 	#ifdef PHASOR_COMM
 	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_PHASOR)) {
 		mempool_getref(frame);
-		phasor_comm_send(phasor_comm, frame->daddr, frame->size, frame->data, comm_putref);
+		serialcomm_send(phasor_comm, frame->daddr, frame->size, frame->data, comm_putref);
 	}
 	#endif
 
@@ -292,5 +334,15 @@ MPC_TWI_MASTER_ISR {
 #include "twi_slave.h"
 MPC_TWI_SLAVE_ISR {
 	twi_slave_isr(((mpc_twi_dev *)comm->dev->dev)->twis);
+}
+#endif
+
+#ifdef PHASOR_COMM
+PHASOR_COMM_TXC_ISR {
+	uart_tx_isr(phasor_uart_dev);
+}
+
+PHASOR_COMM_RXC_ISR {
+	uart_rx_isr(phasor_uart_dev);
 }
 #endif

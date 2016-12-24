@@ -1,5 +1,4 @@
 #include "malloc.h"
-#include "comm.h"
 #include "serialcomm.h"
 
 #include "FreeRTOS.h"
@@ -13,42 +12,15 @@
 #define SERIAL_FRAME_HDR_CHK_OFFSET 3
 
 
-typedef struct {
-	serialcomm_driver driver;
-
-	mempool_t *tx_hdr_pool;
-
-	enum {
-		SERIAL_RX_SYNC_IDLE,
-		SERIAL_RX_SYNC_DADDR,
-		SERIAL_RX_SYNC_SIZE,
-		SERIAL_RX_SYNC_CHK
-	} rx_sync_state;
-
-	enum {
-		SERIAL_RX_IDLE,
-		SERIAL_RX_RECV,
-	} rx_state;
-
-	uint8_t rx_sync_chk;
-	uint8_t rx_sync_size;
-	uint8_t rx_size;
-	uint8_t addr;
-} serialcomm_t;
-
-
-static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data);
+static inline void serialcomm_rx_byte(serialcomm_t *, const uint8_t);
 static void serialcomm_rx_task(void *params);
 
-comm_dev_t *serialcomm_init(const serialcomm_driver driver, uint8_t addr) {
-	comm_dev_t *commdev;
+serialcomm_t *serialcomm_init(
+	const serialcomm_driver driver, void *(*alloc_rx_buf)(uint8_t *),
+	void (*rx_callback)(uint8_t, uint8_t *), uint8_t addr) {
+
 	serialcomm_t *serialcomm;
-
-	commdev = smalloc(sizeof(*commdev));
 	serialcomm = smalloc(sizeof(*serialcomm));
-
-	commdev->comm = NULL;
-	commdev->dev = serialcomm;
 
 	serialcomm->driver = driver;
 	serialcomm->addr = addr;
@@ -58,26 +30,25 @@ comm_dev_t *serialcomm_init(const serialcomm_driver driver, uint8_t addr) {
 
 	// TODO: this queue size doesn't necessarily match anything
 	serialcomm->tx_hdr_pool = init_mempool(SERIAL_FRAME_HDR_SIZE, 10);
-	xTaskCreate(serialcomm_rx_task, "serial-rx", 128, commdev, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
 
-	return commdev;
+	serialcomm->rx_callback = rx_callback;
+	serialcomm->alloc_rx_buf = alloc_rx_buf;
+	serialcomm->rx_buf = alloc_rx_buf(&serialcomm->rx_buf_size);
+	xTaskCreate(serialcomm_rx_task, "serial-rx", 128, serialcomm, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
+
+	return serialcomm;
 }
 
 static void serialcomm_rx_task(void *params) {
-	comm_dev_t *commdev = params;
-	serialcomm_t *serialdev  = commdev->dev;
+	serialcomm_t *serialdev = params;
 
 	while (1) {
 		uint8_t data = serialdev->driver.rx_func(serialdev->driver.dev);
-
-		// why?
-		if (commdev->comm)
-			serialcomm_rx_byte(commdev->comm, data);
+		serialcomm_rx_byte(serialdev, data);
 	}
 }
 
-void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uint8_t *buf, void (*complete)(void *)) {
-	serialcomm_t *dev = comm->dev->dev;
+void serialcomm_send(serialcomm_t *dev, uint8_t daddr, const uint8_t size, uint8_t *buf, void (*complete)(void *)) {
 
 	uint8_t *hdr = mempool_alloc(dev->tx_hdr_pool);
 
@@ -95,16 +66,14 @@ void serialcomm_send(comm_driver_t *comm, uint8_t daddr, const uint8_t size, uin
 	}
 }
 
-static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
-	serialcomm_t *dev = comm->dev->dev;
-
+static inline void serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
 	if (data == SERIAL_FRAME_START) {
 		dev->rx_sync_state = SERIAL_RX_SYNC_DADDR;
 	} else {
 		switch (dev->rx_sync_state) {
 		case SERIAL_RX_SYNC_DADDR:
 			if (data & dev->addr) {
-				dev->rx_sync_chk = data;
+				dev->rx_chk = data;
 				dev->rx_sync_state = SERIAL_RX_SYNC_SIZE;
 			} else {
 				dev->rx_sync_state = SERIAL_RX_SYNC_IDLE;
@@ -113,23 +82,18 @@ static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
 
 		case SERIAL_RX_SYNC_SIZE:
 			dev->rx_sync_state = SERIAL_RX_SYNC_CHK;
-			dev->rx_sync_size = data;
-			dev->rx_sync_chk ^= data;
-			dev->rx_sync_chk &= 0xFE;
+			dev->rx_size = data;
+			dev->rx_chk ^= data;
+			dev->rx_chk &= 0xFE;
 			break;
 
 		case SERIAL_RX_SYNC_CHK:
 			dev->rx_sync_state = SERIAL_RX_SYNC_IDLE;
 
-			if (data == dev->rx_sync_chk) {
-				if (dev->rx_state == SERIAL_RX_IDLE) {
-					dev->rx_state = SERIAL_RX_RECV;
-				} else {
-					comm_end_rx(comm);
-				}
+			if (data == dev->rx_chk) {
+				dev->rx_state = SERIAL_RX_RECV;
+				dev->rx_buf_offset = 0;
 
-				dev->rx_size = dev->rx_sync_size;
-				comm_begin_rx(comm);
 				return;
 			}
 
@@ -144,10 +108,19 @@ static inline void serialcomm_rx_byte(comm_driver_t *comm, const uint8_t data) {
 	if (dev->rx_state != SERIAL_RX_RECV)
 		return;
 
-	comm_rx_byte(comm, data);
+	if (dev->rx_buf_offset < dev->rx_buf_size) {
+		dev->rx_buf[dev->rx_buf_offset++] = data;
 
-	if (comm_rx_full(comm) || (comm_rx_size(comm) >= dev->rx_size)) {
-		comm_end_rx(comm);
+		// expected number of bytes received
+		if (dev->rx_buf_offset >= dev->rx_size) {
+			dev->rx_callback(dev->rx_buf_offset, dev->rx_buf);
+			dev->rx_buf = dev->alloc_rx_buf(&dev->rx_buf_size);
+
+			dev->rx_state = SERIAL_RX_IDLE;
+		}
+
+	// buffer overflow - drop the packet.
+	} else {
 		dev->rx_state = SERIAL_RX_IDLE;
 	}
 }

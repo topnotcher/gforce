@@ -11,7 +11,6 @@
 #include "xbee.h"
 #include "display.h"
 #include "ibutton.h"
-#include <phasor_comm.h>
 #include <mpc.h>
 #include <colors.h>
 #include <tasks.h>
@@ -31,6 +30,7 @@
 static void xbee_relay_mpc(const mpc_pkt *const pkt);
 
 int main(void) {
+	cli();
 	sysclk_set_internal_32mhz();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
@@ -41,8 +41,8 @@ int main(void) {
 
 	init_timers();
 	sound_init();
-	xbee_init();
 	mpc_init();
+	xbee_init();
 	game_init();
 
 	display_init();

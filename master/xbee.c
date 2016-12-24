@@ -16,12 +16,12 @@
 
 #define xbee_crc(crc, data) _crc_ibutton_update(crc, data)
 
-static comm_driver_t *xbee_comm;
+static serialcomm_t *xbee_comm;
 static mempool_t *xbee_mempool;
 static uart_dev_t *xbee_uart_dev;
 
-static void xbee_rx_event(comm_driver_t *comm);
 static void xbee_rx_pkt(mpc_pkt const *const pkt);
+static void *alloc_rx_buf(uint8_t *);
 static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
 
 void xbee_init(void) {
@@ -40,11 +40,13 @@ void xbee_init(void) {
 	};
 
 	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	comm_dev_t *commdev = serialcomm_init(driver, MPC_ADDR_MASTER);
-	xbee_comm = comm_init(
-			commdev, MPC_ADDR_MASTER, MPC_PKT_MAX_SIZE,
-			xbee_mempool, xbee_rx_event,
-			MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);
+	xbee_comm = serialcomm_init(driver, alloc_rx_buf, mpc_rx_xbee, MPC_ADDR_MASTER);
+}
+
+static void *alloc_rx_buf(uint8_t *size) {
+	*size = xbee_mempool->block_size;
+
+	return ((comm_frame_t*)mempool_alloc(xbee_mempool))->data;
 }
 
 void xbee_send_pkt(const mpc_pkt *const spkt) {
@@ -85,7 +87,7 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 
 	pkt->len = size;
 	pkt->cmd = cmd;
-	pkt->saddr = xbee_comm->addr;
+	pkt->saddr = MPC_ADDR_MASTER;
 
 	memcpy(&pkt->data, data, size);  // TODO validate size
 	pkt->chksum = xbee_pkt_chksum(pkt);
@@ -94,28 +96,19 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	serialcomm_send(xbee_comm, 0, frame->size, frame->data, comm_putref);
 }
 
-static void xbee_rx_event(comm_driver_t *comm) {
-	mpc_rx_xbee();
-}
+void xbee_rx_process(uint8_t size, uint8_t *buf) {
+	if (size < sizeof(mpc_pkt))
+		goto cleanup;
 
-void xbee_rx_process(void) {
-	comm_frame_t *frame;
+	mpc_pkt *pkt = (mpc_pkt *)buf;
 
-	while ((frame = comm_rx(xbee_comm)) != NULL) {
+	if (pkt->chksum != xbee_pkt_chksum(pkt))
+	goto cleanup;
 
-		if (frame->size < sizeof(mpc_pkt))
-			goto cleanup;
+	xbee_rx_pkt(pkt);
 
-		mpc_pkt *pkt = (mpc_pkt *)frame->data;
-
-		if (pkt->chksum != xbee_pkt_chksum(pkt))
-			goto cleanup;
-
-		xbee_rx_pkt(pkt);
-
-		cleanup:
-			mempool_putref(frame);
-	}
+	cleanup:
+		comm_putref(buf);
 }
 
 static void xbee_rx_pkt(mpc_pkt const *const pkt) {
@@ -143,7 +136,6 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 			mem_usage_t usage = mem_usage();
 			xbee_send(MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 		}
-
 		if (pkt->data[0] != MPC_ADDR_MASTER)
 			mpc_send_cmd(pkt->data[0] & ~MPC_ADDR_MASTER, MPC_CMD_DIAG_MEM_USAGE);
 

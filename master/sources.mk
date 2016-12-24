@@ -13,7 +13,6 @@ ibutton.c
 ../common/mempool.c
 ../common/mpc.c
 ../common/mpctwi.c
-../common/phasor_comm.c
 ../common/queue.c
 ../common/serialcomm.c
 ../common/uart.c
