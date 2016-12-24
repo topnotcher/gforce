@@ -14,18 +14,24 @@
 #include "xbee.h"
 #include "util.h"
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #define xbee_crc(crc, data) _crc_ibutton_update(crc, data)
 
-static serialcomm_t *xbee_comm;
-static mempool_t *xbee_mempool;
-static uart_dev_t *xbee_uart_dev;
+static struct {
+	serialcomm_t *comm;
+	mempool_t *mempool;
+	uart_dev_t *uart;
+} xbee;
 
-static void xbee_rx_pkt(mpc_pkt const *const pkt);
-static void *alloc_rx_buf(uint8_t *);
-static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt);
+static inline void xbee_rx_pkt(mpc_pkt const *const);
+static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const);
+static inline void xbee_rx_process(uint8_t, uint8_t *);
+static void xbee_rx_task(void *params);
 
 void xbee_init(void) {
-	xbee_uart_dev = uart_init(&XBEE_USART, MPC_QUEUE_SIZE * 2, 24, XBEE_BSEL_VALUE, XBEE_BSCALE_VALUE);
+	xbee.uart = uart_init(&XBEE_USART, MPC_QUEUE_SIZE * 2, 24, XBEE_BSEL_VALUE, XBEE_BSCALE_VALUE);
 
 	XBEE_PORT.DIRSET = PIN7_bm /*on/sleep*/ | PIN1_bm /*xbee~RTS*/;
 	//xbeesleep - status output on xbee
@@ -34,23 +40,29 @@ void xbee_init(void) {
 	XBEE_PORT.OUTSET = PIN7_bm /*~sleep*/;
 
 	serialcomm_driver driver = {
-		.dev = xbee_uart_dev,
+		.dev = xbee.uart,
 		.rx_func = (uint8_t (*)(void*))uart_getchar,
 		.tx_func = (void (*)(void *, uint8_t *, uint8_t, void (*)(void *)))uart_write,
 	};
 
-	xbee_mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	xbee_comm = serialcomm_init(driver, alloc_rx_buf, mpc_rx_xbee, MPC_ADDR_MASTER);
+	xbee.mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
+	xbee.comm = serialcomm_init(driver, MPC_ADDR_MASTER);
+
+	xTaskCreate(xbee_rx_task, "xbee-rx", 128, NULL, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
 }
 
-static void *alloc_rx_buf(uint8_t *size) {
-	*size = xbee_mempool->block_size;
+static void xbee_rx_task(void *params) {
 
-	return ((comm_frame_t*)mempool_alloc(xbee_mempool))->data;
+	while (1) {
+		comm_frame_t *rx_frame =  mempool_alloc(xbee.mempool);
+		uint8_t rx_size = serialcomm_recv_frame(xbee.comm, rx_frame->data, xbee.mempool->block_size - sizeof(*rx_frame));
+
+		xbee_rx_process(rx_size, rx_frame->data);
+	}
 }
 
 void xbee_send_pkt(const mpc_pkt *const spkt) {
-	comm_frame_t *frame = mempool_alloc(xbee_mempool);
+	comm_frame_t *frame = mempool_alloc(xbee.mempool);
 
 	//@TODO
 	if (frame == NULL)
@@ -68,11 +80,11 @@ void xbee_send_pkt(const mpc_pkt *const spkt) {
 	pkt->chksum = xbee_pkt_chksum(pkt);
 
 	// ref to frame is given to serialcomm
-	serialcomm_send(xbee_comm, 0, frame->size, frame->data, comm_putref);
+	serialcomm_send(xbee.comm, 0, frame->size, frame->data, comm_putref);
 }
 
 void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
-	comm_frame_t *frame = mempool_alloc(xbee_mempool);
+	comm_frame_t *frame = mempool_alloc(xbee.mempool);
 
 	//@TODO
 	if (frame == NULL)
@@ -93,10 +105,10 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	pkt->chksum = xbee_pkt_chksum(pkt);
 
 	// ref to frame is given to serialcomm
-	serialcomm_send(xbee_comm, 0, frame->size, frame->data, comm_putref);
+	serialcomm_send(xbee.comm, 0, frame->size, frame->data, comm_putref);
 }
 
-void xbee_rx_process(uint8_t size, uint8_t *buf) {
+static inline void xbee_rx_process(uint8_t size, uint8_t *buf) {
 	if (size < sizeof(mpc_pkt))
 		goto cleanup;
 
@@ -111,7 +123,7 @@ void xbee_rx_process(uint8_t size, uint8_t *buf) {
 		comm_putref(buf);
 }
 
-static void xbee_rx_pkt(mpc_pkt const *const pkt) {
+static inline void xbee_rx_pkt(mpc_pkt const *const pkt) {
 
 	if (pkt == NULL) return;
 
@@ -157,9 +169,9 @@ static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 }
 
 XBEE_TXC_ISR {
-	uart_tx_isr(xbee_uart_dev);
+	uart_tx_isr(xbee.uart);
 }
 
 XBEE_RXC_ISR {
-	uart_rx_isr(xbee_uart_dev);
+	uart_rx_isr(xbee.uart);
 }

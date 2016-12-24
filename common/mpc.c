@@ -33,19 +33,13 @@ static uart_dev_t *phasor_uart_dev;
 #else
 #endif
 
-#ifdef MPC_PROCESS_XBEE
-#include "xbee.h"
-#endif
-
 static void handle_master_hello(const mpc_pkt *const);
 //static void handle_master_settings(const mpc_pkt *const);
 
 static mempool_t *mempool;
 static QueueHandle_t mpc_rx_queue;
-static QueueHandle_t mpc_xbee_rx_queue;
 
 enum {
-	NOTIFY_XBEE_PROCESS = 1,
 	NOTIFY_PHASOR_PROCESS = 2,
 	NOTIFY_TWI_PROCESS = 4
 };
@@ -108,7 +102,6 @@ void mpc_init(void) {
 	__mpc_twi_init(mpc_addr);
 
 	mpc_rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpc_rx_data));
-	mpc_xbee_rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpc_rx_data));
 	phasor_comm_init(mpc_addr);
 
 	for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
@@ -123,27 +116,26 @@ void mpc_init(void) {
 
 // TODO
 #ifdef PHASOR_COMM
-static void *alloc_rx_buf(uint8_t *size) {
-	*size = mempool->block_size;
-
-	return ((comm_frame_t*)mempool_alloc(mempool))->data;
-}
-
-void mpc_rx_phasor(uint8_t size, uint8_t *buf) {
-	if (buf) {
+static void mpc_rx_phasor_task(void *params) {
+	while (1) {
 		struct _mpc_rx_data rx_data = {
-			.size = size,
-			.buf = buf,
+			.size = 0,
+			.buf = NULL,
 		};
+		comm_frame_t *frame = mempool_alloc(mempool);
 
-		if (xQueueSend(mpc_rx_queue, &rx_data, 0))
+		if (frame) {
+			rx_data.buf = frame->data;
+		}
+
+		rx_data.size = serialcomm_recv_frame(phasor_comm, rx_data.buf, mempool->block_size - sizeof(*frame));
+
+		if (xQueueSend(mpc_rx_queue, &rx_data, portMAX_DELAY))
 			xTaskNotify(mpc_task_handle, NOTIFY_PHASOR_PROCESS, eSetBits);
 	}
 }
-#endif
 
 static inline void phasor_comm_init(uint8_t mpc_addr) {
-#ifdef PHASOR_COMM
 	phasor_uart_dev = uart_init(&PHASOR_COMM_USART, MPC_QUEUE_SIZE * 2, 24, PHASOR_COMM_BSEL_VALUE, PHASOR_COMM_BSCALE_VALUE);
 
 	serialcomm_driver driver = {
@@ -152,7 +144,9 @@ static inline void phasor_comm_init(uint8_t mpc_addr) {
 		.tx_func = (void (*)(void *, uint8_t *, uint8_t, void (*)(void *)))uart_write,
 	};
 
-	phasor_comm = serialcomm_init(driver, alloc_rx_buf, mpc_rx_phasor, mpc_addr);
+	phasor_comm = serialcomm_init(driver, mpc_addr);
+
+	xTaskCreate(mpc_rx_phasor_task, "phasor-rx", 128, NULL, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
 #endif
 }
 
@@ -163,18 +157,6 @@ static inline void phasor_comm_init(uint8_t mpc_addr) {
  */
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	cmds[cmd] = cb;
-}
-
-void mpc_rx_xbee(uint8_t size, uint8_t *buf) {
-	if (buf) {
-		struct _mpc_rx_data rx_data = {
-			.size = size,
-			.buf = buf,
-		};
-
-		if (xQueueSend(mpc_xbee_rx_queue, &rx_data, 0))
-			xTaskNotify(mpc_task_handle, NOTIFY_XBEE_PROCESS, eSetBits);
-	}
 }
 
 static void mpc_rx_event(comm_driver_t *evtcomm) {
@@ -211,14 +193,6 @@ static void mpc_task(void *params) {
 	while (1) {
 		notify = 0;
 		if (xTaskNotifyWait(0, all_notifications, &notify, portMAX_DELAY)) {
-
-			#ifdef MPC_PROCESS_XBEE
-			if (notify & NOTIFY_XBEE_PROCESS) {
-				struct _mpc_rx_data rx;
-				if (xQueueReceive(mpc_xbee_rx_queue, &rx, 0))
-					xbee_rx_process(rx.size, rx.buf);
-			}
-			#endif
 
 			#ifdef PHASOR_COMM
 			if ((notify & NOTIFY_PHASOR_PROCESS)) {

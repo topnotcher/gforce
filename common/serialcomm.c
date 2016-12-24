@@ -11,45 +11,43 @@
 #define SERIAL_FRAME_HDR_DADDR_OFFSET 1
 #define SERIAL_FRAME_HDR_CHK_OFFSET 3
 
+static inline uint8_t serialcomm_rx_byte(serialcomm_t *, const uint8_t);
 
-static inline void serialcomm_rx_byte(serialcomm_t *, const uint8_t);
-static void serialcomm_rx_task(void *params);
-
-serialcomm_t *serialcomm_init(
-	const serialcomm_driver driver, void *(*alloc_rx_buf)(uint8_t *),
-	void (*rx_callback)(uint8_t, uint8_t *), uint8_t addr) {
-
+serialcomm_t *serialcomm_init(const serialcomm_driver driver, const uint8_t addr) {
 	serialcomm_t *serialcomm;
 	serialcomm = smalloc(sizeof(*serialcomm));
 
-	serialcomm->driver = driver;
-	serialcomm->addr = addr;
+	if (serialcomm) {
+		serialcomm->driver = driver;
+		serialcomm->addr = addr;
 
-	serialcomm->rx_state = SERIAL_RX_IDLE;
-	serialcomm->rx_sync_state = SERIAL_RX_SYNC_IDLE;
+		serialcomm->rx_state = SERIAL_RX_IDLE;
+		serialcomm->rx_sync_state = SERIAL_RX_SYNC_IDLE;
 
-	// TODO: this queue size doesn't necessarily match anything
-	serialcomm->tx_hdr_pool = init_mempool(SERIAL_FRAME_HDR_SIZE, 10);
-
-	serialcomm->rx_callback = rx_callback;
-	serialcomm->alloc_rx_buf = alloc_rx_buf;
-	serialcomm->rx_buf = alloc_rx_buf(&serialcomm->rx_buf_size);
-	xTaskCreate(serialcomm_rx_task, "serial-rx", 128, serialcomm, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
+		// TODO: this queue size doesn't necessarily match anything
+		serialcomm->tx_hdr_pool = init_mempool(SERIAL_FRAME_HDR_SIZE, 10);
+		serialcomm->rx_buf = NULL;
+	}
 
 	return serialcomm;
 }
 
-static void serialcomm_rx_task(void *params) {
-	serialcomm_t *serialdev = params;
+uint8_t serialcomm_recv_frame(serialcomm_t *dev, uint8_t *buf, uint8_t size) {
+	dev->rx_buf = buf;
+	dev->rx_buf_size = size;
 
-	while (1) {
-		uint8_t data = serialdev->driver.rx_func(serialdev->driver.dev);
-		serialcomm_rx_byte(serialdev, data);
+	uint8_t rx_pending = 1;
+
+	while (rx_pending) {
+		uint8_t data = dev->driver.rx_func(dev->driver.dev);
+		rx_pending = serialcomm_rx_byte(dev, data);
 	}
+	
+	dev->rx_buf = NULL;
+	return dev->rx_size;
 }
 
 void serialcomm_send(serialcomm_t *dev, uint8_t daddr, const uint8_t size, uint8_t *buf, void (*complete)(void *)) {
-
 	uint8_t *hdr = mempool_alloc(dev->tx_hdr_pool);
 
 	if (hdr) {
@@ -66,7 +64,9 @@ void serialcomm_send(serialcomm_t *dev, uint8_t daddr, const uint8_t size, uint8
 	}
 }
 
-static inline void serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
+static inline uint8_t serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
+	uint8_t rx_pending = 1;
+
 	if (data == SERIAL_FRAME_START) {
 		dev->rx_sync_state = SERIAL_RX_SYNC_DADDR;
 	} else {
@@ -94,7 +94,7 @@ static inline void serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
 				dev->rx_state = SERIAL_RX_RECV;
 				dev->rx_buf_offset = 0;
 
-				return;
+				goto out;
 			}
 
 			break;
@@ -106,16 +106,14 @@ static inline void serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
 	}
 
 	if (dev->rx_state != SERIAL_RX_RECV)
-		return;
+		goto out;
 
-	if (dev->rx_buf_offset < dev->rx_buf_size) {
+	if (dev->rx_buf != NULL && dev->rx_buf_offset < dev->rx_buf_size) {
 		dev->rx_buf[dev->rx_buf_offset++] = data;
 
 		// expected number of bytes received
-		if (dev->rx_buf_offset >= dev->rx_size) {
-			dev->rx_callback(dev->rx_buf_offset, dev->rx_buf);
-			dev->rx_buf = dev->alloc_rx_buf(&dev->rx_buf_size);
-
+		if (dev->rx_buf_offset == dev->rx_size) {
+			rx_pending = 0;
 			dev->rx_state = SERIAL_RX_IDLE;
 		}
 
@@ -123,4 +121,7 @@ static inline void serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
 	} else {
 		dev->rx_state = SERIAL_RX_IDLE;
 	}
+
+out:
+	return rx_pending;
 }

@@ -16,9 +16,6 @@ typedef struct {
 	serialcomm_driver driver;
 	mempool_t *tx_hdr_pool;
 
-	void *(*alloc_rx_buf)(uint8_t *);
-	void (*rx_callback)(uint8_t, uint8_t *);
-
 	enum {
 		SERIAL_RX_SYNC_IDLE,
 		SERIAL_RX_SYNC_DADDR,
@@ -40,9 +37,7 @@ typedef struct {
 	uint8_t addr;
 } serialcomm_t;
 
-serialcomm_t *serialcomm_init(
-	const serialcomm_driver , void *(*)(uint8_t *),
-	void (*)(uint8_t, uint8_t *), uint8_t
-);
+serialcomm_t *serialcomm_init(const serialcomm_driver, const uint8_t);
 void serialcomm_send(serialcomm_t *, uint8_t, const uint8_t, uint8_t *, void (*)(void *));
+uint8_t serialcomm_recv_frame(serialcomm_t *, uint8_t *const, const uint8_t);
 #endif
