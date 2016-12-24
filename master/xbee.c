@@ -7,7 +7,6 @@
 
 #include "uart.h"
 #include <serialcomm.h>
-#include <comm.h>
 #include <malloc.h>
 #include <mempool.h>
 #include <mpc.h>
@@ -45,7 +44,7 @@ void xbee_init(void) {
 		.tx_func = (void (*)(void *, uint8_t *, uint8_t, void (*)(void *)))uart_write,
 	};
 
-	xbee.mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
+	xbee.mempool = init_mempool(MPC_PKT_MAX_SIZE, MPC_QUEUE_SIZE);
 	xbee.comm = serialcomm_init(driver, MPC_ADDR_MASTER);
 
 	xTaskCreate(xbee_rx_task, "xbee-rx", 128, NULL, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
@@ -54,58 +53,49 @@ void xbee_init(void) {
 static void xbee_rx_task(void *params) {
 
 	while (1) {
-		comm_frame_t *rx_frame =  mempool_alloc(xbee.mempool);
-		uint8_t rx_size = serialcomm_recv_frame(xbee.comm, rx_frame->data, xbee.mempool->block_size - sizeof(*rx_frame));
+		uint8_t *rx_buf =  mempool_alloc(xbee.mempool);
+		uint8_t rx_size = serialcomm_recv_frame(xbee.comm, rx_buf, xbee.mempool->block_size);
 
-		xbee_rx_process(rx_size, rx_frame->data);
+		xbee_rx_process(rx_size, rx_buf);
 	}
 }
 
 void xbee_send_pkt(const mpc_pkt *const spkt) {
-	comm_frame_t *frame = mempool_alloc(xbee.mempool);
+	mpc_pkt *pkt = NULL;
+	uint8_t pkt_size = sizeof(*pkt) + spkt->len;
 
-	//@TODO
-	if (frame == NULL)
-		return;
+	if (pkt_size <= xbee.mempool->block_size)
+		pkt = mempool_alloc(xbee.mempool);
 
-	mpc_pkt *pkt;
+	if (pkt != NULL) {
+		memcpy(pkt, spkt, pkt_size);
 
-	frame->size = sizeof(*pkt) + spkt->len;
-	frame->daddr = 0;
+		// TODO: crc code is disabled on all other boards
+		pkt->chksum = xbee_pkt_chksum(pkt);
 
-	pkt = (mpc_pkt *)frame->data;
-	memcpy(pkt, spkt, sizeof(*spkt) + spkt->len);
-
-	// TODO: crc code is disabled on all other boards
-	pkt->chksum = xbee_pkt_chksum(pkt);
-
-	// ref to frame is given to serialcomm
-	serialcomm_send(xbee.comm, 0, frame->size, frame->data, comm_putref);
+		// ref to frame is given to serialcomm
+		serialcomm_send(xbee.comm, 0, pkt_size, (uint8_t*)pkt, mempool_putref);
+	}
 }
 
 void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
-	comm_frame_t *frame = mempool_alloc(xbee.mempool);
+	mpc_pkt *pkt = NULL;
+	uint8_t pkt_size = sizeof(*pkt) + size;
 
-	//@TODO
-	if (frame == NULL)
-		return;
+	if (pkt_size <= xbee.mempool->block_size)
+		pkt = mempool_alloc(xbee.mempool);
 
-	mpc_pkt *pkt;
+	if (pkt != NULL) {
+		pkt->len = size;
+		pkt->cmd = cmd;
+		pkt->saddr = MPC_ADDR_MASTER;
 
-	frame->size = sizeof(*pkt) + size;
-	frame->daddr = 0;
+		memcpy(&pkt->data, data, size);
+		pkt->chksum = xbee_pkt_chksum(pkt);
 
-	pkt = (mpc_pkt *)frame->data;
-
-	pkt->len = size;
-	pkt->cmd = cmd;
-	pkt->saddr = MPC_ADDR_MASTER;
-
-	memcpy(&pkt->data, data, size);  // TODO validate size
-	pkt->chksum = xbee_pkt_chksum(pkt);
-
-	// ref to frame is given to serialcomm
-	serialcomm_send(xbee.comm, 0, frame->size, frame->data, comm_putref);
+		// ref to frame is given to serialcomm
+		serialcomm_send(xbee.comm, 0, pkt_size, (uint8_t*)pkt, mempool_putref);
+	}
 }
 
 static inline void xbee_rx_process(uint8_t size, uint8_t *buf) {
@@ -120,7 +110,7 @@ static inline void xbee_rx_process(uint8_t size, uint8_t *buf) {
 	xbee_rx_pkt(pkt);
 
 	cleanup:
-		comm_putref(buf);
+		mempool_putref(buf);
 }
 
 static inline void xbee_rx_pkt(mpc_pkt const *const pkt) {
