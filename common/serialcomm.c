@@ -1,8 +1,6 @@
+#include "mempool.h"
 #include "malloc.h"
 #include "serialcomm.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
 
 //header: [start][dest addr][pktlen][check]
 #define SERIAL_FRAME_START 0xFF
