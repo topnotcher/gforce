@@ -9,6 +9,7 @@ ibutton.c
 
 
 ../common/comm.c
+../common/spi.c
 ../common/malloc.c
 ../common/mempool.c
 ../common/mpc.c
