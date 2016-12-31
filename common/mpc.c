@@ -147,8 +147,8 @@ static inline void phasor_comm_init(uint8_t mpc_addr) {
 	phasor_comm = serialcomm_init(driver, mpc_addr);
 
 	xTaskCreate(mpc_rx_phasor_task, "phasor-rx", 128, NULL, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
-#endif
 }
+#endif
 
 
 /**
