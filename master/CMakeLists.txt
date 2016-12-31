@@ -15,7 +15,6 @@ set(PROJECT_SOURCES
 	ds2483.c
 	ibutton.c
 
-	../common/comm.c
 	../common/spi.c
 	../common/malloc.c
 	../common/mempool.c

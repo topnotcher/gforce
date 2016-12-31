@@ -9,7 +9,6 @@
 #include <mpc.h>
 #include <util.h>
 
-#include "comm.h"
 #include "mpctwi.h"
 
 #include "FreeRTOS.h"
@@ -18,10 +17,10 @@
 
 #define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
 
-static void mpc_rx_event(comm_driver_t *);
+static void mpc_rx_event(uint8_t *, uint8_t);
 
 #ifdef MPC_TWI
-static comm_driver_t *comm;
+static mpctwi_t *mpctwi;
 #endif
 
 #ifdef PHASOR_COMM_USART
@@ -38,12 +37,12 @@ static void handle_master_hello(const mpc_pkt *const);
 
 static mempool_t *mempool;
 static QueueHandle_t mpc_rx_queue;
+static uint8_t board_mpc_addr;
 
 struct _mpc_rx_data {
 	uint8_t size;
 	uint8_t *buf;
 };
-
 
 // TODO: some form of error handling
 static void mpc_nop(const mpc_pkt *const pkt) {}
@@ -83,21 +82,18 @@ static inline void __mpc_twi_init(uint8_t mpc_addr) {
 	mask = 0;
 	#endif
 
-	comm_dev_t *twi;
-	twi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD);
-	comm = comm_init(twi, mpc_addr, MPC_PKT_MAX_SIZE, mempool, mpc_rx_event, MPC_QUEUE_SIZE, MPC_QUEUE_SIZE);
+	mpctwi = mpctwi_init(&MPC_TWI, mpc_addr, mask, MPC_TWI_BAUD, MPC_QUEUE_SIZE, mempool, mpc_rx_event);
 #endif
 }
 
-
 void mpc_init(void) {
-	uint8_t mpc_addr = __mpc_addr();
+	board_mpc_addr = __mpc_addr();
 
-	mempool = init_mempool(MPC_PKT_MAX_SIZE + sizeof(comm_frame_t), MPC_QUEUE_SIZE);
-	__mpc_twi_init(mpc_addr);
+	mempool = init_mempool(MPC_PKT_MAX_SIZE, MPC_QUEUE_SIZE);
+	__mpc_twi_init(board_mpc_addr);
 
 	mpc_rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpc_rx_data));
-	phasor_comm_init(mpc_addr);
+	phasor_comm_init(board_mpc_addr);
 
 	for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
 		// Just in case anything calls mpc_register before mpc_init()
@@ -117,13 +113,13 @@ static void mpc_rx_phasor_task(void *params) {
 			.size = 0,
 			.buf = NULL,
 		};
-		comm_frame_t *frame = mempool_alloc(mempool);
+		void *buf = mempool_alloc(mempool);
 
-		if (frame) {
-			rx_data.buf = frame->data;
+		if (buf) {
+			rx_data.buf = buf;
 		}
 
-		rx_data.size = serialcomm_recv_frame(phasor_comm, rx_data.buf, mempool->block_size - sizeof(*frame));
+		rx_data.size = serialcomm_recv_frame(phasor_comm, rx_data.buf, mempool->block_size);
 
 		xQueueSend(mpc_rx_queue, &rx_data, portMAX_DELAY);
 	}
@@ -153,22 +149,15 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	cmds[cmd] = cb;
 }
 
-static void mpc_rx_event(comm_driver_t *evtcomm) {
+static void mpc_rx_event(uint8_t *buf, uint8_t size) {
 	// this is dirty: TWI will notify straight from the ISR
 	// But serialcomm will notify from a task.
 #ifdef MPC_TWI
-	comm_frame_t *frame;
 	struct _mpc_rx_data rx_data = {
-		.size = 0,
-		.buf = NULL,
+		.size = size,
+		.buf = buf,
 	};
-
-	while ((frame = comm_rx(evtcomm)) != NULL) {
-		rx_data.buf = frame->data;
-		rx_data.size = frame->size;
-		xQueueSendFromISR(mpc_rx_queue, &rx_data, NULL);
-	}
-
+	xQueueSendFromISR(mpc_rx_queue, &rx_data, NULL);
 #endif
 }
 
@@ -220,13 +209,13 @@ static void mpc_rx_frame(uint8_t size, uint8_t *buf) {
 	mpc_pkt *pkt = (mpc_pkt *)buf;
 
 	if (!mpc_check_crc(pkt)) {
-		comm_putref(buf);
+		mempool_putref(buf);
 		return;
 	}
 
 	cmds[pkt->cmd](pkt);
 
-	comm_putref(buf);
+	mempool_putref(buf);
 }
 
 inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
@@ -234,65 +223,47 @@ inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 }
 
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t *const data) {
-
-	comm_frame_t *frame;
 	mpc_pkt *pkt;
 
-	frame = mempool_alloc(mempool);
+	if ((pkt = mempool_alloc(mempool))) {
 
-	frame->daddr = addr;
-	frame->size = sizeof(*pkt) + len;
+		pkt->len = len;
+		pkt->cmd = cmd;
+		pkt->saddr = board_mpc_addr;
+		pkt->chksum = MPC_CRC_SHIFT;
 
-	pkt = (mpc_pkt *)frame->data;
+		for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
+			pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
 
-	pkt->len = len;
-	pkt->cmd = cmd;
+		for (uint8_t i = 0; i < len; ++i) {
+			pkt->data[i] = data[i];
+			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
+		}
 
-	#ifdef MPC_TWI
-	pkt->saddr = comm->addr;
-	#endif
-	#ifdef PHASOR_COMM
-	pkt->saddr = phasor_comm->addr;
-	#endif
+		#ifdef PHASOR_COMM
+		if (addr & (MPC_ADDR_MASTER | MPC_ADDR_PHASOR)) {
+			serialcomm_send(phasor_comm, addr, sizeof(*pkt) + pkt->len, mempool_getref(pkt), mempool_putref);
+		}
+		#endif
 
-	pkt->chksum = MPC_CRC_SHIFT;
+		#ifdef MPC_TWI
+		if (addr & (MPC_ADDR_MASTER | MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK)) {
+			mpctwi_send(mpctwi, addr, sizeof(*pkt) + pkt->len, mempool_getref(pkt));
+		}
+		#endif
 
-	for (uint8_t i = 0; i < sizeof(*pkt) - sizeof(pkt->chksum); ++i)
-		pkt->chksum = mpc_crc(pkt->chksum, ((uint8_t *)pkt)[i]);
-
-	for (uint8_t i = 0; i < len; ++i) {
-		pkt->data[i] = data[i];
-		pkt->chksum = mpc_crc(pkt->chksum, data[i]);
+		mempool_putref(pkt);
 	}
-
-	#ifdef PHASOR_COMM
-	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_PHASOR)) {
-		mempool_getref(frame);
-		serialcomm_send(phasor_comm, frame->daddr, frame->size, frame->data, comm_putref);
-	}
-	#endif
-
-	#ifdef MPC_TWI
-	if (addr & (MPC_ADDR_MASTER | MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK)) {
-		comm_send(comm, mempool_getref(frame));
-		comm_tx(comm);
-	}
-
-	#endif
-
-	mempool_putref(frame);
 }
 
 #ifdef MPC_TWI_MASTER_ISR
-#include "twi_master.h"
 MPC_TWI_MASTER_ISR {
-	twi_master_isr(((mpc_twi_dev *)comm->dev->dev)->twim);
+	mpctwi_master_isr(mpctwi);
 }
 #endif
 #ifdef MPC_TWI_SLAVE_ISR
-#include "twi_slave.h"
 MPC_TWI_SLAVE_ISR {
-	twi_slave_isr(((mpc_twi_dev *)comm->dev->dev)->twis);
+	mpctwi_slave_isr(mpctwi);
 }
 #endif
 

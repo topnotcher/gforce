@@ -1,7 +1,6 @@
 #include <string.h>
 #include <malloc.h>
 #include <stddef.h>
-#include <comm.h>
 #include <twi_slave.h>
 
 twi_slave_t *twi_slave_init(
@@ -9,7 +8,7 @@ twi_slave_t *twi_slave_init(
         uint8_t addr,
         uint8_t mask,
         void *ins,
-        void (*begin_txn)(void *ins, uint8_t write, uint8_t * *buf, uint8_t *buf_size),
+        void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size),
         void (*end_txn)(void *ins, uint8_t write, uint8_t *buf, uint8_t buf_size)
         ) {
 
