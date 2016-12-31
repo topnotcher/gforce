@@ -20,7 +20,6 @@ set(PROJECT_SOURCES
 	../common/mempool.c
 	../common/mpc.c
 	../common/mpctwi.c
-	../common/queue.c
 	../common/serialcomm.c
 	../common/uart.c
 	../common/timer.c
