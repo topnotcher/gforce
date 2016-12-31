@@ -39,11 +39,6 @@ static void handle_master_hello(const mpc_pkt *const);
 static mempool_t *mempool;
 static QueueHandle_t mpc_rx_queue;
 
-enum {
-	NOTIFY_PHASOR_PROCESS = 2,
-	NOTIFY_TWI_PROCESS = 4
-};
-
 struct _mpc_rx_data {
 	uint8_t size;
 	uint8_t *buf;
@@ -130,8 +125,7 @@ static void mpc_rx_phasor_task(void *params) {
 
 		rx_data.size = serialcomm_recv_frame(phasor_comm, rx_data.buf, mempool->block_size - sizeof(*frame));
 
-		if (xQueueSend(mpc_rx_queue, &rx_data, portMAX_DELAY))
-			xTaskNotify(mpc_task_handle, NOTIFY_PHASOR_PROCESS, eSetBits);
+		xQueueSend(mpc_rx_queue, &rx_data, portMAX_DELAY);
 	}
 }
 
@@ -163,8 +157,18 @@ static void mpc_rx_event(comm_driver_t *evtcomm) {
 	// this is dirty: TWI will notify straight from the ISR
 	// But serialcomm will notify from a task.
 #ifdef MPC_TWI
-	if (evtcomm == comm)
-		xTaskNotifyFromISR(mpc_task_handle, NOTIFY_TWI_PROCESS, eSetBits, NULL);
+	comm_frame_t *frame;
+	struct _mpc_rx_data rx_data = {
+		.size = 0,
+		.buf = NULL,
+	};
+
+	while ((frame = comm_rx(evtcomm)) != NULL) {
+		rx_data.buf = frame->data;
+		rx_data.size = frame->size;
+		xQueueSendFromISR(mpc_rx_queue, &rx_data, NULL);
+	}
+
 #endif
 }
 
@@ -178,10 +182,6 @@ static void handle_master_hello(const mpc_pkt *const pkt) {
 //}
 
 static void mpc_task(void *params) {
-	const uint32_t all_notifications = NOTIFY_PHASOR_PROCESS | NOTIFY_PHASOR_PROCESS | NOTIFY_TWI_PROCESS;
-	uint32_t notify;
-	comm_frame_t *frame;
-
 	if (!(MPC_ADDR_BOARD & MPC_ADDR_MASTER)) {
 		mpc_register_cmd(MPC_CMD_HELLO, handle_master_hello);
 
@@ -191,24 +191,9 @@ static void mpc_task(void *params) {
 	}
 
 	while (1) {
-		notify = 0;
-		if (xTaskNotifyWait(0, all_notifications, &notify, portMAX_DELAY)) {
-
-			#ifdef PHASOR_COMM
-			if ((notify & NOTIFY_PHASOR_PROCESS)) {
-				struct _mpc_rx_data rx;
-				if (xQueueReceive(mpc_rx_queue, &rx, 0))
-					mpc_rx_frame(rx.size, rx.buf);
-			}
-			#endif
-
-			#ifdef MPC_TWI
-			if ((notify & NOTIFY_TWI_PROCESS)) {
-				while ((frame = comm_rx(comm)) != NULL)
-					mpc_rx_frame(frame->size, frame->data);
-			}
-			#endif
-		}
+		struct _mpc_rx_data rx;
+		if (xQueueReceive(mpc_rx_queue, &rx, portMAX_DELAY))
+			mpc_rx_frame(rx.size, rx.buf);
 	}
 }
 
