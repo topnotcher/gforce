@@ -17,10 +17,10 @@
 
 #define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
 
-static void mpc_rx_event(uint8_t *, uint8_t);
 
 #ifdef MPC_TWI
 static mpctwi_t *mpctwi;
+static void mpc_rx_event(uint8_t *, uint8_t);
 #endif
 
 #ifdef PHASOR_COMM_USART
@@ -105,7 +105,6 @@ void mpc_init(void) {
 	xTaskCreate(mpc_task, "mpc", 256, NULL, tskIDLE_PRIORITY + 5, &mpc_task_handle);
 }
 
-// TODO
 #ifdef PHASOR_COMM
 static void mpc_rx_phasor_task(void *params) {
 	while (1) {
@@ -124,8 +123,10 @@ static void mpc_rx_phasor_task(void *params) {
 		xQueueSend(mpc_rx_queue, &rx_data, portMAX_DELAY);
 	}
 }
+#endif
 
 static inline void phasor_comm_init(uint8_t mpc_addr) {
+#ifdef PHASOR_COMM
 	phasor_uart_dev = uart_init(&PHASOR_COMM_USART, MPC_QUEUE_SIZE * 2, 24, PHASOR_COMM_BSEL_VALUE, PHASOR_COMM_BSCALE_VALUE);
 
 	serialcomm_driver driver = {
@@ -137,8 +138,8 @@ static inline void phasor_comm_init(uint8_t mpc_addr) {
 	phasor_comm = serialcomm_init(driver, mpc_addr);
 
 	xTaskCreate(mpc_rx_phasor_task, "phasor-rx", 128, NULL, tskIDLE_PRIORITY + 1, (TaskHandle_t*)NULL);
-}
 #endif
+}
 
 
 /**
@@ -149,17 +150,17 @@ void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt *const)) {
 	cmds[cmd] = cb;
 }
 
+#ifdef MPC_TWI
 static void mpc_rx_event(uint8_t *buf, uint8_t size) {
 	// this is dirty: TWI will notify straight from the ISR
 	// But serialcomm will notify from a task.
-#ifdef MPC_TWI
 	struct _mpc_rx_data rx_data = {
 		.size = size,
 		.buf = buf,
 	};
 	xQueueSendFromISR(mpc_rx_queue, &rx_data, NULL);
-#endif
 }
+#endif
 
 static void handle_master_hello(const mpc_pkt *const pkt) {
 	if (pkt->saddr == MPC_ADDR_MASTER)
