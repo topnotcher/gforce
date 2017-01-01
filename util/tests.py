@@ -1,10 +1,17 @@
+#!/usr/bin/env python
+
 import sys
+import os
 import asyncio
 import functools
 import operator
 import time
 
 from tamp import Structure, uint16_t, uint8_t
+
+root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(root, 'python'))
+
 from gforce.mpc import MPC_CMD, MPC_ADDR, mpc_pkt
 from gforce.comm import GForceServer
 from gforce.testing import run_module
