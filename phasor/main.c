@@ -14,6 +14,7 @@
 #include <irrx.h>
 #include <tasks.h>
 #include <mpc.h>
+#include "mpcphasor.h"
 #include <timer.h>
 #include <util.h>
 #include <diag.h>
@@ -31,6 +32,7 @@ int main(void) {
 
 	trigger_init();
 	mpc_init();
+	mpc_register_driver(mpc_phasor_init());
 	init_timers();
 	irtx_init();
 	tasks_init();

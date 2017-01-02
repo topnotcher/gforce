@@ -19,6 +19,7 @@ set(PROJECT_SOURCES
 	../common/serialcomm.c
 	../common/uart.c
 	../common/mpc.c
+	../common/mpcphasor.c
 	../common/tasks.c
 	../common/timer.c
 	../common/twi_master.c

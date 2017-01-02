@@ -12,8 +12,8 @@
 #include "display.h"
 #include "ibutton.h"
 #include <mpc.h>
-#include <colors.h>
-#include <tasks.h>
+#include "mpcphasor.h"
+#include "mpctwi.h"
 #include <util.h>
 
 #include "game.h"
@@ -42,6 +42,8 @@ int main(void) {
 	init_timers();
 	sound_init();
 	mpc_init();
+	mpc_register_driver(mpctwi_init());
+	mpc_register_driver(mpc_phasor_init());
 	xbee_init();
 	game_init();
 

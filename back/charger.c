@@ -57,6 +57,8 @@ static void charger_task(void *params) {
 	uint8_t init_regs[4] = {BQ24193_INPUT_SRC_REG, BQ24193_PWR_ON_REG, BQ24193_TIME_CTRL_REG, BQ24193_VOLT_CTRL_REG};
 
 	while (1) {
+		while(1)
+			charger_block();
 
 		for (uint8_t i = 0; i < 4; ++i) {
 			charger_write_reg(init_regs[i]);

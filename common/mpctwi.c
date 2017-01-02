@@ -1,10 +1,33 @@
+#include <avr/interrupt.h>
+
 #include "mpctwi.h"
 
 #include "malloc.h"
-#include "mempool.h"
+#include "twi_master.h"
+#include "twi_slave.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
+
+#include "g4config.h"
+#include "config.h"
+
+/**
+ * The shoulders need to differentiate left/right.
+ */
+#ifdef MPC_TWI_ADDR_EEPROM_ADDR
+#include <avr/eeprom.h>
+#define __mpc_addr() \
+	eeprom_read_byte((uint8_t *)MPC_TWI_ADDR_EEPROM_ADDR)
+#else
+#define __mpc_addr() ((uint8_t)MPC_ADDR_BOARD)
+#endif
+
+#ifdef MPC_TWI_ADDRMASK
+#define __mpc_rx_addrmask() MPC_TWI_ADDRMASK
+#else
+#define __mpc_rx_addrmask() 0
+#endif
 
 struct _mpctwi_tx_data {
 	uint8_t addr;
@@ -12,33 +35,67 @@ struct _mpctwi_tx_data {
 	uint8_t size;
 };
 
+typedef struct {
+	twi_master_t *twim;
+	twi_slave_t *twis;
+
+	QueueHandle_t tx_queue;
+	uint8_t *tx_buf;
+} mpctwi_t;
+
+static mpctwi_t *_mpctwi;
+
 static void twis_txn_begin(void *, uint8_t, uint8_t **, uint8_t *);
 static void twim_txn_complete(void *, int8_t);
 static void twis_txn_end(void *, uint8_t, uint8_t *, uint8_t);
+static bool mpctwi_registered(mpc_driver_t *);
 
-mpctwi_t *mpctwi_init(
-		TWI_t *const twi_hw, const uint8_t addr,
-		const uint8_t mask, const uint8_t baud,
-		const uint8_t tx_queue_size, mempool_t *mempool,
-		void (*rx_callback)(uint8_t *, uint8_t)
-) {
+mpc_driver_t *mpctwi_init(void) {
+	uint8_t addr = __mpc_addr();
+	uint8_t rx_addrmask = __mpc_rx_addrmask();
+	uint8_t tx_addrmask;
 
-	mpctwi_t *mpctwi = smalloc(sizeof *mpctwi);
+	if (MPC_ADDR_BOARD & MPC_ADDR_MASTER)
+		tx_addrmask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
+	else
+		tx_addrmask = MPC_ADDR_MASTER;
 
-	if (mpctwi) {
-		mpctwi->twis = twi_slave_init(&twi_hw->SLAVE, addr, mask, mpctwi, twis_txn_begin, twis_txn_end);
-		mpctwi->twim = twi_master_init(&twi_hw->MASTER, baud, mpctwi, twim_txn_complete);
-		mpctwi->mempool = mempool;
-		mpctwi->rx_callback = rx_callback;
-		mpctwi->tx_buf = NULL;
+	_mpctwi = NULL;
+	mpc_driver_t *driver = NULL;
 
-		mpctwi->tx_queue = xQueueCreate(tx_queue_size, sizeof(struct _mpctwi_tx_data));
+	if ((driver = smalloc(sizeof *driver)) && (_mpctwi = smalloc(sizeof *_mpctwi))) {
+		driver->ins = _mpctwi;
+		driver->addr = addr;
+		driver->addrmask = tx_addrmask;
+		driver->tx = mpctwi_send;
+		driver->registered = mpctwi_registered;
+
+		_mpctwi->twis = twi_slave_init(&MPC_TWI.SLAVE, addr, rx_addrmask, driver, twis_txn_begin, twis_txn_end);
+		_mpctwi->twim = twi_master_init(&MPC_TWI.MASTER, MPC_TWI_BAUD, driver, twim_txn_complete);
+
+		if (_mpctwi->twis == NULL || _mpctwi->twim == NULL)
+			driver = NULL;
 	}
 
-	return mpctwi;
+	return driver;
 }
 
-void mpctwi_send(mpctwi_t *mpctwi, uint8_t addr, uint8_t size, uint8_t *buf) {
+static bool mpctwi_registered(mpc_driver_t *driver) {
+	if (driver && driver->ins) {
+		mpctwi_t *mpctwi = driver->ins;
+
+		mpctwi->tx_buf = NULL;
+		mpctwi->tx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct _mpctwi_tx_data));
+
+		return true;
+	}
+
+	return false;
+}
+
+void mpctwi_send(mpc_driver_t *driver, uint8_t addr, uint8_t size, uint8_t *buf) {
+	mpctwi_t *mpctwi = driver->ins;
+
 	portENTER_CRITICAL();
 
 	if (mpctwi->tx_buf) {
@@ -58,12 +115,15 @@ void mpctwi_send(mpctwi_t *mpctwi, uint8_t addr, uint8_t size, uint8_t *buf) {
 }
 
 static void twim_txn_complete(void *ins, int8_t status) {
-	mpctwi_t *mpctwi = ins;
+	mpc_driver_t *driver = ins;
+	mpctwi_t *mpctwi = driver->ins;
 	struct _mpctwi_tx_data tx_data;
 
 	portENTER_CRITICAL();
 
-	mempool_putref(mpctwi->tx_buf);
+	if (mpctwi->tx_buf)
+		driver->tx_complete(mpctwi->tx_buf);
+
 	mpctwi->tx_buf = NULL;
 
 	if (xQueueReceiveFromISR(mpctwi->tx_queue, &tx_data, NULL)) {
@@ -75,6 +135,8 @@ static void twim_txn_complete(void *ins, int8_t status) {
 }
 
 static void twis_txn_begin(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size) {
+	mpc_driver_t *driver = ins;
+
 	/**
 	 * buf may be non-null when passed (if driver has a partially used buffer)
 	 * In this case, comm should still have a reference to it and will reuse it
@@ -82,17 +144,30 @@ static void twis_txn_begin(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf
 	 */
 
 	if (!write && !*buf) {
-		mpctwi_t *mpctwi = ins;
-
-		*buf = mempool_alloc(mpctwi->mempool);
-		*buf_size = mpctwi->mempool->block_size;
+		*buf = driver->alloc_buf(buf_size);
 	}
 }
 
 static void twis_txn_end(void *ins, uint8_t write, uint8_t *buf, uint8_t size) {
-	mpctwi_t *mpctwi = ins;
+	mpc_driver_t *driver = ins;
 
 	if (!write && buf) {
-		mpctwi->rx_callback(buf, size);
+		struct mpc_rx_data rx_data = {
+			.size = size,
+			.buf = buf,
+		};
+
+		xQueueSendFromISR(driver->rx_queue, &rx_data, NULL);
 	}
 }
+
+#ifdef MPC_TWI_MASTER_ISR
+MPC_TWI_MASTER_ISR {
+	twi_master_isr(_mpctwi->twim);
+}
+#endif
+#ifdef MPC_TWI_SLAVE_ISR
+MPC_TWI_SLAVE_ISR {
+	twi_slave_isr(_mpctwi->twis);
+}
+#endif
