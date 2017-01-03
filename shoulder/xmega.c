@@ -23,6 +23,8 @@
 
 #include "main.h"
 
+static led_spi_dev *led_controller;
+
 system_init_func(system_board_init) {
 	sysclk_set_internal_32mhz();
 
@@ -58,6 +60,21 @@ void mpc_register_drivers(void) {
 	mpc_register_driver(mpctwi_init(twim, twis, twi_addr, MPC_ADDR_MASTER));
 }
 
+#ifdef SHOULDER_V1_HW
 led_spi_dev *led_init_driver(void) {
-	return led_usart_init(&USARTC1, 0);
+	led_controller = led_spi_init(&SPIC);
+
+	return led_controller;
 }
+
+ISR(SPIC_INT_vect) {
+	led_spi_tx_isr(led_controller);
+}
+#else
+
+led_spi_dev *led_init_driver(void) {
+	led_controller = led_usart_init(&USARTC1, 0);
+
+	return led_controller;
+}
+#endif

@@ -2,12 +2,19 @@ cmake_minimum_required(VERSION 3.6)
 project("GForce Shoulder" C ASM)
 
 if(PLATFORM STREQUAL "xmega")
-	set(AVR_MCU atxmega128a4u)
+	if(SHOULDER_V1_HW)
+		set(AVR_MCU atxmega32a4u)
+		add_definitions(-DSHOULDER_V1_HW)
+	else()
+		set(AVR_MCU atxmega128a4u)
+	endif()
+
 	set(MCU_SPEED "32000000UL")
 
 	set(PLATFORM_SOURCES
 		xmega.c
 		../drivers/xmega/clock.c
+		../drivers/xmega/led_spi.c
 		../drivers/xmega/led_usart_spi.c
 		../drivers/xmega/spi.c
 		../drivers/xmega/twi/twi.c

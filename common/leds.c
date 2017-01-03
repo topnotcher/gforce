@@ -230,7 +230,16 @@ void led_write(void) {
 	for (uint8_t led = 0, comp = 0; led < N_LEDS; led++) {
 		uint16_t const *color = colors[((led & 0x01) ? state.leds[comp++] : (state.leds[comp] >> 4)) & 0x0F];
 
-		tlc59711_set_color(tlc, led, color[0], color[1], color[2]);
+		uint8_t idx[] = {0, 1, 2};
+
+		#ifdef SHOULDER_V1_HW
+		if (led == 2 || led == 3 || led == 6 || led == 7) {
+			idx[0] = 2;
+			idx[2] = 0;
+		}
+		#endif
+
+		tlc59711_set_color(tlc, led, color[idx[0]], color[idx[1]], color[idx[2]]);
 	}
 
 	tlc59711_write(tlc);
