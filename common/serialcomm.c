@@ -9,7 +9,7 @@
 #define SERIAL_FRAME_HDR_DADDR_OFFSET 1
 #define SERIAL_FRAME_HDR_CHK_OFFSET 3
 
-static inline uint8_t serialcomm_rx_byte(serialcomm_t *, const uint8_t);
+static uint8_t serialcomm_rx_byte(serialcomm_t *, const uint8_t);
 
 serialcomm_t *serialcomm_init(const serialcomm_driver driver, const uint8_t addr) {
 	serialcomm_t *serialcomm;
@@ -62,7 +62,7 @@ void serialcomm_send(serialcomm_t *dev, uint8_t daddr, const uint8_t size, uint8
 	}
 }
 
-static inline uint8_t serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
+static uint8_t serialcomm_rx_byte(serialcomm_t *dev, const uint8_t data) {
 	uint8_t rx_pending = 1;
 
 	if (data == SERIAL_FRAME_START) {

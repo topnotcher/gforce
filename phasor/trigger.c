@@ -16,9 +16,8 @@
 #define _TRIGPINCTRL G4_PINCTRL(TRIGGER_PIN)
 #define _TRIGPIN_bm G4_PIN(TRIGGER_PIN)
 
-static inline bool trigger_enabled(void);
-static inline void trigger_disable(void);
-static inline void trigger_enable(void);
+static void trigger_disable(void);
+static void trigger_enable(void);
 static void trigger_pressed(void);
 static void trigger_tick(TimerHandle_t);
 
@@ -28,7 +27,7 @@ static TimerHandle_t trigger_timer;
 
 //static volatile uint8_t ticks = 0;
 
-inline void trigger_init(void) {
+void trigger_init(void) {
 	TRIGGER_PORT.DIRCLR = _TRIGPIN_bm;
 	TRIGGER_PORT._TRIGPINCTRL = PORT_OPC_PULLUP_gc | PORT_ISC_LEVEL_gc;
 
@@ -51,16 +50,13 @@ static void trigger_pressed(void) {
 	}
 }
 
-static inline void trigger_enable(void) {
+static void trigger_enable(void) {
 	_trigger_enabled = true;
 	TRIGGER_PORT.INTCTRL |= PORT_INT0LVL_MED_gc;
 }
-static inline void trigger_disable(void) {
+static void trigger_disable(void) {
 	_trigger_enabled = false;
 	TRIGGER_PORT.INTCTRL &= ~PORT_INT0LVL_MED_gc;
-}
-static inline bool trigger_enabled(void) {
-	return _trigger_enabled;
 }
 
 ISR(PORTA_INT0_vect) {

@@ -42,7 +42,7 @@ add_definitions(
 	-finline-functions -finline-functions-called-once -finline-limit=1000
 	-finline-small-functions
 	-ffunction-sections -fdata-sections -Wl,-gc-sections
-	-DF_CPU=${MCU_SPEED} --std=gnu99
+	-DF_CPU=${MCU_SPEED} --std=gnu11
 )
 
 #

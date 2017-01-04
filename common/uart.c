@@ -11,9 +11,9 @@ typedef struct {
 	uint8_t rx_pin;
 } uart_port_desc;
 
-static inline void uart_tx_interrupt_disable(const uart_dev_t *const);
-static inline void uart_tx_interrupt_enable(const uart_dev_t *const);
-static inline uart_port_desc uart_port_info(const USART_t *const uart);
+static void uart_tx_interrupt_disable(const uart_dev_t *const);
+static void uart_tx_interrupt_enable(const uart_dev_t *const);
+static uart_port_desc uart_port_info(const USART_t *const uart);
 
 uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8_t rx_queue_size,
                      const uint16_t bsel, const uint8_t bscale) {
@@ -56,7 +56,7 @@ uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8
 	return uart;
 }
 
-static inline uart_port_desc uart_port_info(const USART_t *const uart) {
+static uart_port_desc uart_port_info(const USART_t *const uart) {
 	uart_port_desc desc;
 
 #ifdef USARTC0
@@ -139,7 +139,7 @@ uint8_t uart_getchar(const uart_dev_t *const dev) {
 	return data;
 }
 
-static inline void uart_send_byte(uart_dev_t *const dev) {
+static void uart_send_byte(uart_dev_t *const dev) {
 	dev->uart->DATA = dev->tx.buf[dev->tx_pos++];
 
 	if (dev->tx_pos == dev->tx.len && dev->tx.complete)
@@ -165,10 +165,10 @@ void uart_rx_isr(uart_dev_t *const dev) {
 	xQueueSendFromISR(dev->rx_queue, &data, NULL);
 }
 
-static inline void uart_tx_interrupt_disable(const uart_dev_t *const dev) {
+static void uart_tx_interrupt_disable(const uart_dev_t *const dev) {
 	dev->uart->CTRLA &= ~USART_DREINTLVL_MED_gc;
 }
 
-static inline void uart_tx_interrupt_enable(const uart_dev_t *const dev) {
+static void uart_tx_interrupt_enable(const uart_dev_t *const dev) {
 	dev->uart->CTRLA |= USART_DREINTLVL_MED_gc;
 }

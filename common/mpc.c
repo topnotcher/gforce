@@ -1,14 +1,13 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
 #include <util/crc16.h>
 
-#include <g4config.h>
+#include "g4config.h"
 #include "config.h"
-#include <mpc.h>
-#include <util.h>
+#include "mpc.h"
+#include "util.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -33,7 +32,7 @@ static void (*cmds[MPC_CMD_MAX])(const mpc_pkt *);
 
 static void mpc_rx_frame(uint8_t, uint8_t *);
 static void mpc_task(void *params);
-static inline uint8_t mpc_check_crc(const mpc_pkt *pkt) __attribute__((always_inline));
+static bool mpc_check_crc(const mpc_pkt *pkt);
 static uint8_t *mpc_alloc(uint8_t *);
 
 bool mpc_register_driver(mpc_driver_t *driver) {
@@ -113,7 +112,7 @@ static void mpc_task(void *params) {
 	}
 }
 
-static inline uint8_t mpc_check_crc(const mpc_pkt *const pkt) {
+static bool mpc_check_crc(const mpc_pkt *const pkt) {
 
 	if (!MPC_DISABLE_CRC) {
 		const uint8_t *const data = (uint8_t*)pkt;
@@ -176,3 +175,6 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 		mempool_putref(pkt);
 	}
 }
+
+extern inline void mpc_decref(const mpc_pkt *);
+extern inline void mpc_incref(const mpc_pkt *);

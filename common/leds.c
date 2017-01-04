@@ -72,7 +72,7 @@ typedef struct {
 static uint8_t led_sequence_raw[58];
 
 static void led_set_brightness(const mpc_pkt * const pkt);
-static inline void led_timer_start(void) ATTR_ALWAYS_INLINE;
+static void led_timer_start(void);
 static void led_write(void);
 static void led_timer_tick(TimerHandle_t);
 
@@ -83,7 +83,7 @@ static void set_seq_cmd(const mpc_pkt *const pkt);
 static void lights_off_cmd(const mpc_pkt *const pkt);
 static void set_active_color_cmd(const mpc_pkt *const pkt);
 static void set_active_color(const uint8_t color);
-static inline void set_lights(uint8_t status);
+static void set_lights(uint8_t status);
 static void led_set_seq(const uint8_t * const,const uint8_t);
 
 uint16_t colors[][3] = { COLOR_RGB_VALUES };
@@ -315,7 +315,7 @@ static void led_set_brightness(const mpc_pkt *const pkt) {
 	tlc59711_set_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE, level);
 }
 
-static inline void led_timer_start(void) {
+static void led_timer_start(void) {
 	xTimerChangePeriod(led_timer, LED_DELAY_TIME * state.ticks, 0);
 	xTimerStart(led_timer, 0);
 }

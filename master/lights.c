@@ -27,7 +27,7 @@ static uint8_t led_active_pattern[] = {2, 0, 0xe, 0x0e, 0x0e, 0x0e, 1, 15, 0, 0x
 static uint8_t led_active_pattern_size = 16;
 
 
-inline void lights_on(void) {
+void lights_on(void) {
 	mpc_send((MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK | MPC_ADDR_PHASOR), MPC_CMD_LED_SET_SEQ, led_active_pattern_size, led_active_pattern);
 }
 
@@ -35,18 +35,18 @@ void lights_booting(const uint8_t addr) {
 	mpc_send(addr, MPC_CMD_LED_SET_SEQ, sizeof(led_booting), led_booting);
 }
 
-inline void lights_stun(void) {
+void lights_stun(void) {
 	mpc_send((MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK | MPC_ADDR_PHASOR), MPC_CMD_LED_SET_SEQ, led_stun_pattern_size, led_stun_pattern);
 }
 
-inline void lights_off(void) {
+void lights_off(void) {
 	mpc_send_cmd((MPC_ADDR_CHEST | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK | MPC_ADDR_PHASOR), MPC_CMD_LED_OFF);
 }
 
-inline void lights_unstun(void) {
+void lights_unstun(void) {
 	lights_on();
 }
 
-inline void lights_halfstun(void) {
+void lights_halfstun(void) {
 	mpc_send_cmd(MPC_ADDR_BACK | MPC_ADDR_CHEST, MPC_CMD_LED_OFF);
 }

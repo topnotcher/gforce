@@ -39,3 +39,6 @@ void *mempool_alloc(mempool_t *pool) {
 
 	return ret;
 }
+
+extern inline void *mempool_getref(void *buf);
+extern inline void mempool_putref(void *buf);

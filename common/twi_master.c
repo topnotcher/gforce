@@ -3,9 +3,9 @@
 #include <malloc.h>
 #include <twi_master.h>
 
-static inline void twi_master_write_handler(twi_master_t *dev) ATTR_ALWAYS_INLINE;
-static inline void twi_master_read_handler(twi_master_t *dev) ATTR_ALWAYS_INLINE;
-static inline void twi_master_txn_complete(twi_master_t *dev, int8_t status) ATTR_ALWAYS_INLINE;
+static void twi_master_write_handler(twi_master_t *dev);
+static void twi_master_read_handler(twi_master_t *dev);
+static void twi_master_txn_complete(twi_master_t *dev, int8_t status);
 
 #ifndef TWI_MASTER_MAX_RETRIES
 	#define TWI_MASTER_MAX_RETRIES 3
@@ -106,7 +106,7 @@ void twi_master_isr(twi_master_t *dev) {
 	}
 }
 
-static inline void twi_master_read_handler(twi_master_t *dev) {
+static void twi_master_read_handler(twi_master_t *dev) {
 	TWI_MASTER_t *twi = (TWI_MASTER_t *)dev->twi;
 
 	if (dev->bytes < dev->rxbytes) {
@@ -120,7 +120,7 @@ static inline void twi_master_read_handler(twi_master_t *dev) {
 	}
 }
 
-static inline void twi_master_write_handler(twi_master_t *dev) {
+static void twi_master_write_handler(twi_master_t *dev) {
 	TWI_MASTER_t *twi = (TWI_MASTER_t *)dev->twi;
 
 	//when it is read as 0, most recent ack bit was NAK.
@@ -153,7 +153,7 @@ static inline void twi_master_write_handler(twi_master_t *dev) {
 	}
 }
 
-static inline void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
+static void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
 	if (dev->block) {
 		dev->resume();
 	} else {

@@ -38,7 +38,7 @@ void *mempool_alloc(mempool_t * pool);
  * Get a "new" reference to a block. This should be called when copying the
  * data.
  */
-static inline void * mempool_getref(void *buffer) {
+inline void *mempool_getref(void *buffer) {
 	__MEMPOOL_INCREF(buffer);
 	return buffer;
 }
@@ -49,7 +49,7 @@ static inline void * mempool_getref(void *buffer) {
  * mempool_getref() call. Excess calls to mempool_putref will result in a
  * memory leak.
  */
-static inline void mempool_putref(void *buffer) {
+inline void mempool_putref(void *buffer) {
 	__MEMPOOL_DECREF(buffer);
 }
 

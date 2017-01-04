@@ -24,9 +24,9 @@ static struct {
 	uart_dev_t *uart;
 } xbee;
 
-static inline void xbee_rx_pkt(mpc_pkt const *const);
-static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const);
-static inline void xbee_rx_process(uint8_t, uint8_t *);
+static void xbee_rx_pkt(mpc_pkt const *const);
+static uint8_t xbee_pkt_chksum(mpc_pkt const *const);
+static void xbee_rx_process(uint8_t, uint8_t *);
 static void xbee_rx_task(void *params);
 
 void xbee_init(void) {
@@ -98,7 +98,7 @@ void xbee_send(const uint8_t cmd, const uint8_t size, uint8_t *data) {
 	}
 }
 
-static inline void xbee_rx_process(uint8_t size, uint8_t *buf) {
+static void xbee_rx_process(uint8_t size, uint8_t *buf) {
 	if (size < sizeof(mpc_pkt))
 		goto cleanup;
 
@@ -113,7 +113,7 @@ static inline void xbee_rx_process(uint8_t size, uint8_t *buf) {
 		mempool_putref(buf);
 }
 
-static inline void xbee_rx_pkt(mpc_pkt const *const pkt) {
+static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 
 	if (pkt == NULL) return;
 
@@ -146,7 +146,7 @@ static inline void xbee_rx_pkt(mpc_pkt const *const pkt) {
 	}
 }
 
-static inline uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
+static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 	uint8_t *data = (uint8_t *)pkt;
 
 	uint8_t crc = xbee_crc(MPC_CRC_SHIFT, data[0]);

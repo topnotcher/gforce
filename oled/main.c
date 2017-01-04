@@ -16,8 +16,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-static inline void shift_string(char *string);
-static inline void display_scroll(char *string);
+static void shift_string(char *string);
+static void display_scroll(char *string);
 
 static void main_thread(void *);
 
@@ -52,7 +52,7 @@ static void main_thread(void *params) {
 	}
 }
 
-static inline void display_scroll(char *string) {
+static void display_scroll(char *string) {
 	while (1) {
 		display_cmd(0x02);
 		display_tick();
@@ -69,7 +69,7 @@ static inline void display_scroll(char *string) {
 	}
 }
 
-static inline void shift_string(char *string) {
+static void shift_string(char *string) {
 	char first = *string;
 
 	while (1) {

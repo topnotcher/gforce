@@ -23,7 +23,7 @@ static ds2483_dev_t *onewiredev;
 static void ibutton_wake_from_isr(void);
 
 static void ibutton_run(void *params);
-static inline int8_t ibutton_detect_cycle(uint8_t uuid[8]);
+static int8_t ibutton_detect_cycle(uint8_t uuid[8]);
 
 static void ibutton_block(void);
 
@@ -60,7 +60,7 @@ void ibutton_run(void *params) {
 	}
 }
 
-static inline int8_t ibutton_detect_cycle(uint8_t uuid[8]) {
+static int8_t ibutton_detect_cycle(uint8_t uuid[8]) {
 	uint8_t result;
 
 	result = ds2483_1w_rst(onewiredev);

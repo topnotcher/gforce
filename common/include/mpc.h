@@ -51,11 +51,11 @@ void mpc_send_cmd(const uint8_t addr, const uint8_t cmd);
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t * const data);
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const));
 
-static inline void mpc_decref(const mpc_pkt *const pkt) {
+inline void mpc_decref(const mpc_pkt *const pkt) {
 	mempool_putref((void*)pkt);
 }
 
-static inline void mpc_incref(const mpc_pkt *const pkt) {
+inline void mpc_incref(const mpc_pkt *const pkt) {
 	mempool_getref((void*)pkt);
 }
 #endif

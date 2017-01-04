@@ -16,10 +16,10 @@
 
 volatile lcd_queue_t lcd_queue;
 
-static inline void lcd_toggle_read(const bool read);
-static inline void lcd_clk(void);
-static inline void display_out_raw(char data);
-static inline bool lcd_busy(void);
+static void lcd_toggle_read(const bool read);
+static void lcd_clk(void);
+static void display_out_raw(char data);
+static bool lcd_busy(void);
 
 inline void display_init(void) {
 	LCD_CONTROL_PORT.DIRSET = _E_bm | _RS_bm | _RW_bm;
@@ -77,7 +77,7 @@ inline void display_init(void) {
 /**
  * completely raw output
  */
-static inline void display_out_raw(char data) {
+static void display_out_raw(char data) {
 	LCD_DATA_PORT.OUT = data;
 	lcd_clk();
 }
@@ -102,7 +102,7 @@ void display_putstring(char *string) {
 	}
 }
 
-static inline void lcd_clk(void) {
+static void lcd_clk(void) {
 	PIN_HIGH(LCD_CONTROL_PORT, _E_bm);
 	LCD_CLK_DELAY();
 	PIN_LOW(LCD_CONTROL_PORT, _E_bm);
@@ -110,7 +110,7 @@ static inline void lcd_clk(void) {
 
 //in theory, this should speed things up a bit when we
 //check the busy flag multiple times.
-static inline void lcd_toggle_read(const bool read) {
+static void lcd_toggle_read(const bool read) {
 
 	//by default, we're in write mode.
 	static bool is_read = false;
@@ -138,7 +138,7 @@ static inline void lcd_toggle_read(const bool read) {
 	}
 
 }
-static inline bool lcd_busy(void) {
+static bool lcd_busy(void) {
 
 	lcd_toggle_read(true);
 

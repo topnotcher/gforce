@@ -15,7 +15,7 @@ struct spi_port_desc {
 	uint8_t sck_pin;
 };
 
-static inline struct spi_port_desc spi_port_info(const SPI_t *const);
+static struct spi_port_desc spi_port_info(const SPI_t *const);
 
 spi_master_t *spi_master_init(SPI_t *spi_hw, const uint8_t tx_queue_size, uint8_t prescale) {
 	struct spi_port_desc port_info = spi_port_info(spi_hw);
@@ -85,7 +85,7 @@ void spi_master_isr(spi_master_t *const spi) {
 	}
 }
 
-static inline struct spi_port_desc spi_port_info(const SPI_t *const spi) {
+static struct spi_port_desc spi_port_info(const SPI_t *const spi) {
 	struct spi_port_desc desc = {
 		.port = NULL,
 		.ss_pin = 1 << 4,
