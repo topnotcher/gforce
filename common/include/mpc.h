@@ -47,7 +47,6 @@ struct mpc_rx_data {
 
 void mpc_init(void);
 bool mpc_register_driver(mpc_driver_t *);
-void mpc_send_cmd(const uint8_t addr, const uint8_t cmd);
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t * const data);
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const));
 
@@ -57,5 +56,9 @@ inline void mpc_decref(const mpc_pkt *const pkt) {
 
 inline void mpc_incref(const mpc_pkt *const pkt) {
 	mempool_getref((void*)pkt);
+}
+
+inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
+	mpc_send(addr, cmd, 0, NULL);
 }
 #endif

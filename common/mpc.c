@@ -144,10 +144,6 @@ static void mpc_rx_frame(uint8_t size, uint8_t *buf) {
 	mempool_putref(buf);
 }
 
-inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
-	mpc_send(addr, cmd, 0, NULL);
-}
-
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t *const data) {
 	mpc_pkt *pkt;
 
