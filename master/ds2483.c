@@ -1,5 +1,4 @@
 #include <avr/io.h>
-#include <util.h>
 #include <malloc.h>
 #include <twi_master.h>
 #include "config.h"

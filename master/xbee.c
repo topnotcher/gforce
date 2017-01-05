@@ -11,7 +11,6 @@
 #include <mempool.h>
 #include <mpc.h>
 #include "xbee.h"
-#include "util.h"
 
 #include "FreeRTOS.h"
 #include "task.h"

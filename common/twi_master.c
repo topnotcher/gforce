@@ -1,5 +1,4 @@
 #include <string.h>
-#include <util.h>
 #include <malloc.h>
 #include <twi_master.h>
 

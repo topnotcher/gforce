@@ -7,7 +7,6 @@
 #include "g4config.h"
 #include "config.h"
 #include "mpc.h"
-#include "util.h"
 
 #include "FreeRTOS.h"
 #include "task.h"

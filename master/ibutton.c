@@ -6,10 +6,11 @@
 #include <avr/interrupt.h>
 #include <twi_master.h>
 #include <g4config.h>
-#include <util.h>
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
+
+#include "xmega/util.h"
 
 #include "game.h"
 

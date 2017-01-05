@@ -15,6 +15,7 @@ set(PROJECT_SOURCES
 	ds2483.c
 	ibutton.c
 
+	../bsp/xmega/clock.c
 	../common/spi.c
 	../common/malloc.c
 	../common/mempool.c
@@ -26,9 +27,9 @@ set(PROJECT_SOURCES
 	../common/timer.c
 	../common/twi_master.c
 	../common/twi_slave.c
-	../common/util.c
 )
 
+include_directories(../bsp)
 
 include(../cmakedefs)
 

@@ -14,9 +14,9 @@
 #include <mpc.h>
 #include "mpcphasor.h"
 #include "mpctwi.h"
-#include <util.h>
-
 #include "game.h"
+
+#include "xmega/clock.h"
 
 #include "FreeRTOS.h"
 #include "task.h"

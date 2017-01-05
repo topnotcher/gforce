@@ -1,6 +1,9 @@
-#include <stdint.h>
-#include <util.h>
 #include <avr/io.h>
+
+#include "clock.h"
+
+#define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
+#define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )
 
 void sysclk_set_internal_32mhz(void) {
 

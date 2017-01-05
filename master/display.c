@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "util.h"
 #include "string.h"
 #include "serialcomm.h"
 #include "spi.h"
