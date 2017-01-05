@@ -39,12 +39,12 @@ bool mpc_register_driver(mpc_driver_t *driver) {
 	bool status = false;
 
 	if (driver != NULL) {
-		mpc_driver_t **cur = mpc_monostate.drivers;
 
-		while (*cur) ++cur;
+		mpc_driver_t **slot = mpc_monostate.drivers;
+		for (uint8_t i = 0; i < MAX_MPC_DRIVERS && *slot != NULL; ++i)
+			++slot;
 
-		if (*cur == NULL) {
-			*cur = driver;
+		if (*slot == NULL) {
 
 			// TODO: meeeh
 			mpc_monostate.addr = driver->addr;
@@ -55,8 +55,8 @@ bool mpc_register_driver(mpc_driver_t *driver) {
 
 			status = driver->registered(driver);
 
-			if (!status)
-				*cur = NULL;
+			if (status)
+				*slot = driver;
 		}
 	}
 
