@@ -22,4 +22,9 @@ extern bsp_init_func(system_configure_interrupts);
  */
 extern bsp_init_func(system_configure_os_ticks);
 
+/**
+ * Initialize software components - called immediately before starting the scheduler.
+ */
+extern bsp_init_func(system_software_init);
+
 #endif

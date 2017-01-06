@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <stddef.h>
-#include <string.h>
 
 #include <util/crc16.h>
 
@@ -16,11 +15,16 @@
 
 #define MAX_MPC_DRIVERS 2
 static struct {
+	bool initialized;
 	uint8_t addr;
 	mempool_t *mempool;
 	QueueHandle_t rx_queue;
 	mpc_driver_t *drivers[MAX_MPC_DRIVERS];
 } mpc_monostate;
+
+
+// Default implementation
+void __attribute__((weak)) mpc_register_drivers(void) {}
 
 static void handle_master_hello(const mpc_pkt *const);
 //static void handle_master_settings(const mpc_pkt *const);
@@ -63,18 +67,22 @@ bool mpc_register_driver(mpc_driver_t *driver) {
 }
 
 void mpc_init(void) {
-	memset(&mpc_monostate, 0, sizeof(mpc_monostate));
+	if (!mpc_monostate.initialized) {
+		mpc_monostate.mempool = init_mempool(MPC_PKT_MAX_SIZE, MPC_QUEUE_SIZE);
+		mpc_monostate.rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct mpc_rx_data));
 
-	mpc_monostate.mempool = init_mempool(MPC_PKT_MAX_SIZE, MPC_QUEUE_SIZE);
-	mpc_monostate.rx_queue = xQueueCreate(MPC_QUEUE_SIZE, sizeof(struct mpc_rx_data));
+		for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
+			// Just in case anything calls mpc_register before mpc_init()
+			if (cmds[i] == NULL)
+				cmds[i] = mpc_nop;
+		}
 
-	for (uint8_t i = 0; i < MPC_CMD_MAX; ++i) {
-		// Just in case anything calls mpc_register before mpc_init()
-		if (cmds[i] == NULL)
-			cmds[i] = mpc_nop;
+		mpc_register_drivers();
+
+		xTaskCreate(mpc_task, "mpc", 128, NULL, tskIDLE_PRIORITY + 5, NULL);
+
+		mpc_monostate.initialized = true;
 	}
-
-	xTaskCreate(mpc_task, "mpc", 128, NULL, tskIDLE_PRIORITY + 5, NULL);
 }
 
 static uint8_t *mpc_alloc(uint8_t *const size) {

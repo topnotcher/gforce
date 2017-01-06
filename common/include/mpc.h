@@ -47,6 +47,12 @@ struct mpc_rx_data {
 
 void mpc_init(void);
 bool mpc_register_driver(mpc_driver_t *);
+
+/**
+ * Optionally implemented helper: called at the end of mpc_init() to allow
+ * board to hook in and call mpc_register_driver()
+ */
+void mpc_register_drivers(void);
 void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t * const data);
 void mpc_register_cmd(const uint8_t cmd, void (*cb)(const mpc_pkt * const));
 

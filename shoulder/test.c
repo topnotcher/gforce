@@ -1,6 +1,13 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include "mpc.h"
+#include "mpctwi.h"
+#include "leds.h"
+#include "buzz.h"
+#include "irrx.h"
+#include "diag.h"
+
 #include "xmega/clock.h"
 
 #include "FreeRTOS.h"
@@ -25,4 +32,17 @@ ISR(RTC_OVF_vect) {
 
 bsp_init_func(system_configure_interrupts) {
 	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
+}
+
+bsp_init_func(system_software_init) {
+	mpc_init();
+	buzz_init();
+	diag_init();
+
+	led_init();
+	irrx_init();
+}
+
+void mpc_register_drivers(void) {
+	mpc_register_driver(mpctwi_init());
 }

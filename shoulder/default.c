@@ -9,3 +9,4 @@ void _nopfn(void) {}
 bsp_init_stub(system_board_init);
 bsp_init_stub(system_interrupts_enable);
 bsp_init_stub(system_configure_os_ticks);
+bsp_init_stub(system_software_init);
