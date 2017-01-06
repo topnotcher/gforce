@@ -6,7 +6,10 @@ set(MCU_SPEED "32000000UL")
 
 set(PROJECT_SOURCES
 	main.c
+	test.c
+	default.c
 
+	../bsp/xmega/clock.c
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
@@ -16,12 +19,12 @@ set(PROJECT_SOURCES
 	../common/mempool.c
 	../common/mpctwi.c
 	../common/mpc.c
-	../common/timer.c
 	../common/twi_master.c
 	../common/twi_slave.c
-	../common/util.c
 	../common/diag.c
 )
+
+include_directories(../bsp)
 
 include(../cmakedefs)
 

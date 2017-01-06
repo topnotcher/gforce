@@ -14,23 +14,22 @@
 #include <leds.h>
 #include <buzz.h>
 #include <irrx.h>
-#include <timer.h>
-#include <util.h>
 #include <diag.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
 
-int main(void) {
-	sysclk_set_internal_32mhz();
+#include "main.h"
 
-	init_timers();
+int main(void) {
+	system_board_init();
+	system_configure_os_ticks();
+	system_configure_interrupts();
+
 	mpc_init();
 	mpc_register_driver(mpctwi_init());
 	buzz_init();
 	diag_init();
-
-	PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | /*PMIC.CTRL |*/ PMIC_HILVLEN_bm;
 
 	led_init();
 	irrx_init();

@@ -4,12 +4,11 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include <util.h>
+#include "xmega/util.h"
 #include "config.h"
 #include "g4config.h"
 #include <mpc.h>
 #include <irrx.h>
-#include "timer.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"

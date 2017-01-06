@@ -8,7 +8,6 @@
 
 #include "g4config.h"
 #include "config.h"
-#include "util.h"
 
 #include "leds.h"
 #include "colors.h"

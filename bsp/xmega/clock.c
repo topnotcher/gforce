@@ -28,3 +28,25 @@ void sysclk_set_internal_32mhz(void) {
 	// Select 32Mhz internal as sys. clk. 
 	CLK.CTRL = CLK_SCLKSEL_RC32M_gc;
 }
+
+void clk_enable_rtc_systick_256hz(void) {
+	// enable 32Khz osc
+	CLKSYS_Enable( OSC_RC32KEN_bm );
+	while (CLKSYS_IsReady( OSC_RC32KRDY_bm ) == 0);
+
+	// Lock source to 1024Hz from internal 32Khz osc and enable RTC 
+	CLK.RTCCTRL = CLK_RTCSRC_RCOSC_gc /*CLK_RTCSRC_ULP_gc*/ | CLK_RTCEN_bm;
+	RTC.CTRL = RTC_PRESCALER_DIV2_gc; // 512 Hz
+
+	/**
+	 * RTC must be enabled and SYNCBUSY cleared before writing each of these registers.
+	 */
+	while (RTC.STATUS & RTC_SYNCBUSY_bm);
+	RTC.PER = 1; // 256 Hz
+
+	while (RTC.STATUS & RTC_SYNCBUSY_bm);
+	RTC.CNT = 0;
+
+	// Enable overflow interrupt vector. CNT resuts to 0 when CNT == PER
+	RTC.INTCTRL |= RTC_OVFINTLVL_HI_gc;
+}
