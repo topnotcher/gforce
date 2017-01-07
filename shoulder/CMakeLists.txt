@@ -11,6 +11,14 @@ if(PLATFORM STREQUAL "xmega")
 		../drivers/xmega/led_usart_spi.c
 		../drivers/xmega/twi/master.c
 		../drivers/xmega/twi/slave.c
+
+		../common/buzz.c
+		../common/irrx.c
+		../common/uart.c
+		../common/mpctwi.c
+		../common/diag.c
+		../common/malloc.c
+		../common/mempool.c
 	)
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
@@ -23,15 +31,8 @@ set(PROJECT_SOURCES
 
 	../drivers/tlc59711.c
 
-	../common/buzz.c
-	../common/irrx.c
 	../common/leds.c
-	../common/uart.c
-	../common/malloc.c
-	../common/mempool.c
-	../common/mpctwi.c
 	../common/mpc.c
-	../common/diag.c
 
 	${PLATFORM_SOURCES}
 )
