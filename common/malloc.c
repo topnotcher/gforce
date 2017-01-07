@@ -6,6 +6,8 @@ extern uint8_t __heap_start;
 extern uint8_t __data_start;
 static size_t heap_offset = (size_t)0;
 
+typedef uint8_t __attribute__((aligned)) __aligned;
+
 /**
  * dynamically allocate an unfree-able chunk of memory.  This is intended to be
  * used during boot so any errors should be found when the board turns on.
@@ -17,7 +19,7 @@ void *smalloc(size_t size) {
 		addr = &__heap_start + heap_offset;
 		heap_offset += size;
 
-		heap_offset += __alignof__(void *) - (size % __alignof__(void *));
+		heap_offset += __alignof__(__aligned) - (size % __alignof__(__aligned));
 	}; portEXIT_CRITICAL();
 
 	//@TODO check for overflow, throw an error
@@ -31,7 +33,8 @@ mem_usage_t mem_usage(void) {
 	// where we expect.
 	usage.mem_data = (size_t)(&__heap_start - &__data_start);
 	usage.mem_heap_stack = heap_offset;
-	usage.mem_total = RAMSIZE;
+	usage.mem_total = 1;
+	//usage.mem_total = RAMSIZE;
 
 	return usage;
 }

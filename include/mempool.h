@@ -9,7 +9,7 @@
 //internal use 
 typedef struct {
 	uint8_t refcnt;
-	uint8_t block[] __attribute__((aligned(__alignof__(void *))));
+	uint8_t block[] __attribute__((aligned));
 } mempool_block_t;
 
 
@@ -27,7 +27,7 @@ void *mempool_alloc(mempool_t * pool);
  * Get a pointer to the block given membool_block_t.block (buffer)
  */
 #define __MEMPOOL_BLOCK(buffer) \
-	((mempool_block_t *)((uint8_t*)(buffer)-offsetof(mempool_block_t,block)))
+	((mempool_block_t *)((void*)((uint8_t*)(buffer) - offsetof(mempool_block_t, block))))
 
 #define __MEMPOOL_DECREF(buffer) do { \
 	__MEMPOOL_BLOCK(buffer)->refcnt--; \
