@@ -18,6 +18,8 @@ void *smalloc(size_t size) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		addr = &__heap_start + heap_offset;
 		heap_offset += size;
+
+		heap_offset += size % __alignof__(void *);
 	}
 
 	//@TODO check for overflow, throw an error

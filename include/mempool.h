@@ -6,7 +6,7 @@
 //internal use 
 typedef struct {
 	uint8_t refcnt;
-	uint8_t block[];
+	uint8_t block[] __attribute__((aligned(__alignof__(void *))));
 } mempool_block_t;
 
 
