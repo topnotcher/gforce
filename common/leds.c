@@ -1,8 +1,4 @@
-#include <util/delay.h>
-#include <avr/sleep.h>
 #include <stdint.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -269,18 +265,18 @@ static void led_set_seq(const uint8_t *const data, const uint8_t len) {
 
 //	state.seq = seq;
 }
+
+led_spi_dev __attribute__((weak)) *led_init_driver(void) {
+	return NULL;
+}
+
 void led_init(void) {
 	led_spi_dev *spi;
 
 	// why???
 	state.u_seq.seq_data = led_sequence_raw;
 
-#ifdef LED_USART
-	spi = led_usart_init(&LED_USART, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_DMA_CH);
-#else
-	spi = led_spi_init(&LED_SPI, &LED_PORT, LED_SCLK_PIN, LED_SOUT_PIN, LED_SS_PIN);
-#endif
-
+	spi = led_init_driver();
 	if (spi) {
 		tlc = tlc59711_init(spi, 2);
 
@@ -323,9 +319,3 @@ void led_timer_tick(TimerHandle_t _) {
 	state.ticks = 0;
 	xTaskNotify(leds_task_handle, 0, eNoAction);
 }
-
-#ifdef LED_TX_vect
-ISR(LED_TX_vect) {
-	tlc->spi->tx_isr(tlc->spi);
-}
-#endif

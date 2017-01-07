@@ -13,7 +13,7 @@ set(PROJECT_SOURCES
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
-	../common/led_usart_spi.c
+	../bsp/xmega/led_usart_spi.c
 	../common/tlc59711.c
 	../common/malloc.c
 	../common/mempool.c

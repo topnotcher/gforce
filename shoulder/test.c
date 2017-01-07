@@ -8,12 +8,17 @@
 #include "irrx.h"
 #include "diag.h"
 
+#include "leds.h"
+#include "xmega/led_drivers.h"
+
 #include "xmega/clock.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
 #include "main.h"
+
+static led_spi_dev *led_spi;
 
 system_init_func(system_board_init) {
 	sysclk_set_internal_32mhz();
@@ -45,4 +50,11 @@ system_init_func(system_software_init) {
 
 void mpc_register_drivers(void) {
 	mpc_register_driver(mpctwi_init());
+}
+
+led_spi_dev *led_init_driver(void) {
+	//uart module, port, sclk pin, sout_pin, dma_ch
+	led_spi = led_usart_init(&USARTC1, &PORTC, 5, 7, 0);
+
+	return led_spi;
 }

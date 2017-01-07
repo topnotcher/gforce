@@ -4,12 +4,6 @@
  * Configuration specific to this board as required to work with includes etcetc
  */
 
-#define LED_PORT PORTC
-#define LED_SCLK_PIN 5
-#define LED_SOUT_PIN 7
-#define LED_DMA_CH 0
-#define LED_USART USARTC1
-
 #define MPC_TWI_ADDR_EEPROM_ADDR 0
 #define MPC_TWI_ADDRMASK 0x3F
 

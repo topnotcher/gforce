@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <avr/io.h>
 
 #include "led_patterns.h"
 
@@ -24,15 +23,7 @@ typedef struct led_spi_dev_s {
 	void *dev;
 } led_spi_dev;
 
-led_spi_dev *led_spi_init(
-	SPI_t *const, PORT_t *const, const uint8_t,
-	const uint8_t sout_pin, const uint8_t
-);
-
-led_spi_dev *led_usart_init(
-	USART_t *const, PORT_t *const, const uint8_t,
-	const uint8_t, const int8_t
-);
+led_spi_dev *led_init_driver(void);
 
 void led_init(void);
 #endif

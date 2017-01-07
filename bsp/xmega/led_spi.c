@@ -4,6 +4,7 @@
 
 #include "malloc.h"
 #include "leds.h"
+#include "led_drivers.h"
 
 typedef struct {
 	led_spi_dev controller;
