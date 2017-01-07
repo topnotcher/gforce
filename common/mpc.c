@@ -3,13 +3,13 @@
 
 #include <util/crc16.h>
 
-#include "g4config.h"
+#include <g4config.h>
+#include <mpc.h>
 #include "config.h"
-#include "mpc.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
 
 #define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
 

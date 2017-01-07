@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "mpc_cmds.h"
-#include "mempool.h"
+#include <mpc_cmds.h>
+#include <mempool.h>
 
-#include "FreeRTOS.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #ifndef MPC_H
 #define MPC_H

@@ -2,19 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "g4config.h"
+#include <g4config.h>
 #include "config.h"
 
-#include "leds.h"
-#include "colors.h"
-#include "tlc59711.h"
+#include <leds.h>
+#include <colors.h>
+#include <tlc59711.h>
 
-#include "mpc.h"
+#include <mpc.h>
 
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "timers.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/timers.h>
 
 static TaskHandle_t leds_task_handle;
 static TimerHandle_t led_timer;

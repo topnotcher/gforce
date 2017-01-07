@@ -1,6 +1,6 @@
 #include <avr/io.h>
 
-#include "clock.h"
+#include <drivers/xmega/clock.h>
 
 #define CLKSYS_Enable( _oscSel ) ( OSC.CTRL |= (_oscSel) )
 #define CLKSYS_IsReady( _oscSel ) ( OSC.STATUS & (_oscSel) )

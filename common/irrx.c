@@ -4,15 +4,16 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "xmega/util.h"
-#include "config.h"
-#include "g4config.h"
+#include <drivers/xmega/util.h>
+#include <g4config.h>
 #include <mpc.h>
 #include <irrx.h>
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "task.h"
+#include "config.h"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
 
 #define _RXPIN_bm G4_PIN(IRRX_USART_RXPIN)
 

@@ -1,9 +1,9 @@
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
 
-#include "malloc.h"
-#include "uart.h"
+#include <malloc.h>
+#include <uart.h>
 
 static void uart_tx_interrupt_disable(const uart_dev_t *const);
 static void uart_tx_interrupt_enable(const uart_dev_t *const);

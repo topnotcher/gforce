@@ -24,15 +24,15 @@ SET(FREERTOS_SOURCES
 # Generate the GForce MPC CMD header
 #
 add_custom_command(
-	OUTPUT "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
+	OUTPUT "${CMAKE_SOURCE_DIR}/../include/mpc_cmds.h"
 	COMMAND /usr/bin/env PYTHONPATH="${CMAKE_SOURCE_DIR}/../python" python "${CMAKE_SOURCE_DIR}/../util/cmds.py"
-		"${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h"
+		"${CMAKE_SOURCE_DIR}/../include/mpc_cmds.h"
 
 	DEPENDS "${CMAKE_SOURCE_DIR}/../util/cmds.py"
 	DEPENDS "${CMAKE_SOURCE_DIR}/../python/gforce/mpc.py"
 )
 
-set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../common/include/mpc_cmds.h")
+set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../include/mpc_cmds.h")
 
 # 
 # Definitions to use when building all sources
@@ -68,8 +68,10 @@ set_property(SOURCE ${FREERTOS_SOURCES} APPEND_STRING PROPERTY COMPILE_FLAGS
 )
 
 include_directories(
-	"${CMAKE_SOURCE_DIR}/../common/include"
+	"${CMAKE_SOURCE_DIR}/../include"
 	"${CMAKE_SOURCE_DIR}/../freertos/include"
+
+	# TODO: this is for FreeRTOSConfig.h - do this better.
 	"${CMAKE_SOURCE_DIR}"
 )
 

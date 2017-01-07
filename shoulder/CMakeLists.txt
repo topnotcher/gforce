@@ -9,12 +9,13 @@ set(PROJECT_SOURCES
 	test.c
 	default.c
 
-	../bsp/xmega/clock.c
+	../drivers/xmega/clock.c
+	../drivers/xmega/led_usart_spi.c
+
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
 	../common/uart.c
-	../bsp/xmega/led_usart_spi.c
 	../common/tlc59711.c
 	../common/malloc.c
 	../common/mempool.c
@@ -25,7 +26,7 @@ set(PROJECT_SOURCES
 	../common/diag.c
 )
 
-include_directories(../bsp)
+include_directories(../include)
 
 include(../cmakedefs)
 

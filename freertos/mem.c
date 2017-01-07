@@ -1,7 +1,7 @@
-#include "FreeRTOS.h"
-#include "portable.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/portable.h>
 
-#include "malloc.h"
+#include <malloc.h>
 
 void *pvPortMalloc(size_t size) {
 	return smalloc(size);

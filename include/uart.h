@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <avr/io.h>
 
-#include "FreeRTOS.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #ifndef UART_H
 #define UART_H

@@ -1,20 +1,19 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include "mpc.h"
-#include "mpctwi.h"
-#include "leds.h"
-#include "buzz.h"
-#include "irrx.h"
-#include "diag.h"
+#include <mpc.h>
+#include <mpctwi.h>
+#include <leds.h>
+#include <buzz.h>
+#include <irrx.h>
+#include <diag.h>
 
-#include "leds.h"
-#include "xmega/led_drivers.h"
+#include <leds.h>
+#include <drivers/xmega/led_drivers.h>
+#include <drivers/xmega/clock.h>
 
-#include "xmega/clock.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include "main.h"
 
