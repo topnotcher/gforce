@@ -14,6 +14,14 @@ struct spi_tx_data {
 	void (*complete)(void *);
 };
 
+struct spi_port_desc {
+	PORT_t *port;
+	uint8_t ss_pin;
+	uint8_t mosi_pin;
+	uint8_t miso_pin;
+	uint8_t sck_pin;
+};
+
 typedef struct {
 	SPI_t *spi;
 	PORT_t *port;
@@ -29,6 +37,7 @@ typedef struct {
 spi_master_t *spi_master_init(SPI_t *, const uint8_t, const uint8_t);
 void spi_master_write(spi_master_t *const, const uint8_t *const, const uint8_t, void (*)(void *));
 void spi_master_isr(spi_master_t *const);
+struct spi_port_desc spi_port_info(const SPI_t *const);
 
 typedef struct {
 	QueueHandle_t rx_queue;

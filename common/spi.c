@@ -7,16 +7,6 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
-struct spi_port_desc {
-	PORT_t *port;
-	uint8_t ss_pin;
-	uint8_t mosi_pin;
-	uint8_t miso_pin;
-	uint8_t sck_pin;
-};
-
-static struct spi_port_desc spi_port_info(const SPI_t *const);
-
 spi_master_t *spi_master_init(SPI_t *spi_hw, const uint8_t tx_queue_size, uint8_t prescale) {
 	struct spi_port_desc port_info = spi_port_info(spi_hw);
 	spi_master_t *dev;
@@ -25,13 +15,13 @@ spi_master_t *spi_master_init(SPI_t *spi_hw, const uint8_t tx_queue_size, uint8_
 	if (dev) {
 		dev->spi = spi_hw;
 		dev->port = port_info.port;
-		dev->ss_pin = port_info.ss_pin;
+		dev->ss_pin = 1 << port_info.ss_pin;
 		dev->tx_queue = xQueueCreate(tx_queue_size, sizeof(struct spi_tx_data));
 		dev->busy = 0;
 
 		// SS will fuck you over hard per xmegaA, pp226
-		port_info.port->DIRSET = port_info.mosi_pin | port_info.sck_pin | port_info.ss_pin;
-		port_info.port->OUTSET = port_info.mosi_pin | port_info.sck_pin | port_info.ss_pin;
+		port_info.port->DIRSET = 1 << port_info.mosi_pin | 1 << port_info.sck_pin | 1 << port_info.ss_pin;
+		port_info.port->OUTSET = 1 << port_info.mosi_pin | 1 << port_info.sck_pin | 1 << port_info.ss_pin;
 
 		spi_hw->INTCTRL = SPI_INTLVL_LO_gc;
 		spi_hw->CTRL = SPI_ENABLE_bm | SPI_MASTER_bm | prescale;
@@ -85,13 +75,13 @@ void spi_master_isr(spi_master_t *const spi) {
 	}
 }
 
-static struct spi_port_desc spi_port_info(const SPI_t *const spi) {
+struct spi_port_desc spi_port_info(const SPI_t *const spi) {
 	struct spi_port_desc desc = {
 		.port = NULL,
-		.ss_pin = 1 << 4,
-		.mosi_pin = 1 << 5,
-		.miso_pin = 1 << 6,
-		.sck_pin = 1 << 7,
+		.ss_pin = 4,
+		.mosi_pin = 5,
+		.miso_pin = 6,
+		.sck_pin = 7,
 	};
 
 #ifdef SPIC

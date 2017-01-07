@@ -53,8 +53,5 @@ void mpc_register_drivers(void) {
 }
 
 led_spi_dev *led_init_driver(void) {
-	//uart module, port, sclk pin, sout_pin, dma_ch
-	led_spi = led_usart_init(&USARTC1, &PORTC, 5, 7, 0);
-
-	return led_spi;
+	return (led_spi = led_usart_init(&USARTC1, 0));
 }

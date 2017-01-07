@@ -14,6 +14,13 @@ struct _uart_tx_vec {
 };
 
 typedef struct {
+	PORT_t *port;
+	uint8_t tx_pin;
+	uint8_t rx_pin;
+	uint8_t xck_pin;
+} uart_port_desc;
+
+typedef struct {
 	QueueHandle_t rx_queue;
 	QueueHandle_t tx_queue;
 
@@ -30,5 +37,6 @@ void uart_tx_isr(uart_dev_t *const);
 uint8_t uart_getchar(const uart_dev_t *const);
 void uart_write(const uart_dev_t *const, const uint8_t *const, const uint8_t, void (*)(void *buf));
 uart_dev_t *uart_init(USART_t *, const uint8_t, const uint8_t, const uint16_t, const uint8_t);
+uart_port_desc uart_port_info(const USART_t *const uart);
 
 #endif

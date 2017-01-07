@@ -5,6 +5,7 @@
 
 #include "malloc.h"
 #include "leds.h"
+#include "uart.h"
 
 typedef struct {
 	led_spi_dev controller;
@@ -25,19 +26,16 @@ static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, c
 static void led_usart_dma_write(const led_spi_dev *const controller);
 static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart);
 
-led_spi_dev *led_usart_init(
-	USART_t *const usart, PORT_t *const port, const uint8_t sclk_pin,
-	const uint8_t sout_pin, const int8_t dma_ch)
+led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 
-{
 	uint16_t bsel;
 	led_spi_dev *controller = NULL;
 
-	uint8_t sclk_bm = 1 << sclk_pin;
-	uint8_t sout_bm = 1 << sout_pin;
-
+	uart_port_desc port_info = uart_port_info(usart);
+	uint8_t sclk_bm = 1 << port_info.xck_pin;
+	uint8_t sout_bm = 1 << port_info.tx_pin;
 	// yeah, I know ;)...
-	volatile uint8_t *port_pinctrl = &port->PIN0CTRL;
+	volatile uint8_t *port_pinctrl = &port_info.port->PIN0CTRL;
 
 	if (dma_ch >= 0) {
 		DMA_CH_t *dma_channels = &DMA.CH0;
@@ -82,9 +80,9 @@ led_spi_dev *led_usart_init(
 		}
 	}
 
-	port->OUTSET = sout_bm | sclk_bm;
-	port->DIRSET = sclk_bm | sout_bm;
-	port_pinctrl[sclk_pin] = PORT_INVEN_bm;
+	port_info.port->OUTSET = sout_bm | sclk_bm;
+	port_info.port->DIRSET = sout_bm | sclk_bm;
+	port_pinctrl[port_info.xck_pin] = PORT_INVEN_bm;
 
 	usart->BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
 	usart->BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);

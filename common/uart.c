@@ -5,15 +5,8 @@
 #include "malloc.h"
 #include "uart.h"
 
-typedef struct {
-	PORT_t *port;
-	uint8_t tx_pin;
-	uint8_t rx_pin;
-} uart_port_desc;
-
 static void uart_tx_interrupt_disable(const uart_dev_t *const);
 static void uart_tx_interrupt_enable(const uart_dev_t *const);
-static uart_port_desc uart_port_info(const USART_t *const uart);
 
 uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8_t rx_queue_size,
                      const uint16_t bsel, const uint8_t bscale) {
@@ -30,7 +23,7 @@ uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8
 		ctrlb |= USART_RXEN_bm;
 
 		// Manual, page 237.
-		port_info.port->DIRCLR = port_info.rx_pin;
+		port_info.port->DIRCLR = 1 << port_info.rx_pin;
 	}
 
 	if (tx_queue_size) {
@@ -38,8 +31,8 @@ uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8
 		ctrlb |= USART_TXEN_bm;
 
 		// Manual, page 237.
-		port_info.port->OUTSET = port_info.tx_pin;
-		port_info.port->DIRSET = port_info.tx_pin;
+		port_info.port->OUTSET = 1 << port_info.tx_pin;
+		port_info.port->DIRSET = 1 << port_info.tx_pin;
 	}
 	
 	uart->uart = uart_hw;
@@ -56,63 +49,71 @@ uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8
 	return uart;
 }
 
-static uart_port_desc uart_port_info(const USART_t *const uart) {
+uart_port_desc uart_port_info(const USART_t *const uart) {
 	uart_port_desc desc;
 
 #ifdef USARTC0
 	if (uart == &USARTC0) {
 		desc.port = &PORTC;
-		desc.tx_pin = PIN3_bm;
-		desc.rx_pin = PIN2_bm;
+		desc.tx_pin = 3;
+		desc.rx_pin = 2;
+		desc.xck_pin = 1;
 	}
 #endif
 #ifdef USARTC1
 	if (uart == &USARTC1) {
 		desc.port = &PORTC;
-		desc.tx_pin = PIN7_bm;
-		desc.rx_pin = PIN6_bm;
+		desc.tx_pin = 7;
+		desc.rx_pin = 6;
+		desc.xck_pin = 5;
 	}
 #endif
 #ifdef USARTD0
 	if (uart == &USARTD0) {
 		desc.port = &PORTD;
-		desc.tx_pin = PIN3_bm;
-		desc.rx_pin = PIN2_bm;
+		desc.tx_pin = 3;
+		desc.rx_pin = 2;
+		desc.xck_pin = 1;
 	}
 #endif
 #ifdef USARTD1
 	if (uart == &USARTD1) {
 		desc.port = &PORTD;
-		desc.tx_pin = PIN7_bm;
-		desc.rx_pin = PIN6_bm;
+		desc.tx_pin = 7;
+		desc.rx_pin = 6;
+		desc.xck_pin = 5;
 	}
 #endif
 #ifdef USARTE0
 	if (uart == &USARTE0) {
 		desc.port = &PORTE;
-		desc.tx_pin = PIN3_bm;
-		desc.rx_pin = PIN2_bm;
+		desc.tx_pin = 3;
+		desc.rx_pin = 2;
+		desc.xck_pin = 1;
 	}
 #endif
 #ifdef USARTE1
 	if (uart == &USARTE1) {
 		desc.port = &PORTE;
-		desc.tx_pin = PIN7_bm;
-		desc.rx_pin = PIN6_bm;
+		desc.tx_pin = 7;
+		desc.rx_pin = 6;
+		desc.xck_pin = 5;
 	}
 #endif
 #ifdef USARTF0
 	if (uart == &USARTF0) {
 		desc.port = &PORTF;
-		desc.tx_pin = PIN3_bm;
-		desc.rx_pin = PIN2_bm;
+		desc.tx_pin = 3;
+		desc.rx_pin = 2;
+		desc.xck_pin = 1;
 	}
 #endif
 #ifdef USARTF1
 	if (uart == &USARTF1) {
 		desc.port = &PORTF;
-		desc.tx_pin = PIN7_bm;
-		desc.rx_pin = PIN6_bm;
+		desc.tx_pin = 7;
+		desc.rx_pin = 6;
+		desc.xck_pin = 5;
 	}
 #endif
 

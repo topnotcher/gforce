@@ -5,6 +5,7 @@
 #include "malloc.h"
 #include "leds.h"
 #include "led_drivers.h"
+#include "spi.h"
 
 typedef struct {
 	led_spi_dev controller;
@@ -20,19 +21,18 @@ static void led_spi_load(const led_spi_dev *const, const uint8_t *const, const u
 static void led_spi_write(const led_spi_dev *const);
 static void led_spi_tx_isr(const led_spi_dev *const);
 
-led_spi_dev *led_spi_init(
-	SPI_t *const spi, PORT_t *const port, const uint8_t sclk_pin,
-	const uint8_t sout_pin, const uint8_t ss_pin)
-{
-	uint8_t sclk_bm = 1 << sclk_pin;
-	uint8_t ss_bm = 1 << ss_pin;
-	uint8_t sout_bm = 1 << sout_pin;
+led_spi_dev *led_spi_init(SPI_t *const spi) {
+	struct spi_port_desc port_info = spi_port_info(spi);
+
+	uint8_t sclk_bm = 1 << port_info.sck_pin;
+	uint8_t ss_bm = 1 << port_info.ss_pin;
+	uint8_t sout_bm = 1 << port_info.mosi_pin;
 	led_spi_driver *dev;
 
 	// SS is required even though we're not using it. xmegaA, p226.
-	port->DIRSET = sclk_bm | sout_bm | ss_bm;
-	port->OUTSET = sclk_bm | sout_bm;
-	port->OUTCLR = ss_bm;
+	port_info.port->DIRSET = sclk_bm | sout_bm | ss_bm;
+	port_info.port->OUTSET = sclk_bm | sout_bm;
+	port_info.port->OUTCLR = ss_bm;
 
 	// NOTE: the controller supports up to 20Mhz. The fastest hardware can do
 	// is 16MHz, but without DMA we cannot use 16MHz reliably. Data is latched
