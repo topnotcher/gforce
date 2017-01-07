@@ -1,8 +1,6 @@
 #include <malloc.h>
-#include <util/atomic.h>
-#include <avr/io.h>
 
-#include "config.h"
+#include <freertos/FreeRTOS.h>
 
 extern uint8_t __heap_start;
 extern uint8_t __data_start;
@@ -15,12 +13,12 @@ static size_t heap_offset = (size_t)0;
 void *smalloc(size_t size) {
 	void *addr;
 
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+	portENTER_CRITICAL(); {
 		addr = &__heap_start + heap_offset;
 		heap_offset += size;
 
 		heap_offset += size % __alignof__(void *);
-	}
+	}; portEXIT_CRITICAL();
 
 	//@TODO check for overflow, throw an error
 	return addr;

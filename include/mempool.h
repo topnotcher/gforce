@@ -1,5 +1,8 @@
 #include <stdint.h>
 #include <stddef.h>
+
+#include <freertos/FreeRTOS.h>
+
 #ifndef MEMPOOL_H
 #define MEMPOOL_H
 
@@ -39,7 +42,10 @@ void *mempool_alloc(mempool_t * pool);
  * data.
  */
 inline void *mempool_getref(void *buffer) {
+	portENTER_CRITICAL();
 	__MEMPOOL_INCREF(buffer);
+	portEXIT_CRITICAL();
+
 	return buffer;
 }
 
@@ -50,7 +56,9 @@ inline void *mempool_getref(void *buffer) {
  * memory leak.
  */
 inline void mempool_putref(void *buffer) {
+	portENTER_CRITICAL();
 	__MEMPOOL_DECREF(buffer);
+	portEXIT_CRITICAL();
 }
 
 #endif

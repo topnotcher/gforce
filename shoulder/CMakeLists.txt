@@ -17,8 +17,6 @@ if(PLATFORM STREQUAL "xmega")
 		../common/uart.c
 		../common/mpctwi.c
 		../common/diag.c
-		../common/malloc.c
-		../common/mempool.c
 	)
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
@@ -33,6 +31,8 @@ set(PROJECT_SOURCES
 
 	../common/leds.c
 	../common/mpc.c
+	../common/malloc.c
+	../common/mempool.c
 
 	${PLATFORM_SOURCES}
 )
