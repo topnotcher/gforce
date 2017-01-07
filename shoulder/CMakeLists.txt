@@ -12,11 +12,12 @@ set(PROJECT_SOURCES
 	../drivers/xmega/clock.c
 	../drivers/xmega/led_usart_spi.c
 
+	../drivers/tlc59711.c
+
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
 	../common/uart.c
-	../common/tlc59711.c
 	../common/malloc.c
 	../common/mempool.c
 	../common/mpctwi.c

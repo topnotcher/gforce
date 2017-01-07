@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "leds.h"
-#include "malloc.h"
-#include "tlc59711.h"
+#include <leds.h>
+#include <malloc.h>
+#include <drivers/tlc59711.h>
 
 tlc59711_dev *tlc59711_init(led_spi_dev *const spi, const uint8_t controllers) {
 	tlc59711_dev *tlc;

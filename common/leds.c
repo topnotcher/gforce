@@ -7,7 +7,7 @@
 
 #include <leds.h>
 #include <colors.h>
-#include <tlc59711.h>
+#include <drivers/tlc59711.h>
 
 #include <mpc.h>
 

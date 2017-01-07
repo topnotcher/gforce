@@ -1,7 +1,6 @@
 #include <stdint.h>
 
-#include "leds.h"
-#include "g4config.h"
+#include <leds.h>
 
 #ifndef TLC59711_H
 #define TLC59711_H
