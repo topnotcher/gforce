@@ -17,7 +17,7 @@ void *smalloc(size_t size) {
 		addr = &__heap_start + heap_offset;
 		heap_offset += size;
 
-		heap_offset += size % __alignof__(void *);
+		heap_offset += __alignof__(void *) - (size % __alignof__(void *));
 	}; portEXIT_CRITICAL();
 
 	//@TODO check for overflow, throw an error
