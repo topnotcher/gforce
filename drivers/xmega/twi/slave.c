@@ -1,7 +1,8 @@
 #include <string.h>
-#include <malloc.h>
 #include <stddef.h>
-#include <twi_slave.h>
+
+#include <drivers/xmega/twi/slave.h>
+#include <malloc.h>
 
 twi_slave_t *twi_slave_init(
         TWI_SLAVE_t *twi,

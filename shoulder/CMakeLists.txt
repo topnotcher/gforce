@@ -11,6 +11,8 @@ set(PROJECT_SOURCES
 
 	../drivers/xmega/clock.c
 	../drivers/xmega/led_usart_spi.c
+	../drivers/xmega/twi/master.c
+	../drivers/xmega/twi/slave.c
 
 	../drivers/tlc59711.c
 
@@ -22,8 +24,6 @@ set(PROJECT_SOURCES
 	../common/mempool.c
 	../common/mpctwi.c
 	../common/mpc.c
-	../common/twi_master.c
-	../common/twi_slave.c
 	../common/diag.c
 )
 

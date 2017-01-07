@@ -3,8 +3,8 @@
 #include <mpctwi.h>
 
 #include <malloc.h>
-#include <twi_master.h>
-#include <twi_slave.h>
+#include <drivers/xmega/twi/master.h>
+#include <drivers/xmega/twi/slave.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>

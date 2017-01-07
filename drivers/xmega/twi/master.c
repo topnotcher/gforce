@@ -1,6 +1,7 @@
 #include <string.h>
+
 #include <malloc.h>
-#include <twi_master.h>
+#include <drivers/xmega/twi/master.h>
 
 static void twi_master_write_handler(twi_master_t *dev);
 static void twi_master_read_handler(twi_master_t *dev);
