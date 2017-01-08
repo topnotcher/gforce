@@ -21,6 +21,12 @@ if(PLATFORM STREQUAL "xmega")
 elseif(PLATFORM STREQUAL "saml21")
 	set(SAM_PART "saml21j18b")
 	message("Building for ${SAM_PART}")
+
+	set(PLATFORM_SOURCES
+		saml21.c
+		../common/startup_saml21.c
+	)
+
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
 endif()
@@ -49,9 +55,9 @@ include(../cmakedefs)
 if(PLATFORM STREQUAL "xmega")
 	add_avr_executable(main ${SOURCES})
 elseif(PLATFORM STREQUAL "saml21")
-	add_executable(main ${SOURCES})
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-T${CMAKE_SOURCE_DIR}/../util/${SAM_PART}.ld")
-	set_target_properties(main PROPERTIES SAM_PART ${SAM_PART})
+	set_property(SOURCE "../common/startup_saml21.c" APPEND APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-pedantic")
+
+	add_arm_executable(main ${SOURCES})
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
 endif()
