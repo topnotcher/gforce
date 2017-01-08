@@ -16,8 +16,13 @@ mempool_t *init_mempool(const uint8_t block_size, const uint8_t size) {
 	pool->size = size;
 	pool->block_size = block_size;
 
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-align"
+
 	for (uint8_t i = 0; i < block_size; ++i)
 		block(pool, i)->refcnt = 0;
+
+	#pragma GCC diagnostic pop
 
 	return pool;
 }
@@ -26,6 +31,9 @@ void *mempool_alloc(mempool_t *pool) {
 	void *ret = NULL;
 
 	portENTER_CRITICAL(); {
+
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-align"
 		for (uint8_t i = 0; i < pool->size; ++i) {
 			mempool_block_t *block = block(pool, i);
 			if (block->refcnt == 0) {
@@ -34,6 +42,8 @@ void *mempool_alloc(mempool_t *pool) {
 				break;
 			}
 		}
+	#pragma GCC diagnostic pop
+
 	} portEXIT_CRITICAL();
 
 	return ret;

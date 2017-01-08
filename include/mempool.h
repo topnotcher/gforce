@@ -27,7 +27,7 @@ void *mempool_alloc(mempool_t * pool);
  * Get a pointer to the block given membool_block_t.block (buffer)
  */
 #define __MEMPOOL_BLOCK(buffer) \
-	((mempool_block_t *)((void*)((uint8_t*)(buffer) - offsetof(mempool_block_t, block))))
+	((mempool_block_t *)((uint8_t*)(buffer) - offsetof(mempool_block_t, block)))
 
 #define __MEMPOOL_DECREF(buffer) do { \
 	__MEMPOOL_BLOCK(buffer)->refcnt--; \
@@ -43,7 +43,14 @@ void *mempool_alloc(mempool_t * pool);
  */
 inline void *mempool_getref(void *buffer) {
 	portENTER_CRITICAL();
+
+	// This change in alignment should be completely safe - the block should be
+	// aligned if it was allocated by mempool.
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-align"
 	__MEMPOOL_INCREF(buffer);
+	#pragma GCC diagnostic pop
+
 	portEXIT_CRITICAL();
 
 	return buffer;
@@ -57,7 +64,14 @@ inline void *mempool_getref(void *buffer) {
  */
 inline void mempool_putref(void *buffer) {
 	portENTER_CRITICAL();
+
+	// This change in alignment should be completely safe - the block should be
+	// aligned if it was allocated by mempool.
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wcast-align"
 	__MEMPOOL_DECREF(buffer);
+	#pragma GCC diagnostic pop
+
 	portEXIT_CRITICAL();
 }
 
