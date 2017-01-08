@@ -18,11 +18,6 @@ system_init_func(system_board_init);
 system_init_func(system_configure_interrupts);
 
 /**
- * Configure the OS timer interrupt and associated clock source.
- */
-system_init_func(system_configure_os_ticks);
-
-/**
  * Initialize software components - called immediately before starting the scheduler.
  */
 system_init_func(system_software_init);

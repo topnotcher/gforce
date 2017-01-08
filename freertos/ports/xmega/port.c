@@ -233,7 +233,7 @@ uint16_t usAddress;
 BaseType_t xPortStartScheduler( void )
 {
 	/* Setup the hardware to generate the tick. */
-	//prvSetupTimerInterrupt();
+	prvSetupTimerInterrupt();
 
 	/* Restore the context of the first task that is going to run. */
 	portRESTORE_CONTEXT();
@@ -292,40 +292,10 @@ void vPortYieldFromTick( void )
 /*
  * Setup timer 1 compare match A to generate a tick interrupt.
  */
-/* static void prvSetupTimerInterrupt( void ) */
-/* { */
-/* uint32_t ulCompareMatch; */
-/* uint8_t ucHighByte, ucLowByte; */
-/*  */
-/* 	#<{(| Using 16bit timer 1 to generate the tick.  Correct fuses must be */
-/* 	selected for the configCPU_CLOCK_HZ clock. |)}># */
-/*  */
-/* 	ulCompareMatch = configCPU_CLOCK_HZ / configTICK_RATE_HZ; */
-/*  */
-/* 	#<{(| We only have 16 bits so have to scale to get our required tick rate. |)}># */
-/* 	ulCompareMatch /= portCLOCK_PRESCALER; */
-/*  */
-/* 	#<{(| Adjust for correct value. |)}># */
-/* 	ulCompareMatch -= ( uint32_t ) 1; */
-/*  */
-/* 	#<{(| Setup compare match value for compare match A.  Interrupts are disabled  */
-/* 	before this is called so we need not worry here. |)}># */
-/* 	ucLowByte = ( uint8_t ) ( ulCompareMatch & ( uint32_t ) 0xff ); */
-/* 	ulCompareMatch >>= 8; */
-/* 	ucHighByte = ( uint8_t ) ( ulCompareMatch & ( uint32_t ) 0xff ); */
-/* 	OCR1AH = ucHighByte; */
-/* 	OCR1AL = ucLowByte; */
-/*  */
-/* 	#<{(| Setup clock source and compare match behaviour. |)}># */
-/* 	ucLowByte = portCLEAR_COUNTER_ON_MATCH | portPRESCALE_64; */
-/* 	TCCR1B = ucLowByte; */
-/*  */
-/* 	#<{(| Enable the interrupt - this is okay as interrupt are currently globally */
-/* 	disabled. |)}># */
-/* 	ucLowByte = TIMSK; */
-/* 	ucLowByte |= portCOMPARE_MATCH_A_INTERRUPT_ENABLE; */
-/* 	TIMSK = ucLowByte; */
-/* } */
+static void prvSetupTimerInterrupt(void) {
+	clk_enable_rtc_systick_256hz();
+	_Static_assert(configTICK_RATE_HZ == 256, "configTICK_RATE_HZ != 256");
+}
 
 /*-----------------------------------------------------------*/
 
@@ -336,27 +306,12 @@ void vPortYieldFromTick( void )
 	 * the context is saved at the start of vPortYieldFromTick().  The tick
 	 * count is incremented after the context is saved.
 	 */
-	/*void SIG_OUTPUT_COMPARE1A( void ) __attribute__ ( ( signal, naked ) );
-	void SIG_OUTPUT_COMPARE1A( void )
-	{
+	ISR(RTC_OVF_vect) __attribute__((naked)) {
 		vPortYieldFromTick();
 		asm volatile ( "reti" );
 	}
-	*/
 #else
-
-	/*
-	 * Tick ISR for the cooperative scheduler.  All this does is increment the
-	 * tick count.  We don't need to switch context, this can only be done by
-	 * manual calls to taskYIELD();
-	 */
-	/*void SIG_OUTPUT_COMPARE1A( void ) __attribute__ ( ( signal ) );
-	void SIG_OUTPUT_COMPARE1A( void )
-	{
+	ISR(RTC_OVF_vect) {
 		xTaskIncrementTick();
 	}
-	*/
 #endif
-
-
-	

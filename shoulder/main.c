@@ -6,7 +6,6 @@
 
 int main(void) {
 	system_board_init();
-	system_configure_os_ticks();
 	system_configure_interrupts();
 
 	system_software_init();
