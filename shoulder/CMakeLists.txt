@@ -24,7 +24,6 @@ elseif(PLATFORM STREQUAL "saml21")
 
 	set(PLATFORM_SOURCES
 		saml21.c
-		../common/startup_saml21.c
 	)
 
 else()
@@ -47,16 +46,12 @@ set(PROJECT_SOURCES
 	${PLATFORM_SOURCES}
 )
 
-include_directories(../include)
-
 include(../cmakedefs)
 
 # TODO
 if(PLATFORM STREQUAL "xmega")
 	add_avr_executable(main ${SOURCES})
 elseif(PLATFORM STREQUAL "saml21")
-	set_property(SOURCE "../common/startup_saml21.c" APPEND APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-pedantic")
-
 	add_arm_executable(main ${SOURCES})
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")

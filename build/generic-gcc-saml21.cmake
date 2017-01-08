@@ -26,14 +26,10 @@ find_program(ARM_OBJCOPY arm-none-eabi-objcopy)
 find_program(ARM_SIZE arm-none-eabi-size)
 find_program(CMSIS_DAP_PROGRAMMER edbg)
 
-
-set(CMAKE_C_FLAGS "\
-	-fno-common -ffunction-sections -fdata-sections \
+set(CMAKE_C_FLAGS "-fno-common -ffunction-sections -fdata-sections\
 	-mcpu=cortex-m0plus -march=armv6-m -mthumb \
-	-msoft-float \
-	-specs=nosys.specs \
-")
-
+	-msoft-float -specs=nosys.specs \
+" CACHE STRING "" FORCE)
 
 function(add_arm_executable EXECUTABLE_NAME)
 	if(NOT SAM_PART)
@@ -48,13 +44,15 @@ function(add_arm_executable EXECUTABLE_NAME)
 	set(bin_file ${EXECUTABLE_NAME}-${SAM_PART}.bin)
 	set(map_file ${EXECUTABLE_NAME}-${SAM_PART}.map)
 
+	get_filename_component(TOOLCHAIN_DIRECTORY "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
+
+	set(STARTUP_CODE "${TOOLCHAIN_DIRECTORY}/startup_saml21.c")
+	list(APPEND ARGN "${STARTUP_CODE}")
 
 	add_executable(${elf_file} ${ARGN})
 	string(TOUPPER "__${SAM_PART}__" SAM_PART_DEFINE)
 
 	target_compile_definitions(${elf_file} PRIVATE ${SAM_PART_DEFINE}=1)
-
-	get_filename_component(TOOLCHAIN_DIRECTORY "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
 
 	set_target_properties(
 		${elf_file}
