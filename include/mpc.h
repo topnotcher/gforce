@@ -64,7 +64,7 @@ inline void mpc_incref(const mpc_pkt *const pkt) {
 	mempool_getref((void*)pkt);
 }
 
-inline void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
+inline __attribute__((always_inline)) void mpc_send_cmd(const uint8_t addr, const uint8_t cmd) {
 	mpc_send(addr, cmd, 0, NULL);
 }
 #endif

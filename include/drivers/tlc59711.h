@@ -55,7 +55,7 @@ typedef struct {
 
 void tlc59711_set_color(tlc59711_dev *dev, uint8_t led, uint16_t red, uint16_t green, uint16_t blue);
 
-inline void tlc59711_write(const tlc59711_dev *const dev) {
+inline __attribute__((always_inline)) void tlc59711_write(const tlc59711_dev *const dev) {
 	dev->spi->write(dev->spi);
 }
 
