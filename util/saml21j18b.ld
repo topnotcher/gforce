@@ -54,9 +54,6 @@ MEMORY
   lpram    (rwx) : ORIGIN = 0x30000000, LENGTH = 0x00002000
 }
 
-/* The stack size used by the application. NOTE: you need to adjust according to your application. */
-STACK_SIZE = DEFINED(STACK_SIZE) ? STACK_SIZE : DEFINED(__stack_size__) ? __stack_size__ : 0x2000;
-
 /* Section Definitions */
 SECTIONS
 {
@@ -123,6 +120,7 @@ SECTIONS
     .relocate : AT (_etext)
     {
         . = ALIGN(4);
+		__data_start = .;
         _srelocate = .;
         *(.ramfunc .ramfunc.*);
         *(.data .data.*);
@@ -143,23 +141,23 @@ SECTIONS
     .bss (NOLOAD) :
     {
         . = ALIGN(4);
-        _sbss = . ;
+        __bss_start__ = . ;
         _szero = .;
         *(.bss .bss.*)
         *(COMMON)
         . = ALIGN(4);
-        _ebss = . ;
+        __bss_end__ = . ;
         _ezero = .;
+		__heap_start = .;
     } > ram
 
     /* stack section */
     .stack (NOLOAD):
     {
         . = ALIGN(8);
-        _sstack = .;
-        . = . + STACK_SIZE;
-        . = ALIGN(8);
-        _estack = .;
+        __stack_bottom = .;
+        . = ORIGIN(ram) + LENGTH(ram);
+        __stack_top = .;
     } > ram
 
     . = ALIGN(4);

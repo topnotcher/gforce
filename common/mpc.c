@@ -1,8 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <util/crc16.h>
-
 #include <g4config.h>
 #include <mpc.h>
 #include "config.h"
@@ -11,7 +9,13 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 
+// TODO: port this.
+// #include <util/crc16.h>
+_Static_assert(MPC_DISABLE_CRC, "CRCs are not disabled.");
+#define _crc_ibutton_update(crc, data) ((data == data) ? 0 : 0)
 #define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
+
+
 
 #define MAX_MPC_DRIVERS 2
 static struct {

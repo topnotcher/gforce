@@ -18,10 +18,14 @@ if(PLATFORM STREQUAL "xmega")
 		../common/mpctwi.c
 		../common/diag.c
 	)
+elseif(PLATFORM STREQUAL "saml21")
+	set(SAM_PART "saml21j18b")
+	message("Building for ${SAM_PART}")
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
 endif()
 
+set(FREERTOS_PORT ${PLATFORM})
 
 set(PROJECT_SOURCES
 	main.c
@@ -41,4 +45,13 @@ include_directories(../include)
 
 include(../cmakedefs)
 
-add_avr_executable(main ${SOURCES})
+# TODO
+if(PLATFORM STREQUAL "xmega")
+	add_avr_executable(main ${SOURCES})
+elseif(PLATFORM STREQUAL "saml21")
+	add_executable(main ${SOURCES})
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-T${CMAKE_SOURCE_DIR}/../util/${SAM_PART}.ld")
+	set_target_properties(main PROPERTIES SAM_PART ${SAM_PART})
+else()
+	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
+endif()
