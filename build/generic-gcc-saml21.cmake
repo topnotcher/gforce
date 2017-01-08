@@ -26,10 +26,25 @@ find_program(ARM_OBJCOPY arm-none-eabi-objcopy)
 find_program(ARM_SIZE arm-none-eabi-size)
 find_program(CMSIS_DAP_PROGRAMMER edbg)
 
+if(NOT ((CMAKE_BUILD_TYPE MATCHES Release) OR
+	(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo) OR
+	(CMAKE_BUILD_TYPE MATCHES Debug) OR
+	(CMAKE_BUILD_TYPE MATCHES MinSizeRel)))
+	set(
+		CMAKE_BUILD_TYPE Release
+		CACHE STRING "Choose cmake build type: Debug Release RelWithDebInfo MinSizeRel"
+		FORCE
+		)
+endif()
+
 set(CMAKE_C_FLAGS "-fno-common -ffunction-sections -fdata-sections\
 	-mcpu=cortex-m0plus -march=armv6-m -mthumb \
 	-msoft-float -specs=nosys.specs \
 " CACHE STRING "" FORCE)
+
+set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "-O1 -gdwarf-3 -gstrict-dwarf" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -gdwarf-3 -gstrict-dwarf" CACHE STRING "" FORCE)
 
 function(add_arm_executable EXECUTABLE_NAME)
 	if(NOT SAM_PART)
