@@ -116,6 +116,10 @@ void xPortPendSVHandler( void ) __attribute__ (( naked ));
 void xPortSysTickHandler( void );
 void vPortSVCHandler( void );
 
+// override the weak handlers set by the startup code
+void PendSV_Handler(void) __attribute__ ((alias("xPortPendSVHandler")));
+void SysTick_Handler(void) __attribute__((alias("xPortSysTickHandler")));
+
 /*
  * Start first task is a separate function so it can be tested in isolation.
  */
@@ -339,7 +343,6 @@ void xPortPendSVHandler( void )
 	);
 }
 /*-----------------------------------------------------------*/
-
 void xPortSysTickHandler( void )
 {
 uint32_t ulPreviousMask;
