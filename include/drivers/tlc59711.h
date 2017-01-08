@@ -14,7 +14,7 @@ enum {
 	TLC59711_TMGRST,
 	TLC59711_DSPRPT,
 	TLC59711_BLANK,
-} tlc59711_bit;
+};
 
 enum {
 	TLC59711_RED = 1,
