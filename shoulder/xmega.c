@@ -21,7 +21,15 @@ static led_spi_dev *led_spi;
 
 system_init_func(system_board_init) {
 	sysclk_set_internal_32mhz();
-	_Static_assert(configCPU_CLOCK_HZ == 32000000, "configCPU_CLOCK_HZ != 32MHz");
+
+	// Prescale system clock /2
+	uint8_t val = CLK.PSCTRL & ~CLK_PSADIV_gm;
+	val |= CLK_PSADIV2_bm;
+
+	CCP = CCP_IOREG_gc;
+	CLK.PSCTRL = val;
+
+	_Static_assert(configCPU_CLOCK_HZ == 16000000, "configCPU_CLOCK_HZ != 32MHz");
 }
 
 system_init_func(system_configure_interrupts) {
