@@ -2,8 +2,8 @@
 
 #include <avr/io.h>
 
-#include "FreeRTOS.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 #ifndef SPI_H
 #define SPI_H

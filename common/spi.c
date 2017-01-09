@@ -4,8 +4,8 @@
 #include "malloc.h"
 #include "mempool.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 
 spi_master_t *spi_master_init(SPI_t *spi_hw, const uint8_t tx_queue_size, uint8_t prescale) {
 	struct spi_port_desc port_info = spi_port_info(spi_hw);

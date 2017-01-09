@@ -1,12 +1,22 @@
 #include <stdint.h>
 #include <saml21/io.h>
+#include <mpc.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <drivers/saml21/twi/slave.h>
+
 #include "main.h"
 
-static void led_task(void *);
+//static void led_task(void *);
+
+static uint8_t recv_buf[64];
+
+static void begin_txn(void *, uint8_t, uint8_t**, uint8_t*);
+static void end_txn(void *, uint8_t, uint8_t*, uint8_t);
+
+static uint8_t count;
 
 system_init_func(system_board_init) {
 	uint32_t val = 0;
@@ -37,16 +47,42 @@ system_init_func(system_board_init) {
 }
 
 system_init_func(system_software_init) {
-	// LED0 on xplained board.
-	PORT[0].Group[1].DIRSET.reg = 1 << 10;
-	PORT[0].Group[1].OUTCLR.reg = 1 << 10;
+	twi_slave_t *slave = twi_slave_init();
 
-	xTaskCreate(led_task, "led task", 256, NULL, tskIDLE_PRIORITY + 1, NULL);
+	slave->begin_txn = begin_txn;
+	slave->end_txn = end_txn;
+
+	// LED0 on xplained board.
+	/*PORT[0].Group[1].DIRSET.reg = 1 << 10;
+	PORT[0].Group[1].OUTCLR.reg = 1 << 10;*/
+
+	//xTaskCreate(led_task, "led task", 256, NULL, tskIDLE_PRIORITY + 1, NULL);
 }
 
+static void begin_txn(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size) {
+	if (!write && !*buf) {
+		*buf = recv_buf;
+		*buf_size = sizeof(recv_buf);
+	}
+}
+
+static void end_txn(void *ins, uint8_t write, uint8_t *buf, uint8_t bytes) {
+	if (!write && buf) {
+		++count;
+	}
+}
+/*
 static void led_task(void *params) {
 	while (1) {
 		PORT[0].Group[1].OUTTGL.reg = 1 << 10;
 		vTaskDelay(configTICK_RATE_HZ / 2);
 	}
 }
+*/
+
+/*
+void mpc_register_drivers(void) {
+	mpc_register_driver(mpctwi_init());
+}
+*/
+
