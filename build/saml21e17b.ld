@@ -143,23 +143,24 @@ SECTIONS
     .bss (NOLOAD) :
     {
         . = ALIGN(4);
-        _sbss = . ;
+        __bss_start__ = . ;
         _szero = .;
         *(.bss .bss.*)
         *(COMMON)
         . = ALIGN(4);
-        _ebss = . ;
+        __bss_end__ = . ;
         _ezero = .;
+		__heap_start = .;
     } > ram
 
     /* stack section */
     .stack (NOLOAD):
     {
         . = ALIGN(8);
-        _sstack = .;
+        __stack_bottom = .;
         . = . + STACK_SIZE;
         . = ALIGN(8);
-        _estack = .;
+        __stack_top = .;
     } > ram
 
     . = ALIGN(4);

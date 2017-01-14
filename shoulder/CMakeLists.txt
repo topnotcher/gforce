@@ -19,7 +19,7 @@ if(PLATFORM STREQUAL "xmega")
 		../common/diag.c
 	)
 elseif(PLATFORM STREQUAL "saml21")
-	set(SAM_PART "saml21j18b")
+	set(SAM_PART "saml21e17b")
 	message("Building for ${SAM_PART}")
 
 	set(PLATFORM_SOURCES
