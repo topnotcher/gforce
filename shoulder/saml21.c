@@ -6,6 +6,9 @@
 #include <freertos/task.h>
 
 #include <drivers/saml21/twi/slave.h>
+#include <drivers/saml21/twi/master.h>
+
+#include <mpc.h>
 
 #include "main.h"
 
@@ -15,8 +18,13 @@ static uint8_t recv_buf[64];
 
 static void begin_txn(void *, uint8_t, uint8_t**, uint8_t*);
 static void end_txn(void *, uint8_t, uint8_t*, uint8_t);
+static void master_txn_complete(void *, int8_t);
 
-static uint8_t count;
+static uint8_t rx_count;
+static uint8_t tx_count;
+
+static twi_slave_t *slave;
+static twi_master_t *master;
 
 system_init_func(system_board_init) {
 	uint32_t val = 0;
@@ -47,7 +55,9 @@ system_init_func(system_board_init) {
 }
 
 system_init_func(system_software_init) {
-	twi_slave_t *slave = twi_slave_init();
+	slave = twi_slave_init();
+	// TODO properly pass in the sercom module.
+	master = twi_master_init(NULL, 14, NULL, master_txn_complete);
 
 	slave->begin_txn = begin_txn;
 	slave->end_txn = end_txn;
@@ -67,8 +77,17 @@ static void begin_txn(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size
 }
 
 static void end_txn(void *ins, uint8_t write, uint8_t *buf, uint8_t bytes) {
+	static uint8_t reply[] = {0x00, MPC_CMD_DIAG_RELAY, MPC_ADDR_LS, 0x00};
+
 	if (!write && buf) {
-		++count;
+		++rx_count;
+		twi_master_write(master, MPC_ADDR_MASTER, sizeof(reply), reply);
+	}
+}
+
+static void master_txn_complete(void *ins, int8_t status) {
+	if (status == 0) {
+		++tx_count;
 	}
 }
 /*

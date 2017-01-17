@@ -25,6 +25,7 @@ elseif(PLATFORM STREQUAL "saml21")
 	set(PLATFORM_SOURCES
 		saml21.c
 		../drivers/saml21/twi/slave.c
+		../drivers/saml21/twi/master.c
 	)
 
 else()
