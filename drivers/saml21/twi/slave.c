@@ -8,16 +8,40 @@
 #include <drivers/saml21/twi/slave.h>
 #include <malloc.h>
 
+struct _twi_slave_s {
+	Sercom *sercom;
+	void *ins;
+
+	void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size);
+	void (*end_txn)(void *ins, uint8_t write, uint8_t *buf, uint8_t buf_size);
+
+	uint8_t *buf;
+	uint8_t buf_size;
+	uint8_t bytes;
+	uint8_t addr;
+};
+
 static void twi_slave_handler(void *);
 static inline bool twi_slave_direction(const Sercom *) __attribute__((always_inline));
 
-twi_slave_t *twi_slave_init(Sercom *sercom) {
+// TODO: this mask has a different meaning than on the XMEGA
+twi_slave_t *twi_slave_init(
+		Sercom *sercom,
+		uint8_t addr,
+		uint8_t mask,
+		void *ins,
+		void (*begin_txn)(void *, uint8_t, uint8_t **, uint8_t *),
+		void (*end_txn)(void *, uint8_t, uint8_t *, uint8_t)) {
+
 	int sercom_index = sercom_get_index(sercom);
 
 	twi_slave_t *dev = smalloc(sizeof *dev);
 
 	if (dev) {
 		dev->sercom = sercom;
+		dev->begin_txn = begin_txn;
+		dev->end_txn = end_txn;
+		dev->ins = ins;
 
 		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
 		int pm_index = sercom_index + MCLK_APBCMASK_SERCOM0_Pos;
@@ -62,7 +86,7 @@ twi_slave_t *twi_slave_init(Sercom *sercom) {
 		// 0x00 = mask: responds to ADDR.ADDR masked by ADDR.ADDRMASK (bits masked
 		// out in ADDRMASK do not count)
 		ctrlb |= SERCOM_I2CS_CTRLB_AMODE(0x00);
-		sercom->I2CS.ADDR.reg = SERCOM_I2CS_ADDR_ADDR(0x02) | SERCOM_I2CS_ADDR_ADDRMASK(~0x02U);
+		sercom->I2CS.ADDR.reg = SERCOM_I2CS_ADDR_ADDR(addr) | SERCOM_I2CS_ADDR_ADDRMASK(mask);
 
 		sercom->I2CS.CTRLA.reg = ctrla;
 		sercom->I2CS.CTRLB.reg = ctrlb;
@@ -130,7 +154,7 @@ static void twi_slave_handler(void *_isr_ins) {
 		dev->buf_size = 0;
 		dev->buf = NULL;
 
-		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC; 
+		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
 	} else if (sercom->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) {
 		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTENSET_ERROR;
 	}

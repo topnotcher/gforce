@@ -4,6 +4,21 @@
 #include <drivers/xmega/twi/slave.h>
 #include <malloc.h>
 
+struct _twi_slave_s {
+	TWI_SLAVE_t *twi;
+	uint8_t addr;
+	void *ins;
+
+	uint8_t *buf;
+	uint8_t buf_size;
+	uint8_t bytes;
+
+	void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size);
+	void (*end_txn)(void *ins, uint8_t write, uint8_t * buf, uint8_t buf_size);
+};
+
+static inline bool twi_slave_direction(const TWI_SLAVE_t *) __attribute__((always_inline));
+
 twi_slave_t *twi_slave_init(
         TWI_SLAVE_t *twi,
         uint8_t addr,
@@ -85,4 +100,8 @@ void twi_slave_isr(twi_slave_t *dev) {
 	} else {
 		//Some kind of unexpected interrupt
 	}
+}
+
+static inline bool twi_slave_direction(const TWI_SLAVE_t *) {
+	return twi->STATUS & TWI_SLAVE_DIR_bm;
 }
