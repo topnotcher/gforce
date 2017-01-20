@@ -69,7 +69,7 @@ system_init_func(system_software_init) {
 }
 
 static void init_twi_slave(void) {
-	slave = twi_slave_init();
+	slave = twi_slave_init(SERCOM3);
 	slave->begin_txn = begin_txn;
 	slave->end_txn = end_txn;
 

@@ -17,6 +17,6 @@ typedef struct {
 	uint8_t addr;
 } twi_slave_t;
 
-twi_slave_t *twi_slave_init(void);
+twi_slave_t *twi_slave_init(Sercom *);
 
 #endif

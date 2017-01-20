@@ -11,8 +11,7 @@
 static void twi_slave_handler(void *);
 static inline bool twi_slave_direction(const Sercom *) __attribute__((always_inline));
 
-twi_slave_t *twi_slave_init(void) {
-	Sercom *sercom = SERCOM3;
+twi_slave_t *twi_slave_init(Sercom *sercom) {
 	int sercom_index = sercom_get_index(sercom);
 
 	twi_slave_t *dev = smalloc(sizeof *dev);
