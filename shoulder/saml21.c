@@ -57,7 +57,7 @@ system_init_func(system_board_init) {
 system_init_func(system_software_init) {
 	slave = twi_slave_init();
 	// TODO properly pass in the sercom module.
-	master = twi_master_init(NULL, 14, NULL, master_txn_complete);
+	master = twi_master_init(SERCOM1, 14, NULL, master_txn_complete);
 
 	slave->begin_txn = begin_txn;
 	slave->end_txn = end_txn;

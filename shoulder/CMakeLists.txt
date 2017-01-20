@@ -26,6 +26,7 @@ elseif(PLATFORM STREQUAL "saml21")
 		saml21.c
 		../drivers/saml21/twi/slave.c
 		../drivers/saml21/twi/master.c
+		../drivers/saml21/sercom.c
 	)
 
 else()

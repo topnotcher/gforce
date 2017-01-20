@@ -4,24 +4,24 @@
 
 #include <saml21/io.h>
 
+#include <drivers/saml21/sercom.h>
 #include <drivers/saml21/twi/slave.h>
 #include <malloc.h>
+
+static void twi_slave_handler(void *);
 
 static bool twi_slave_direction(const Sercom *const _sercom) {
 	// i2c direction bit: 1 indicates master read (slave sends data to master)
 	return _sercom->I2CS.STATUS.reg & SERCOM_I2CS_STATUS_DIR;
 }
 
-static twi_slave_t *gdev;
-
 twi_slave_t *twi_slave_init(void) {
-	uint8_t sercom_index = 3;
 	Sercom *sercom = SERCOM3;
+	int sercom_index = sercom_get_index(sercom);
 
 	twi_slave_t *dev = smalloc(sizeof *dev);
 
 	if (dev) {
-		gdev = dev;
 		dev->sercom = sercom;
 
 		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
@@ -81,7 +81,8 @@ twi_slave_t *twi_slave_init(void) {
 			SERCOM_I2CS_INTENSET_DRDY |
 			SERCOM_I2CS_INTENSET_ERROR;
 
-		NVIC_EnableIRQ(SERCOM0_IRQn + sercom_index);
+		sercom_register_handler(sercom_index, twi_slave_handler, dev);
+		sercom_enable_irq(sercom_index);
 
 		// TODO WRCONFIG
 		// Each pin is 1 nybble (even pin = low); set them both to D (0x04)
@@ -95,9 +96,9 @@ twi_slave_t *twi_slave_init(void) {
 	return dev;
 }
 
-void SERCOM3_Handler(void) {
-	twi_slave_t *dev = gdev;
-	Sercom *sercom = gdev->sercom;
+static void twi_slave_handler(void *_isr_ins) {
+	twi_slave_t *dev = _isr_ins;
+	Sercom *sercom = dev->sercom;
 
 	// TODO SMEN: smart mode - auto ack on DATA read
 	// TODO AACKEN: auto ack on address match.

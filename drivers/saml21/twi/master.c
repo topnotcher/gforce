@@ -4,18 +4,15 @@
 #include <malloc.h>
 #include <saml21/io.h>
 
+#include <drivers/saml21/sercom.h>
 #include <drivers/saml21/twi/master.h>
 
 static void twi_master_start_txn(const twi_master_t *);
 static void twi_master_txn_complete(twi_master_t *, int8_t);
-
-static twi_master_t *gdev;
+static void twi_master_isr(void *);
 
 twi_master_t *twi_master_init(Sercom *sercom, const uint8_t baud, void *ins, void (*txn_complete)(void *, int8_t)) {
-	// TODO
-	uint8_t sercom_index = 1;
-	sercom = SERCOM1;
-
+	int sercom_index = sercom_get_index(sercom);
 	twi_master_t *dev = smalloc(sizeof *dev);
 
 	if (dev) {
@@ -24,7 +21,6 @@ twi_master_t *twi_master_init(Sercom *sercom, const uint8_t baud, void *ins, voi
 		dev->sercom = sercom;
 		dev->ins = ins;
 		dev->txn_complete = txn_complete;
-		gdev = dev;
 
 		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
 		int pm_index = sercom_index + MCLK_APBCMASK_SERCOM0_Pos;
@@ -82,8 +78,6 @@ twi_master_t *twi_master_init(Sercom *sercom, const uint8_t baud, void *ins, voi
 			SERCOM_I2CM_INTENSET_MB |
 			SERCOM_I2CM_INTENSET_ERROR;
 
-		NVIC_EnableIRQ(SERCOM0_IRQn + sercom_index);
-
 		// TODO WRCONFIG
 		// Each pin is 1 nybble (even pin = low); set them both to D (0x04)
 		uint8_t pmux = 0x02 | (0x02 << 4);
@@ -91,6 +85,9 @@ twi_master_t *twi_master_init(Sercom *sercom, const uint8_t baud, void *ins, voi
 
 		PORT[0].Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
 		PORT[0].Group[0].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
+
+		sercom_register_handler(sercom_index, twi_master_isr, dev);
+		sercom_enable_irq(sercom_index);
 	}
 
 	return dev;
@@ -157,8 +154,8 @@ static void twi_master_write_handler(twi_master_t *dev) {
 	}
 }
 
-void SERCOM1_Handler(void) {
-	twi_master_t *dev = gdev;
+static void twi_master_isr(void *_isr_ins) {
+	twi_master_t *dev = _isr_ins;
 	Sercom *sercom = dev->sercom;
 
 	if (sercom->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB) {
