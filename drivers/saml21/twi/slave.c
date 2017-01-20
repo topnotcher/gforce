@@ -9,11 +9,7 @@
 #include <malloc.h>
 
 static void twi_slave_handler(void *);
-
-static bool twi_slave_direction(const Sercom *const _sercom) {
-	// i2c direction bit: 1 indicates master read (slave sends data to master)
-	return _sercom->I2CS.STATUS.reg & SERCOM_I2CS_STATUS_DIR;
-}
+static inline bool twi_slave_direction(const Sercom *) ___attribute__((always_inline));
 
 twi_slave_t *twi_slave_init(void) {
 	Sercom *sercom = SERCOM3;
@@ -146,4 +142,9 @@ static void twi_slave_handler(void *_isr_ins) {
 	} else if (sercom->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) {
 		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTENSET_ERROR;
 	}
+}
+
+static inline bool twi_slave_direction(const Sercom *const _sercom) {
+	// i2c direction bit: 1 indicates master read (slave sends data to master)
+	return _sercom->I2CS.STATUS.reg & SERCOM_I2CS_STATUS_DIR;
 }
