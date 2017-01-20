@@ -3,6 +3,26 @@
 #include <malloc.h>
 #include <drivers/xmega/twi/master.h>
 
+struct _twi_master_s {
+	TWI_MASTER_t * twi;
+	void (* txn_complete)(void * ins, int8_t status);
+	void (*block)(void);
+	void (*resume)(void);
+
+	void * ins;
+	uint8_t * txbuf;
+	uint8_t txbytes;
+
+	uint8_t * rxbuf;
+	uint8_t rxbytes;
+
+	uint8_t bytes;
+	uint8_t retries;
+
+	/*currently addressed slave*/
+	uint8_t addr;
+};
+
 static void twi_master_write_handler(twi_master_t *dev);
 static void twi_master_read_handler(twi_master_t *dev);
 static void twi_master_txn_complete(twi_master_t *dev, int8_t status);

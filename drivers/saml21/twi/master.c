@@ -7,6 +7,23 @@
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/twi/master.h>
 
+struct _twi_master_s {
+	Sercom *sercom;
+	void (*txn_complete)(void * ins, int8_t status);
+	void *ins;
+	uint8_t *txbuf;
+	uint8_t *rxbuf;
+
+	uint8_t rxbytes;
+	uint8_t txbytes;
+
+	uint8_t bytes;
+	uint8_t retries;
+
+	// currently addressed slave
+	uint8_t addr;
+};
+
 static void twi_master_start_txn(const twi_master_t *);
 static void twi_master_txn_complete(twi_master_t *, int8_t);
 static void twi_master_isr(void *);
