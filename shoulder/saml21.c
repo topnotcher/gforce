@@ -20,6 +20,9 @@ static void begin_txn(void *, uint8_t, uint8_t**, uint8_t*);
 static void end_txn(void *, uint8_t, uint8_t*, uint8_t);
 static void master_txn_complete(void *, int8_t);
 
+static void init_twi_slave(void);
+static void init_twi_master(void);
+
 static uint8_t rx_count;
 static uint8_t tx_count;
 
@@ -55,18 +58,41 @@ system_init_func(system_board_init) {
 }
 
 system_init_func(system_software_init) {
-	slave = twi_slave_init();
-	// TODO properly pass in the sercom module.
-	master = twi_master_init(SERCOM1, 14, NULL, master_txn_complete);
-
-	slave->begin_txn = begin_txn;
-	slave->end_txn = end_txn;
+	init_twi_slave();
+	init_twi_master();
 
 	// LED0 on xplained board.
 	/*PORT[0].Group[1].DIRSET.reg = 1 << 10;
 	PORT[0].Group[1].OUTCLR.reg = 1 << 10;*/
 
 	//xTaskCreate(led_task, "led task", 256, NULL, tskIDLE_PRIORITY + 1, NULL);
+}
+
+static void init_twi_slave(void) {
+	slave = twi_slave_init();
+	slave->begin_txn = begin_txn;
+	slave->end_txn = end_txn;
+
+	/**
+	 * TWI Slave PinMux
+	 */
+	// TODO WRCONFIG
+	PORT[0].Group[0].PMUX[11].reg = 0x02 | (0x02 << 4);
+
+	PORT[0].Group[0].PINCFG[22].reg |= PORT_PINCFG_PMUXEN;
+	PORT[0].Group[0].PINCFG[23].reg |= PORT_PINCFG_PMUXEN;
+}
+
+static void init_twi_master(void) {
+	master = twi_master_init(SERCOM1, 14, NULL, master_txn_complete);
+
+	/**
+	 * TWI Master PinMux
+	 */
+	PORT[0].Group[0].PMUX[8].reg = 0x02 | (0x02 << 4);
+
+	PORT[0].Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
+	PORT[0].Group[0].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
 }
 
 static void begin_txn(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size) {

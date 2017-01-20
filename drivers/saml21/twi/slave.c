@@ -9,7 +9,7 @@
 #include <malloc.h>
 
 static void twi_slave_handler(void *);
-static inline bool twi_slave_direction(const Sercom *) ___attribute__((always_inline));
+static inline bool twi_slave_direction(const Sercom *) __attribute__((always_inline));
 
 twi_slave_t *twi_slave_init(void) {
 	Sercom *sercom = SERCOM3;
@@ -80,13 +80,6 @@ twi_slave_t *twi_slave_init(void) {
 		sercom_register_handler(sercom_index, twi_slave_handler, dev);
 		sercom_enable_irq(sercom_index);
 
-		// TODO WRCONFIG
-		// Each pin is 1 nybble (even pin = low); set them both to D (0x04)
-		uint8_t pmux = 0x02 | (0x02 << 4);
-		PORT[0].Group[0].PMUX[11].reg = pmux;
-
-		PORT[0].Group[0].PINCFG[22].reg |= PORT_PINCFG_PMUXEN;
-		PORT[0].Group[0].PINCFG[23].reg |= PORT_PINCFG_PMUXEN;
 	}
 
 	return dev;
