@@ -82,11 +82,13 @@ twi_master_t *twi_master_init(Sercom *sercom, const const uint8_t baud) {
 
 		sercom->I2CM.CTRLA.reg = ctrla;
 		sercom->I2CM.CTRLB.reg = ctrlb;
-		sercom->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(0x01); // Idle.
 		sercom->I2CM.BAUD.reg = SERCOM_I2CM_BAUD_BAUD(baud);
 
 		sercom->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_ENABLE;
-		while (sercom->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_ENABLE);
+		while (sercom->I2CM.SYNCBUSY.reg & (SERCOM_I2CM_SYNCBUSY_ENABLE | SERCOM_I2CM_SYNCBUSY_SYSOP));
+
+		sercom->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(0x01u); // Idle.
+		while (sercom->I2CM.SYNCBUSY.reg & (SERCOM_I2CM_SYNCBUSY_ENABLE | SERCOM_I2CM_SYNCBUSY_SYSOP));
 
 		sercom->I2CM.INTENSET.reg =
 			// SERCOM_I2CM_INTENSET_SB |
