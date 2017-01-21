@@ -38,34 +38,9 @@ twi_slave_t *twi_slave_init(Sercom *sercom, uint8_t addr, uint8_t mask){
 		dev->end_txn = NULL;
 		dev->ins = NULL;
 
-		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
-		int pm_index = sercom_index + MCLK_APBCMASK_SERCOM0_Pos;
-		int gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
-
-		MCLK->APBCMASK.reg |= 1 << pm_index;
-
-		// disable peripheral clock channel
-		GCLK->PCHCTRL[gclk_index].reg &= ~GCLK_PCHCTRL_CHEN;
-		while (GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN);
-
-		// set peripheral clock thannel generator to gclk0
-		GCLK->PCHCTRL[gclk_index].reg = GCLK_PCHCTRL_GEN_GCLK0;
-
-		GCLK->PCHCTRL[gclk_index].reg |= GCLK_PCHCTRL_CHEN;
-		while (!(GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN));
-
-		/**
-		* Enable slow clock
-		*/
-		// disable peripheral clock channel
-		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg &= ~GCLK_PCHCTRL_CHEN;
-		while (GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg & GCLK_PCHCTRL_CHEN);
-
-		// set peripheral clock channel generator to gclk0
-		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg = GCLK_PCHCTRL_GEN_GCLK0;
-
-		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg |= GCLK_PCHCTRL_CHEN;
-		while (!(GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg & GCLK_PCHCTRL_CHEN));
+		sercom_enable_pm(sercom_index);
+		sercom_set_gclk_core(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
 
 		// Disable module
 		// Parts of CTRLA and CTRLB are enabled-protected

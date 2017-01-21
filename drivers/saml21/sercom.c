@@ -59,6 +59,58 @@ void sercom_disable_irq(const int sercom_index) {
 	NVIC_DisableIRQ(SERCOM0_IRQn + sercom_index);
 }
 
+void sercom_enable_pm(int sercom_index) {
+	if (sercom_index != 5) {
+		MCLK->APBCMASK.reg |= 1 << (sercom_index + MCLK_APBCMASK_SERCOM0_Pos);
+	} else {
+		MCLK->APBDMASK.reg |= MCLK_APBDMASK_SERCOM5;
+	}
+}
+
+void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
+	int gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
+
+	// disable peripheral clock channel
+	GCLK->PCHCTRL[gclk_index].reg &= ~GCLK_PCHCTRL_CHEN;
+	while (GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN);
+
+	// set peripheral clock thannel generator to gclk_gen
+	GCLK->PCHCTRL[gclk_index].reg = gclk_gen;
+
+	GCLK->PCHCTRL[gclk_index].reg |= GCLK_PCHCTRL_CHEN;
+	while (!(GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN));
+}
+
+void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
+	static bool sercom5_gclk_slow_initialized;
+	static bool sercom_gclk_slow_initialized;
+
+	bool *initialized;
+	int gclk_id;
+
+	if (sercom_index != 5) {
+		gclk_id = SERCOM0_GCLK_ID_SLOW;
+		initialized = &sercom_gclk_slow_initialized;
+	} else {
+		gclk_id = SERCOM5_GCLK_ID_SLOW;
+		initialized = &sercom5_gclk_slow_initialized;
+	}
+
+	if (!(*initialized)) {
+		// disable peripheral clock channel
+		GCLK->PCHCTRL[gclk_id].reg &= ~GCLK_PCHCTRL_CHEN;
+		while (GCLK->PCHCTRL[gclk_id].reg & GCLK_PCHCTRL_CHEN);
+
+		// set peripheral clock channel generator to gclk0
+		GCLK->PCHCTRL[gclk_id].reg = gclk_gen;
+
+		GCLK->PCHCTRL[gclk_id].reg |= GCLK_PCHCTRL_CHEN;
+		while (!(GCLK->PCHCTRL[gclk_id].reg & GCLK_PCHCTRL_CHEN));
+
+		*initialized = true;
+	}
+}
+
 static inline void sercom_isr_handler(const int sercom_index) {
 	sercom_isr_table[sercom_index].isr(sercom_isr_table[sercom_index].ins);
 }
