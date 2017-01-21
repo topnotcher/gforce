@@ -6,5 +6,4 @@
 #define XMEGA_TWI_SLAVE_H
 
 twi_slave_t *twi_slave_init(TWI_SLAVE_t *twi, uint8_t addr, uint8_t mask);
-void twi_slave_isr(twi_slave_t *dev);
 #endif

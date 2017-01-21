@@ -163,9 +163,3 @@ static void twis_txn_end(void *ins, uint8_t write, uint8_t *buf, uint8_t size) {
 		xQueueSendFromISR(driver->rx_queue, &rx_data, NULL);
 	}
 }
-
-#ifdef MPC_TWI_SLAVE_ISR
-MPC_TWI_SLAVE_ISR {
-	twi_slave_isr(_mpctwi->twis);
-}
-#endif
