@@ -123,6 +123,7 @@ SECTIONS
     .relocate : AT (_etext)
     {
         . = ALIGN(4);
+		__data_start = .;
         _srelocate = .;
         *(.ramfunc .ramfunc.*);
         *(.data .data.*);
