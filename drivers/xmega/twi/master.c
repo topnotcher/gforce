@@ -5,7 +5,7 @@
 
 struct _twi_master_s {
 	TWI_MASTER_t * twi;
-	void (* txn_complete)(void * ins, int8_t status);
+	twi_master_complete_txn_cb txn_complete;
 	void (*block)(void);
 	void (*resume)(void);
 
@@ -34,19 +34,12 @@ static void twi_master_txn_complete(twi_master_t *dev, int8_t status);
 #define twi_master_start_txn(dev) (dev)->twi->ADDR = (dev)->addr | ((dev)->txbytes ? 0 : 1)
 
 
-twi_master_t *twi_master_init(
-        TWI_MASTER_t *twi,
-        const uint8_t baud,
-        void *ins,
-        void (*txn_complete)(void *, int8_t)
-        ) {
+twi_master_t *twi_master_init(TWI_MASTER_t *twi, const uint8_t baud) {
 	twi_master_t *dev;
 	dev = smalloc(sizeof *dev);
 	memset(dev, 0, sizeof *dev);
 
 	dev->twi = twi;
-	dev->txn_complete = txn_complete;
-	dev->ins = ins;
 	dev->block = NULL;
 	dev->resume = NULL;
 
@@ -170,6 +163,13 @@ static void twi_master_write_handler(twi_master_t *dev) {
 				twi_master_txn_complete(dev, TWI_MASTER_STATUS_OK);
 			}
 		}
+	}
+}
+
+void twi_master_set_callback(twi_master_t *dev, void *ins, twi_master_complete_txn_cb txn_complete) {
+	if (dev) {
+		dev->ins = ins;
+		dev->txn_complete = txn_complete;
 	}
 }
 

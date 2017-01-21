@@ -9,7 +9,7 @@
 
 struct _twi_master_s {
 	Sercom *sercom;
-	void (*txn_complete)(void * ins, int8_t status);
+	twi_master_complete_txn_cb txn_complete;
 	void *ins;
 	uint8_t *txbuf;
 	uint8_t *rxbuf;
@@ -28,7 +28,7 @@ static void twi_master_start_txn(const twi_master_t *);
 static void twi_master_txn_complete(twi_master_t *, int8_t);
 static void twi_master_isr(void *);
 
-twi_master_t *twi_master_init(Sercom *sercom, const const uint8_t baud, void *ins, void (*txn_complete)(void *, int8_t)) {
+twi_master_t *twi_master_init(Sercom *sercom, const const uint8_t baud) {
 	int sercom_index = sercom_get_index(sercom);
 	twi_master_t *dev = smalloc(sizeof *dev);
 
@@ -36,8 +36,6 @@ twi_master_t *twi_master_init(Sercom *sercom, const const uint8_t baud, void *in
 		memset(dev, 0, sizeof(*dev));
 
 		dev->sercom = sercom;
-		dev->ins = ins;
-		dev->txn_complete = txn_complete;
 
 		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
 		int pm_index = sercom_index + MCLK_APBCMASK_SERCOM0_Pos;
@@ -160,6 +158,13 @@ static void twi_master_write_handler(twi_master_t *dev) {
 				twi_master_txn_complete(dev, 0);
 			}
 		}
+	}
+}
+
+void twi_master_set_callback(twi_master_t *dev, void *ins, twi_master_complete_txn_cb txn_complete) {
+	if (dev) {
+		dev->ins = ins;
+		dev->txn_complete = txn_complete;
 	}
 }
 

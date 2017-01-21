@@ -83,7 +83,8 @@ static void init_twi_slave(void) {
 }
 
 static void init_twi_master(void) {
-	master = twi_master_init(SERCOM1, 14, NULL, master_txn_complete);
+	master = twi_master_init(SERCOM1, 14);
+	twi_master_set_callback(master, NULL, master_txn_complete);
 
 	/**
 	 * TWI Master PinMux
