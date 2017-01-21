@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/eeprom.h>
 
 #include <mpc.h>
 #include <mpctwi.h>
@@ -11,9 +12,14 @@
 #include <leds.h>
 #include <drivers/xmega/led_drivers.h>
 #include <drivers/xmega/clock.h>
+#include <drivers/xmega/twi/master.h>
+#include <drivers/xmega/twi/slave.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+#include <g4config.h>
+#include "config.h"
 
 #include "main.h"
 
@@ -46,7 +52,12 @@ system_init_func(system_software_init) {
 }
 
 void mpc_register_drivers(void) {
-	mpc_register_driver(mpctwi_init());
+	uint8_t twi_addr = eeprom_read_byte((uint8_t *)MPC_TWI_ADDR_EEPROM_ADDR);
+
+	twi_slave_t *twis = twi_slave_init(&MPC_TWI.SLAVE, twi_addr, MPC_TWI_ADDRMASK);
+	twi_master_t *twim = twi_master_init(&MPC_TWI.MASTER, MPC_TWI_BAUD);
+
+	mpc_register_driver(mpctwi_init(twim, twis, twi_addr, MPC_ADDR_MASTER));
 }
 
 led_spi_dev *led_init_driver(void) {

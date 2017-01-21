@@ -12,23 +12,6 @@
 #include <g4config.h>
 #include "config.h"
 
-/**
- * The shoulders need to differentiate left/right.
- */
-#ifdef MPC_TWI_ADDR_EEPROM_ADDR
-#include <avr/eeprom.h>
-#define __mpc_addr() \
-	eeprom_read_byte((uint8_t *)MPC_TWI_ADDR_EEPROM_ADDR)
-#else
-#define __mpc_addr() ((uint8_t)MPC_ADDR_BOARD)
-#endif
-
-#ifdef MPC_TWI_ADDRMASK
-#define __mpc_rx_addrmask() MPC_TWI_ADDRMASK
-#else
-#define __mpc_rx_addrmask() 0
-#endif
-
 struct _mpctwi_tx_data {
 	uint8_t addr;
 	uint8_t *buf;
@@ -43,24 +26,13 @@ typedef struct {
 	uint8_t *tx_buf;
 } mpctwi_t;
 
-static mpctwi_t *_mpctwi;
-
 static void twis_txn_begin(void *, uint8_t, uint8_t **, uint8_t *);
 static void twim_txn_complete(void *, int8_t);
 static void twis_txn_end(void *, uint8_t, uint8_t *, uint8_t);
 static bool mpctwi_registered(mpc_driver_t *);
 
-mpc_driver_t *mpctwi_init(void) {
-	uint8_t addr = __mpc_addr();
-	uint8_t rx_addrmask = __mpc_rx_addrmask();
-	uint8_t tx_addrmask;
-
-	if (MPC_ADDR_BOARD & MPC_ADDR_MASTER)
-		tx_addrmask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
-	else
-		tx_addrmask = MPC_ADDR_MASTER;
-
-	_mpctwi = NULL;
+mpc_driver_t *mpctwi_init(twi_master_t *twim, twi_slave_t *twis, uint8_t addr, uint8_t tx_addrmask) {
+	mpctwi_t *_mpctwi = NULL;
 	mpc_driver_t *driver = NULL;
 
 	if ((driver = smalloc(sizeof *driver)) && (_mpctwi = smalloc(sizeof *_mpctwi))) {
@@ -70,10 +42,10 @@ mpc_driver_t *mpctwi_init(void) {
 		driver->tx = mpctwi_send;
 		driver->registered = mpctwi_registered;
 
-		_mpctwi->twis = twi_slave_init(&MPC_TWI.SLAVE, addr, rx_addrmask);
+		_mpctwi->twis = twis;
 		twi_slave_set_callbacks(_mpctwi->twis, driver, twis_txn_begin, twis_txn_end);
 
-		_mpctwi->twim = twi_master_init(&MPC_TWI.MASTER, MPC_TWI_BAUD);
+		_mpctwi->twim = twim;
 		twi_master_set_callback(_mpctwi->twim, driver, twim_txn_complete);
 
 		if (_mpctwi->twis == NULL || _mpctwi->twim == NULL)
