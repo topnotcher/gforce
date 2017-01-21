@@ -9,6 +9,8 @@
 #include <drivers/saml21/twi/master.h>
 
 #include <mpc.h>
+#include <mpctwi.h>
+#include <diag.h>
 
 #include "main.h"
 
@@ -43,6 +45,8 @@ system_init_func(system_board_init) {
 }
 
 system_init_func(system_software_init) {
+	mpc_init();
+	diag_init();
 	// LED0 on xplained board.
 	/*PORT[0].Group[1].DIRSET.reg = 1 << 10;
 	PORT[0].Group[1].OUTCLR.reg = 1 << 10;*/
@@ -63,7 +67,7 @@ void mpc_register_drivers(void) {
 	PORT[0].Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
 	PORT[0].Group[0].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
 
-	twi_slave_t *twis = twi_slave_init(SERCOM3, 0x02u, ~0x02u);
+	twi_slave_t *twis = twi_slave_init(SERCOM3, twi_addr, ~twi_addr);
 
 	/**
 	 * TWI Slave PinMux

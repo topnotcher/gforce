@@ -15,8 +15,6 @@ if(PLATFORM STREQUAL "xmega")
 		../common/buzz.c
 		../common/irrx.c
 		../common/uart.c
-		../common/mpctwi.c
-		../common/diag.c
 	)
 elseif(PLATFORM STREQUAL "saml21")
 	set(SAM_PART "saml21e17b")
@@ -45,6 +43,8 @@ set(PROJECT_SOURCES
 	../common/mpc.c
 	../common/malloc.c
 	../common/mempool.c
+	../common/mpctwi.c
+	../common/diag.c
 
 	${PLATFORM_SOURCES}
 )

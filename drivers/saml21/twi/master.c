@@ -176,7 +176,7 @@ static void twi_master_isr(void *_isr_ins) {
 		twi_master_write_handler(dev);
 		
 	} else if (sercom->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_ERROR) {
-		sercom->I2CS.INTFLAG.reg = SERCOM_I2CM_INTENSET_ERROR;
+		sercom->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
 
 		// arbitration lost - if the bus is not idle, issuing another start
 		// will cause HW to wait for the bus to become idle before starting the
