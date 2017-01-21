@@ -164,11 +164,6 @@ static void twis_txn_end(void *ins, uint8_t write, uint8_t *buf, uint8_t size) {
 	}
 }
 
-#ifdef MPC_TWI_MASTER_ISR
-MPC_TWI_MASTER_ISR {
-	twi_master_isr(_mpctwi->twim);
-}
-#endif
 #ifdef MPC_TWI_SLAVE_ISR
 MPC_TWI_SLAVE_ISR {
 	twi_slave_isr(_mpctwi->twis);

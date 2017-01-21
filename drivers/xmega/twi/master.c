@@ -26,6 +26,24 @@ struct _twi_master_s {
 static void twi_master_write_handler(twi_master_t *dev);
 static void twi_master_read_handler(twi_master_t *dev);
 static void twi_master_txn_complete(twi_master_t *dev, int8_t status);
+static uint8_t twi_master_module_index(const TWI_MASTER_t *const);
+static inline void twi_master_handler(const uint8_t) __attribute__((always_inline));
+
+
+// On devices with two TWIs, C and E are present. D and F additionaly on those
+// with 4 instances.
+#define TWIC_INST_IDX 0 
+#define TWIE_INST_IDX 1 
+#define TWID_INST_IDX 2 
+#define TWIF_INST_IDX 3 
+
+#ifdef TWIF
+#define TWI_INST_NUM 4
+#else
+#define TWI_INST_NUM 2
+#endif
+
+static twi_master_t *twim_dev_table[TWI_INST_NUM];
 
 #ifndef TWI_MASTER_MAX_RETRIES
 	#define TWI_MASTER_MAX_RETRIES 3
@@ -33,24 +51,26 @@ static void twi_master_txn_complete(twi_master_t *dev, int8_t status);
 
 #define twi_master_start_txn(dev) (dev)->twi->ADDR = (dev)->addr | ((dev)->txbytes ? 0 : 1)
 
-
 twi_master_t *twi_master_init(TWI_MASTER_t *twi, const uint8_t baud) {
-	twi_master_t *dev;
-	dev = smalloc(sizeof *dev);
-	memset(dev, 0, sizeof *dev);
+	twi_master_t *dev = smalloc(sizeof *dev);
+	uint8_t twi_idx = twi_master_module_index(twi);
 
-	dev->twi = twi;
-	dev->block = NULL;
-	dev->resume = NULL;
+	if (twi_idx < TWI_INST_NUM && dev != NULL) {
+		memset(dev, 0, sizeof *dev);
+		dev->twi = twi;
 
-	/**
-	 * Master initialization
-	 */
-	twi->CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm | TWI_MASTER_RIEN_bm;
-	twi->BAUD = baud;
+		// Register the device in the static dev table for the ISR.
+		twim_dev_table[twi_idx] = dev;
 
-	//per AVR1308
-	twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+		/**
+		* Master initialization
+		*/
+		twi->CTRLA |= TWI_MASTER_INTLVL_MED_gc | TWI_MASTER_ENABLE_bm | TWI_MASTER_WIEN_bm | TWI_MASTER_RIEN_bm;
+		twi->BAUD = baud;
+
+		//per AVR1308
+		twi->STATUS = TWI_MASTER_BUSSTATE_IDLE_gc;
+	}
 
 	return dev;
 }
@@ -180,3 +200,49 @@ static void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
 		dev->txn_complete(dev->ins, status);
 	}
 }
+
+static uint8_t twi_master_module_index(const TWI_MASTER_t *const twim) {
+#ifdef TWIC
+	if (twim == &TWIC.MASTER)
+		return TWIC_INST_IDX;
+#endif
+#ifdef TWID
+	if (twim == &TWID.MASTER)
+		return TWID_INST_IDX;
+#endif
+#ifdef TWIE
+	if (twim == &TWIE.MASTER)
+		return TWIE_INST_IDX;
+#endif
+#ifdef TWIF
+	if (twim == &TWIF.MASTER)
+		return TWIF_INST_IDX;
+#endif
+
+	return 255;
+}
+
+static void twi_master_handler(const uint8_t twi_idx) {
+	twi_master_isr(twim_dev_table[twi_idx]);
+}
+
+#define CONCAT(a, b, c) a ## b ## c
+#define TWIM_HANDLER(x) void TWI ## x ## TWIM_vect(void) { \
+	twi_master_handler(CONCAT(TWI, x, _INST_IDX)); \
+}
+
+#ifdef TWIC
+TWIM_HANDLER(C)
+#endif
+
+#ifdef TWID
+TWIM_HANDLER(D)
+#endif
+
+#ifdef TWIE
+TWIM_HANDLER(E)
+#endif
+
+#ifdef TWIF
+TWIM_HANDLER(F)
+#endif
