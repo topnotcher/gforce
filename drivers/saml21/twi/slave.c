@@ -58,10 +58,10 @@ twi_slave_t *twi_slave_init(Sercom *sercom, uint8_t addr, uint8_t mask){
 		* Enable slow clock
 		*/
 		// disable peripheral clock channel
-		GCLK->PCHCTRL[SERCOM3_GCLK_ID_CORE].reg &= ~GCLK_PCHCTRL_CHEN;
-		while (GCLK->PCHCTRL[SERCOM3_GCLK_ID_CORE].reg & GCLK_PCHCTRL_CHEN);
+		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg &= ~GCLK_PCHCTRL_CHEN;
+		while (GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg & GCLK_PCHCTRL_CHEN);
 
-		// set peripheral clock thannel generator to gclk0
+		// set peripheral clock channel generator to gclk0
 		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg = GCLK_PCHCTRL_GEN_GCLK0;
 
 		GCLK->PCHCTRL[SERCOM3_GCLK_ID_SLOW].reg |= GCLK_PCHCTRL_CHEN;
