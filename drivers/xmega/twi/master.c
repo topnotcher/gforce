@@ -27,8 +27,9 @@ static void twi_master_write_handler(twi_master_t *dev);
 static void twi_master_read_handler(twi_master_t *dev);
 static void twi_master_txn_complete(twi_master_t *dev, int8_t status);
 static uint8_t twi_master_module_index(const TWI_MASTER_t *const);
-static inline void twi_master_handler(const uint8_t) __attribute__((always_inline));
 
+static inline void twi_master_handler(const uint8_t) __attribute__((always_inline));
+static void twi_master_isr(twi_master_t *);
 
 // On devices with two TWIs, C and E are present. D and F additionaly on those
 // with 4 instances.
