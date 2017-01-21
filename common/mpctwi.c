@@ -70,7 +70,9 @@ mpc_driver_t *mpctwi_init(void) {
 		driver->tx = mpctwi_send;
 		driver->registered = mpctwi_registered;
 
-		_mpctwi->twis = twi_slave_init(&MPC_TWI.SLAVE, addr, rx_addrmask, driver, twis_txn_begin, twis_txn_end);
+		_mpctwi->twis = twi_slave_init(&MPC_TWI.SLAVE, addr, rx_addrmask);
+		twi_slave_set_callbacks(_mpctwi->twis, driver, twis_txn_begin, twis_txn_end);
+
 		_mpctwi->twim = twi_master_init(&MPC_TWI.MASTER, MPC_TWI_BAUD, driver, twim_txn_complete);
 
 		if (_mpctwi->twis == NULL || _mpctwi->twim == NULL)

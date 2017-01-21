@@ -12,8 +12,8 @@ struct _twi_slave_s {
 	Sercom *sercom;
 	void *ins;
 
-	void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size);
-	void (*end_txn)(void *ins, uint8_t write, uint8_t *buf, uint8_t buf_size);
+	twi_slave_begin_txn begin_txn;
+	twi_slave_end_txn end_txn;
 
 	uint8_t *buf;
 	uint8_t buf_size;
@@ -25,13 +25,7 @@ static void twi_slave_handler(void *);
 static inline bool twi_slave_direction(const Sercom *) __attribute__((always_inline));
 
 // TODO: this mask has a different meaning than on the XMEGA
-twi_slave_t *twi_slave_init(
-		Sercom *sercom,
-		uint8_t addr,
-		uint8_t mask,
-		void *ins,
-		void (*begin_txn)(void *, uint8_t, uint8_t **, uint8_t *),
-		void (*end_txn)(void *, uint8_t, uint8_t *, uint8_t)) {
+twi_slave_t *twi_slave_init(Sercom *sercom, uint8_t addr, uint8_t mask){
 
 	int sercom_index = sercom_get_index(sercom);
 
@@ -39,9 +33,10 @@ twi_slave_t *twi_slave_init(
 
 	if (dev) {
 		dev->sercom = sercom;
-		dev->begin_txn = begin_txn;
-		dev->end_txn = end_txn;
-		dev->ins = ins;
+
+		dev->begin_txn = NULL;
+		dev->end_txn = NULL;
+		dev->ins = NULL;
 
 		// TODO: Not true for SERCOM5, which is on AHB-ABP bridge D.
 		int pm_index = sercom_index + MCLK_APBCMASK_SERCOM0_Pos;
@@ -119,7 +114,8 @@ static void twi_slave_handler(void *_isr_ins) {
 
 	// Address match
 	if (sercom->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_AMATCH) {
-		dev->begin_txn(dev->ins, twi_slave_direction(sercom), &dev->buf, &dev->buf_size);
+		if (dev->begin_txn)
+			dev->begin_txn(dev->ins, twi_slave_direction(sercom), &dev->buf, &dev->buf_size);
 
 		if (dev->buf) {
 			dev->bytes = 0;
@@ -150,13 +146,23 @@ static void twi_slave_handler(void *_isr_ins) {
 		sercom->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_ACKACT;
 		sercom->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_CMD(0x03);
 	} else if (sercom->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_PREC) {
-		dev->end_txn(dev->ins, twi_slave_direction(sercom), dev->buf, dev->bytes);
+		if (dev->end_txn)
+			dev->end_txn(dev->ins, twi_slave_direction(sercom), dev->buf, dev->bytes);
+
 		dev->buf_size = 0;
 		dev->buf = NULL;
 
 		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
 	} else if (sercom->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) {
 		sercom->I2CS.INTFLAG.reg = SERCOM_I2CS_INTENSET_ERROR;
+	}
+}
+
+void twi_slave_set_callbacks(twi_slave_t *dev, void *ins, twi_slave_begin_txn begin_txn, twi_slave_end_txn end_txn) {
+	if (dev) {
+		dev->ins = ins;
+		dev->begin_txn = begin_txn;
+		dev->end_txn = end_txn;
 	}
 }
 

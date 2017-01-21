@@ -69,7 +69,8 @@ system_init_func(system_software_init) {
 }
 
 static void init_twi_slave(void) {
-	slave = twi_slave_init(SERCOM3, 0x02u, ~0x02u, NULL, begin_txn, end_txn);
+	slave = twi_slave_init(SERCOM3, 0x02u, ~0x02u);
+	twi_slave_set_callbacks(slave, NULL, begin_txn, end_txn);
 
 	/**
 	 * TWI Slave PinMux

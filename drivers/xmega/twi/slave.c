@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 #include <drivers/xmega/twi/slave.h>
@@ -13,33 +14,22 @@ struct _twi_slave_s {
 	uint8_t buf_size;
 	uint8_t bytes;
 
-	void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size);
-	void (*end_txn)(void *ins, uint8_t write, uint8_t * buf, uint8_t buf_size);
+	twi_slave_begin_txn begin_txn;
+	twi_slave_end_txn end_txn;
 };
 
 static inline bool twi_slave_direction(const TWI_SLAVE_t *) __attribute__((always_inline));
 
-twi_slave_t *twi_slave_init(
-        TWI_SLAVE_t *twi,
-        uint8_t addr,
-        uint8_t mask,
-        void *ins,
-        void (*begin_txn)(void *ins, uint8_t write, uint8_t **buf, uint8_t *buf_size),
-        void (*end_txn)(void *ins, uint8_t write, uint8_t *buf, uint8_t buf_size)
-        ) {
-
+twi_slave_t *twi_slave_init(TWI_SLAVE_t *twi, uint8_t addr, uint8_t mask) {
 	twi_slave_t *dev;
 	dev = (twi_slave_t *)smalloc(sizeof *dev);
 	memset(dev, 0, sizeof *dev);
 
 	dev->twi = twi;
 	dev->addr = addr << 1;
-	dev->ins = ins;
 	dev->buf = NULL;
 	dev->bytes = 0;
 	dev->buf_size = 0;
-	dev->end_txn = end_txn;
-	dev->begin_txn = begin_txn;
 
 	twi->CTRLA = TWI_SLAVE_INTLVL_LO_gc | TWI_SLAVE_ENABLE_bm | TWI_SLAVE_APIEN_bm /*| TWI_SLAVE_PMEN_bm*/;
 	twi->ADDR = dev->addr;
@@ -102,6 +92,14 @@ void twi_slave_isr(twi_slave_t *dev) {
 	}
 }
 
-static inline bool twi_slave_direction(const TWI_SLAVE_t *) {
+void twi_slave_set_callbacks(twi_slave_t *dev, void *ins, twi_slave_begin_txn begin_txn, twi_slave_end_txn end_txn) {
+	if (dev) {
+		dev->ins = ins;
+		dev->begin_txn = begin_txn;
+		dev->end_txn = end_txn;
+	}
+}
+
+static inline bool twi_slave_direction(const TWI_SLAVE_t *twi) {
 	return twi->STATUS & TWI_SLAVE_DIR_bm;
 }
