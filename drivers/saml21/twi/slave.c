@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <saml21/io.h>
 
@@ -32,6 +33,8 @@ twi_slave_t *twi_slave_init(Sercom *sercom, uint8_t addr, uint8_t mask){
 	twi_slave_t *dev = smalloc(sizeof *dev);
 
 	if (dev) {
+		memset(dev, 0, sizeof(*dev));
+
 		dev->sercom = sercom;
 
 		dev->begin_txn = NULL;

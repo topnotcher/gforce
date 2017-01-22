@@ -20,7 +20,6 @@ typedef struct {
 
 static void led_usart_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
 static void led_usart_write(const led_spi_dev *const);
-static void led_usart_tx_isr(const led_spi_dev *const);
 
 static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
 static void led_usart_dma_write(const led_spi_dev *const controller);
@@ -76,7 +75,6 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 
 			controller->load = led_usart_load;
 			controller->write = led_usart_write;
-			controller->tx_isr = led_usart_tx_isr;
 		}
 	}
 
@@ -142,7 +140,7 @@ static void led_usart_write(const led_spi_dev *const controller) {
 	dev->usart->CTRLA |= USART_DREINTLVL_LO_gc;
 }
 
-static void led_usart_tx_isr(const led_spi_dev *const controller) {
+void led_usart_tx_isr(const led_spi_dev *const controller) {
 	led_usart_driver *dev = controller->dev;
 
 	dev->usart->DATA = dev->data[dev->bytes_written++];

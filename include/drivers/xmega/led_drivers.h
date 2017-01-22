@@ -5,5 +5,6 @@
 
 led_spi_dev *led_spi_init(SPI_t *const);
 led_spi_dev *led_usart_init(USART_t *const, const uint8_t);
+void led_usart_tx_isr(const led_spi_dev *);
 
 #endif

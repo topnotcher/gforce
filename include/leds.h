@@ -16,9 +16,6 @@ typedef struct led_spi_dev_s {
 	// start writing out the actual data
 	void (*write)(const struct led_spi_dev_s *const);
 
-	// handle a tx interrupt
-	void (*tx_isr)(const struct led_spi_dev_s *const);
-
 	// underlying device driver
 	void *dev;
 } led_spi_dev;

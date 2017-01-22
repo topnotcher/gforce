@@ -1,12 +1,14 @@
 #include <stdint.h>
 #include <saml21/io.h>
-#include <mpc.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include <drivers/saml21/twi/slave.h>
 #include <drivers/saml21/twi/master.h>
+#include <drivers/saml21/led_spi.h>
+
+#include <drivers/saml21/led_spi.h>
 
 #include <mpc.h>
 #include <mpctwi.h>
@@ -47,6 +49,7 @@ system_init_func(system_board_init) {
 system_init_func(system_software_init) {
 	mpc_init();
 	diag_init();
+	led_init();
 	// LED0 on xplained board.
 	/*PORT[0].Group[1].DIRSET.reg = 1 << 10;
 	PORT[0].Group[1].OUTCLR.reg = 1 << 10;*/
@@ -79,6 +82,18 @@ void mpc_register_drivers(void) {
 	PORT[0].Group[0].PINCFG[23].reg |= PORT_PINCFG_PMUXEN;
 
 	mpc_register_driver(mpctwi_init(twim, twis, twi_addr, MPC_ADDR_MASTER));
+}
+
+led_spi_dev *led_init_driver(void) {
+	// SERCOM0
+	// pa04 - MOSI (SERCOM0:1)
+	// pa05 - SCLK (SERCOM0:0)
+	PORT[0].Group[0].PMUX[2].reg = 0x03 | (0x03 << 4);
+
+	PORT[0].Group[0].PINCFG[4].reg |= PORT_PINCFG_PMUXEN;
+	PORT[0].Group[0].PINCFG[5].reg |= PORT_PINCFG_PMUXEN;
+
+	return led_spi_init(SERCOM0, 0);
 }
 /*
 static void led_task(void *params) {

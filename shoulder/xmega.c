@@ -23,8 +23,6 @@
 
 #include "main.h"
 
-static led_spi_dev *led_spi;
-
 system_init_func(system_board_init) {
 	sysclk_set_internal_32mhz();
 
@@ -61,5 +59,5 @@ void mpc_register_drivers(void) {
 }
 
 led_spi_dev *led_init_driver(void) {
-	return (led_spi = led_usart_init(&USARTC1, 0));
+	return led_usart_init(&USARTC1, 0);
 }
