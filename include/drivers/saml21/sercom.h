@@ -9,4 +9,7 @@ void sercom_disable_irq(int);
 void sercom_enable_pm(int);
 void sercom_set_gclk_core(int, int);
 void sercom_set_gclk_slow(int, int);
+
+int sercom_dma_rx_trigsrc(int);
+int sercom_dma_tx_trigsrc(int);
 #endif

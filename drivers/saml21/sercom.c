@@ -4,6 +4,7 @@
 
 #include <saml21/io.h>
 #include <drivers/saml21/sercom.h>
+#include <drivers/saml21/dma.h>
 
 #define SERCOM_INST_NUM 6
 
@@ -109,6 +110,20 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 
 		*initialized = true;
 	}
+}
+
+int sercom_dma_rx_trigsrc(int sercom_index) {
+	if (sercom_index >= 0 && sercom_index < 5)
+		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
+	else
+		return -1;
+}
+
+int sercom_dma_tx_trigsrc(int sercom_index) {
+	if (sercom_index >= 0 && sercom_index < 5)
+		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
+	else
+		return -1;
 }
 
 static inline void sercom_isr_handler(const int sercom_index) {
