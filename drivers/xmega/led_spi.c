@@ -18,7 +18,6 @@ typedef struct {
 
 static void led_spi_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
 static void led_spi_write(const led_spi_dev *const);
-static void led_spi_tx_isr(const led_spi_dev *const);
 
 led_spi_dev *led_spi_init(SPI_t *const spi) {
 	struct spi_port_desc port_info = spi_port_info(spi);
@@ -47,7 +46,6 @@ led_spi_dev *led_spi_init(SPI_t *const spi) {
 
 		dev->controller.write = led_spi_write;
 		dev->controller.load = led_spi_load;
-		dev->controller.tx_isr = led_spi_tx_isr;
 
 		dev->out = &spi->DATA;
 
@@ -73,7 +71,7 @@ static void led_spi_write(const led_spi_dev *const controller) {
 	dev->bytes_written = 0;
 }
 
-static void led_spi_tx_isr(const led_spi_dev *const controller) {
+void led_spi_tx_isr(const led_spi_dev *const controller) {
 	led_spi_driver *dev = controller->dev;
 
 	if (dev->bytes_written < dev->data_size)
