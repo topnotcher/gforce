@@ -79,6 +79,8 @@ Changes from V2.6.0
 #include <freertos/task.h>
 #include <freertos/projdefs.h>
 
+#include <drivers/xmega/clock.h>
+
 /*-----------------------------------------------------------
  * Implementation of functions defined in portable.h for the AVR port.
  *----------------------------------------------------------*/
