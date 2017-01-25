@@ -50,11 +50,6 @@ system_init_func(system_software_init) {
 	mpc_init();
 	diag_init();
 	led_init();
-	// LED0 on xplained board.
-	/*PORT[0].Group[1].DIRSET.reg = 1 << 10;
-	PORT[0].Group[1].OUTCLR.reg = 1 << 10;*/
-
-	//xTaskCreate(led_task, "led task", 256, NULL, tskIDLE_PRIORITY + 1, NULL);
 }
 
 void mpc_register_drivers(void) {
@@ -95,18 +90,3 @@ led_spi_dev *led_init_driver(void) {
 
 	return led_spi_init(SERCOM0, 0);
 }
-/*
-static void led_task(void *params) {
-	while (1) {
-		PORT[0].Group[1].OUTTGL.reg = 1 << 10;
-		vTaskDelay(configTICK_RATE_HZ / 2);
-	}
-}
-*/
-
-/*
-void mpc_register_drivers(void) {
-	mpc_register_driver(mpctwi_init());
-}
-*/
-
