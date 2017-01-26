@@ -125,7 +125,7 @@ static void twi_slave_handler(const uint8_t twi_idx) {
 }
 
 #define CONCAT(a, b, c) a ## b ## c
-#define TWIS_HANDLER(x) void TWI ## x ## TWIS_vect(void) { \
+#define TWIS_HANDLER(x) void TWI ## x ## _TWIS_vect(void) { \
 	twi_slave_handler(CONCAT(TWI, x, _INST_IDX)); \
 }
 
