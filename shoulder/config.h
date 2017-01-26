@@ -10,9 +10,6 @@
 #define MPC_ADDR_BOARD (MPC_ADDR_LS | MPC_ADDR_RS)
 
 #define MPC_TWI TWIC
-#define MPC_TWI_SLAVE_ISR ISR(TWIC_TWIS_vect)
-#define MPC_TWI_MASTER_ISR ISR(TWIC_TWIM_vect)
-
 
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm
