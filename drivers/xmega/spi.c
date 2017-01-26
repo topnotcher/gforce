@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "spi.h"
-#include "malloc.h"
-#include "mempool.h"
+#include <drivers/xmega/spi.h>
+#include <malloc.h>
+#include <mempool.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>

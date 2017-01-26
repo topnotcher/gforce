@@ -5,8 +5,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
-#ifndef SPI_H
-#define SPI_H
+#ifndef XMEGA_SPI_H
+#define XMEGA_SPI_H
 
 struct spi_tx_data {
 	const uint8_t *const buf;

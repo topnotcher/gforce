@@ -2,9 +2,9 @@
 
 #include <avr/io.h>
 
-#include "malloc.h"
-#include "leds.h"
-#include "spi.h"
+#include <malloc.h>
+#include <leds.h>
+#include <drivers/xmega/spi.h>
 
 typedef struct {
 	led_spi_dev controller;
