@@ -19,7 +19,7 @@ mempool_t *init_mempool(const uint8_t block_size, const uint8_t size) {
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wcast-align"
 
-	for (uint8_t i = 0; i < block_size; ++i)
+	for (uint8_t i = 0; i < size; ++i)
 		block(pool, i)->refcnt = 0;
 
 	#pragma GCC diagnostic pop
