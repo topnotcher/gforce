@@ -35,7 +35,7 @@ system_init_func(system_board_init) {
 	CCP = CCP_IOREG_gc;
 	CLK.PSCTRL = val;
 
-	_Static_assert(configCPU_CLOCK_HZ == 16000000, "configCPU_CLOCK_HZ != 32MHz");
+	_Static_assert(configCPU_CLOCK_HZ == 16000000, "configCPU_CLOCK_HZ != 16");
 }
 
 system_init_func(system_configure_interrupts) {

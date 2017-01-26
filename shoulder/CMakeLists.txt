@@ -9,7 +9,7 @@ if(PLATFORM STREQUAL "xmega")
 		set(AVR_MCU atxmega128a4u)
 	endif()
 
-	set(MCU_SPEED "32000000UL")
+	set(MCU_SPEED "16000000UL")
 
 	set(PLATFORM_SOURCES
 		xmega.c
