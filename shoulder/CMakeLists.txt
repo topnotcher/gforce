@@ -9,6 +9,8 @@ if(PLATFORM STREQUAL "xmega")
 		xmega.c
 		../drivers/xmega/clock.c
 		../drivers/xmega/led_usart_spi.c
+		../drivers/xmega/spi.c
+		../drivers/xmega/twi/twi.c
 		../drivers/xmega/twi/master.c
 		../drivers/xmega/twi/slave.c
 

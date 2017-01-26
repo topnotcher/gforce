@@ -5,5 +5,5 @@
 #ifndef XMEGA_TWI_MASTER_H
 #define XMEGA_TWI_MASTER_H
 
-twi_master_t *twi_master_init(TWI_MASTER_t *, const uint8_t);
+twi_master_t *twi_master_init(TWI_t *, const uint8_t);
 #endif
