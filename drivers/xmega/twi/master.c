@@ -197,7 +197,7 @@ static void twi_master_handler(const uint8_t twi_idx) {
 }
 
 #define CONCAT(a, b, c) a ## b ## c
-#define TWIM_HANDLER(x) void TWI ## x ## _TWIM_vect(void) { \
+#define TWIM_HANDLER(x) void __attribute__((signal)) TWI ## x ## _TWIM_vect(void) { \
 	twi_master_handler(CONCAT(TWI, x, _INST_IDX)); \
 }
 
