@@ -1,9 +1,11 @@
 #include <string.h>
+
 #include <avr/pgmspace.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 #include <stdint.h>
 
-#include "timer.h"
 #include "sounds.h"
 
 #if W_SOUNDS == 1

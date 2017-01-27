@@ -3,18 +3,18 @@
 
 #include <avr/interrupt.h>
 
-#include "mempool.h"
-#include "malloc.h"
-#include "serialcomm.h"
-#include "uart.h"
-#include "mpc.h"
+#include <mempool.h>
+#include <malloc.h>
+#include <serialcomm.h>
+#include <uart.h>
+#include <mpc.h>
 #include "mpcphasor.h"
 
-#include "g4config.h"
+#include <g4config.h>
 #include "config.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 // needed for ISRs
 static uart_dev_t *phasor_uart_dev;

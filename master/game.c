@@ -11,10 +11,10 @@
 
 #include <g4config.h>
 
-#include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
-#include "timers.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include <freertos/timers.h>
 
 // Number of seconds to spend waiting for boards
 #define GFORCE_BOOT_TICKS 10

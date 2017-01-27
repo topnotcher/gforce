@@ -3,11 +3,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "string.h"
-#include "serialcomm.h"
-#include "spi.h"
-#include "mempool.h"
-#include "displaycomm.h"
+//#include "string.h"
+#include <serialcomm.h>
+#include <mempool.h>
+#include <displaycomm.h>
+#include <drivers/xmega/spi.h>
 
 #include "display.h"
 

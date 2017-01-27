@@ -3,6 +3,7 @@ project("GForce Master" C ASM)
 
 set(AVR_MCU atxmega256a3u)
 set(MCU_SPEED "32000000UL")
+set(FREERTOS_PORT "xmega")
 
 set(PROJECT_SOURCES
 
@@ -15,18 +16,19 @@ set(PROJECT_SOURCES
 	ds2483.c
 	ibutton.c
 
-	../bsp/xmega/clock.c
-	../common/spi.c
+	../drivers/xmega/clock.c
+	../drivers/xmega/spi.c
+	../drivers/xmega/twi/master.c
+	../drivers/xmega/twi/slave.c
+	../drivers/xmega/twi/twi.c
+
+	../common/uart.c
 	../common/malloc.c
 	../common/mempool.c
 	../common/mpc.c
 	../common/mpctwi.c
 	../common/mpcphasor.c
 	../common/serialcomm.c
-	../common/uart.c
-	../common/timer.c
-	../common/twi_master.c
-	../common/twi_slave.c
 )
 
 include_directories(../bsp)

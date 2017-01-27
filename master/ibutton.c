@@ -4,19 +4,19 @@
 #include <avr/io.h>
 #include <util/crc16.h>
 #include <avr/interrupt.h>
-#include <twi_master.h>
+#include <drivers/xmega/twi/master.h>
 #include <g4config.h>
 #include "config.h"
 #include "ds2483.h"
 #include "ibutton.h"
 
-#include "xmega/util.h"
+#include <drivers/xmega/util.h>
 
 #include "game.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "timer.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+//#include <timer.h>
 
 static TaskHandle_t ibutton_task_handle;
 
@@ -31,7 +31,7 @@ static void ibutton_block(void);
 static uint8_t ibutton_uuid[8];
 
 void ibutton_init(void) {
-	twi_master_t *twim = twi_master_init(&DS2483_TWI.MASTER, MPC_TWI_BAUD, NULL, NULL);
+	twi_master_t *twim = twi_master_init(&DS2483_TWI, MPC_TWI_BAUD);
 	twi_master_set_blocking(twim, ibutton_block, ibutton_wake_from_isr);
 	onewiredev = ds2483_init(twim, &DS2483_SLPZ_PORT, G4_PIN(DS2483_SLPZ_PIN));
 
@@ -94,5 +94,3 @@ static void ibutton_wake_from_isr(void) {
 static void ibutton_block(void) {
 	xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
 }
-
-DS2483_INTERRUPT_HANDLER(ISR(TWIE_TWIM_vect), onewiredev)

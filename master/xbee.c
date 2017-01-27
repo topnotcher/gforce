@@ -5,15 +5,16 @@
 #include <g4config.h>
 #include "config.h"
 
-#include "uart.h"
 #include <serialcomm.h>
 #include <malloc.h>
 #include <mempool.h>
 #include <mpc.h>
+#include <uart.h>
+
 #include "xbee.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #define xbee_crc(crc, data) _crc_ibutton_update(crc, data)
 

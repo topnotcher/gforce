@@ -1,25 +1,31 @@
 #include <stdlib.h>
-#include <avr/io.h>
 #include <stdint.h>
+
+#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 //#include <avr/wdt.h>
 
 #include <g4config.h>
-#include <timer.h>
+#include <mpc.h>
+#include <mpcphasor.h>
+#include <mpctwi.h>
+
 #include "sounds.h"
 #include "xbee.h"
 #include "display.h"
 #include "ibutton.h"
-#include <mpc.h>
-#include "mpcphasor.h"
-#include "mpctwi.h"
 #include "game.h"
 
-#include "xmega/clock.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <drivers/xmega/clock.h>
+#include <drivers/xmega/twi/master.h>
+#include <drivers/xmega/twi/slave.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include "config.h"
 
 #ifndef DEBUG
 #define DEBUG 1
@@ -30,7 +36,6 @@
 static void xbee_relay_mpc(const mpc_pkt *const pkt);
 
 int main(void) {
-	cli();
 	sysclk_set_internal_32mhz();
 
 	PMIC.CTRL |= PMIC_MEDLVLEN_bm | PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm;
@@ -39,11 +44,8 @@ int main(void) {
 	CCP = CCP_IOREG_gc;
 	WDT.CTRL = temp;
 
-	init_timers();
 	sound_init();
 	mpc_init();
-	mpc_register_driver(mpctwi_init());
-	mpc_register_driver(mpc_phasor_init());
 	xbee_init();
 	game_init();
 
@@ -62,6 +64,17 @@ int main(void) {
 	ibutton_init();
 
 	vTaskStartScheduler();
+}
+
+void mpc_register_drivers(void) {
+	const uint8_t twi_tx_mask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
+
+	twi_slave_t *twis = twi_slave_init(&MPC_TWI, MPC_ADDR_BOARD, 0);
+	twi_master_t *twim = twi_master_init(&MPC_TWI, MPC_TWI_BAUD);
+
+	mpc_register_driver(mpctwi_init(twim, twis, MPC_ADDR_BOARD, twi_tx_mask));
+
+	mpc_register_driver(mpc_phasor_init());
 }
 
 static void xbee_relay_mpc(const mpc_pkt *const pkt) {

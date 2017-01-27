@@ -1,4 +1,4 @@
-#include <twi_master.h>
+#include <drivers/xmega/twi/master.h>
 
 #ifndef DS2483_H
 #define DS2483_H
@@ -46,6 +46,5 @@ uint8_t ds2483_read_byte(ds2483_dev_t * dev);
 void ds2483_set_read_ptr(ds2483_dev_t * dev, uint8_t reg);
 uint8_t ds2483_1w_read_byte(ds2483_dev_t * dev);
 void ds2483_1w_write(ds2483_dev_t * dev, uint8_t data);
-#define DS2483_INTERRUPT_HANDLER(ISR, dev) ISR { twi_master_isr(dev->twim); }
 
 #endif
