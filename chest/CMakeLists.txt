@@ -3,6 +3,7 @@ project("GForce Chest" C ASM)
 
 set(AVR_MCU atxmega32a4u)
 set(MCU_SPEED "32000000UL")
+set(FREERTOS_PORT "xmega")
 
 set(PROJECT_SOURCES
 	main.c
@@ -10,17 +11,20 @@ set(PROJECT_SOURCES
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
-	../common/led_spi.c
-	../common/tlc59711.c
 	../common/malloc.c
 	../common/mempool.c
 	../common/mpctwi.c
 	../common/mpc.c
-	../common/timer.c
-	../common/twi_master.c
-	../common/twi_slave.c
-	../common/util.c
 	../common/diag.c
+
+	../drivers/xmega/led_spi.c
+	../drivers/xmega/twi/master.c
+	../drivers/xmega/twi/slave.c
+	../drivers/xmega/twi/twi.c
+	../drivers/xmega/clock.c
+	../drivers/xmega/spi.c
+
+	../drivers/tlc59711.c
 )
 
 include(../cmakedefs)
