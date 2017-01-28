@@ -5,7 +5,10 @@
 
 #include <malloc.h>
 #include <leds.h>
+
 #include <drivers/xmega/uart.h>
+#include <drivers/xmega/led_drivers.h>
+#include <drivers/xmega/dma.h>
 
 typedef struct {
 	led_spi_dev controller;
@@ -25,7 +28,7 @@ static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, c
 static void led_usart_dma_write(const led_spi_dev *const controller);
 static void led_usart_tx_isr(void *);
 
-led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
+led_spi_dev *led_usart_init(USART_t *const usart, const bool use_dma) {
 
 	uint16_t bsel;
 	led_spi_dev *controller = NULL;
@@ -36,33 +39,25 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 	// yeah, I know ;)...
 	volatile uint8_t *port_pinctrl = &port_info.port->PIN0CTRL;
 
-	if (dma_ch >= 0) {
-		DMA_CH_t *dma_channels = &DMA.CH0;
-
+	if (use_dma) {
 		bsel = 1;
-
-		DMA.CTRL |= DMA_ENABLE_bm;
+		DMA_CH_t *chan = dma_channel_alloc();
 
 		// DMA source address is incremented during transaction and reset at the
 		// end of every transaction; dest address is fixed.
-		dma_channels[dma_ch].ADDRCTRL =
+		chan->ADDRCTRL =
 			DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc |
 			DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
 
-		dma_channels[dma_ch].TRIGSRC = usart_dma_get_trigsrc(usart);
-		dma_channels[dma_ch].CTRLA = DMA_CH_SINGLE_bm;
+		chan->TRIGSRC = usart_dma_get_trigsrc(usart);
+		chan->CTRLA = DMA_CH_SINGLE_bm;
 
-		#pragma GCC diagnostic push
-		#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-		dma_channels[dma_ch].DESTADDR0 = ((uint32_t)&usart->DATA) & 0xFF;
-		dma_channels[dma_ch].DESTADDR1 = (((uint32_t)&usart->DATA) >> 8) & 0xFF;
-		dma_channels[dma_ch].DESTADDR2 = (((uint32_t)&usart->DATA) >> 16) & 0xFF;
-		#pragma GCC diagnostic pop
+		dma_chan_set_destaddr(chan, (void*)&usart->DATA);
 
 		if ((controller = smalloc(sizeof *controller))) {
 			controller->write = led_usart_dma_write;
 			controller->load = led_usart_dma_load;
-			controller->dev = &dma_channels[dma_ch];
+			controller->dev = chan;
 		}
 
 	} else {
@@ -119,22 +114,10 @@ static void led_usart_tx_isr(void *const _dev) {
 }
 
 static void led_usart_dma_load(const led_spi_dev *const controller, const uint8_t *const data, const uint8_t size) {
-	DMA_CH_t *dma = controller->dev;
-
-	// TODO: define dev
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-	dma->SRCADDR0 = ((uint32_t)data) & 0xFF;
-	dma->SRCADDR1 = (((uint32_t)data) >> 8) & 0xFF;
-	dma->SRCADDR2 = (((uint32_t)data) >> 16) & 0xFF;
-	#pragma GCC diagnostic pop
-
-	dma->TRFCNTL = size & 0xFF;
-	dma->TRFCNTH = 0;
-
-	dma->CTRLA |= DMA_CH_ENABLE_bm;
+	dma_chan_set_srcaddr(controller->dev, data);
+	dma_chan_set_transfer_count(controller->dev, size);
 }
 
 static void led_usart_dma_write(const led_spi_dev *const controller) {
-	((DMA_CH_t*)(controller->dev))->CTRLA |= DMA_CH_ENABLE_bm;
+	dma_chan_enable(controller->dev);
 }

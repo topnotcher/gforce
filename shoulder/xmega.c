@@ -1,3 +1,6 @@
+#include <stdint.h>
+#include <stdbool.h>
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
@@ -73,7 +76,7 @@ ISR(SPIC_INT_vect) {
 #else
 
 led_spi_dev *led_init_driver(void) {
-	led_controller = led_usart_init(&USARTC1, 0);
+	led_controller = led_usart_init(&USARTC1, true);
 
 	return led_controller;
 }

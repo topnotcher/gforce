@@ -21,6 +21,7 @@ if(PLATFORM STREQUAL "xmega")
 		../drivers/xmega/twi/master.c
 		../drivers/xmega/twi/slave.c
 		../drivers/xmega/uart.c
+		../drivers/xmega/dma.c
 
 		../common/buzz.c
 		../common/irrx.c
