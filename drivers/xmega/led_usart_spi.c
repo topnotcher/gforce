@@ -28,8 +28,10 @@ static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, c
 static void led_usart_dma_write(const led_spi_dev *const controller);
 static void led_usart_tx_isr(void *);
 
-led_spi_dev *led_usart_init(USART_t *const usart, const bool use_dma) {
+static led_spi_dev *led_usart_dma_init(USART_t *usart, uint16_t *);
+static led_spi_dev *led_usart_interrupt_init(USART_t *usart, uint16_t *);
 
+led_spi_dev *led_usart_init(USART_t *const usart, const bool use_dma) {
 	uint16_t bsel;
 	led_spi_dev *controller = NULL;
 
@@ -39,10 +41,33 @@ led_spi_dev *led_usart_init(USART_t *const usart, const bool use_dma) {
 	// yeah, I know ;)...
 	volatile uint8_t *port_pinctrl = &port_info.port->PIN0CTRL;
 
-	if (use_dma) {
-		bsel = 1;
-		DMA_CH_t *chan = dma_channel_alloc();
+	if (use_dma)
+		controller = led_usart_dma_init(usart, &bsel);
+	else
+		controller = led_usart_interrupt_init(usart, &bsel);
 
+	if (controller) {
+		port_info.port->OUTSET = sout_bm | sclk_bm;
+		port_info.port->DIRSET = sout_bm | sclk_bm;
+		port_pinctrl[port_info.xck_pin] = PORT_INVEN_bm;
+
+		usart->BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
+		usart->BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);
+
+		usart->CTRLC |= USART_CMODE_MSPI_gc;
+		usart->CTRLB |= USART_TXEN_bm;
+	}
+
+	return controller;
+}
+
+static led_spi_dev *led_usart_dma_init(USART_t *usart, uint16_t *bsel) {
+	led_spi_dev *controller = NULL;
+	*bsel = 1;
+
+	DMA_CH_t *chan = dma_channel_alloc();
+
+	if (chan) {
 		// DMA source address is incremented during transaction and reset at the
 		// end of every transaction; dest address is fixed.
 		chan->ADDRCTRL =
@@ -59,33 +84,29 @@ led_spi_dev *led_usart_init(USART_t *const usart, const bool use_dma) {
 			controller->load = led_usart_dma_load;
 			controller->dev = chan;
 		}
-
-	} else {
-		// Without DMA we might prematurely latch the data
-		bsel = 8;
-
-		led_usart_driver *dev;
-		if ((dev = smalloc(sizeof *dev))) {
-			// whoa it's a cirlce!
-			controller = &dev->controller;
-			controller->dev = dev;
-			dev->usart = usart;
-
-			controller->load = led_usart_load;
-			controller->write = led_usart_write;
-
-			uart_register_handler(uart_get_index(usart), UART_DRE_VEC, led_usart_tx_isr, dev);
-		}
 	}
 
-	port_info.port->OUTSET = sout_bm | sclk_bm;
-	port_info.port->DIRSET = sout_bm | sclk_bm;
-	port_pinctrl[port_info.xck_pin] = PORT_INVEN_bm;
+	return controller;
+}
 
-	usart->BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
-	usart->BAUDCTRLB = (uint8_t)((bsel >> 8) & 0x000F);
-	usart->CTRLC |= USART_CMODE_MSPI_gc;
-	usart->CTRLB |= USART_TXEN_bm;
+static led_spi_dev *led_usart_interrupt_init(USART_t *usart, uint16_t *bsel) {
+	led_spi_dev *controller = NULL;
+	led_usart_driver *dev;
+
+	// Without DMA we might prematurely latch the data
+	*bsel = 8;
+
+	if ((dev = smalloc(sizeof *dev))) {
+		// whoa it's a cirlce!
+		controller = &dev->controller;
+		controller->dev = dev;
+		dev->usart = usart;
+
+		controller->load = led_usart_load;
+		controller->write = led_usart_write;
+
+		uart_register_handler(uart_get_index(usart), UART_DRE_VEC, led_usart_tx_isr, dev);
+	}
 
 	return controller;
 }
