@@ -45,7 +45,10 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 
 		// DMA source address is incremented during transaction and reset at the
 		// end of every transaction; dest address is fixed.
-		dma_channels[dma_ch].ADDRCTRL = DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
+		dma_channels[dma_ch].ADDRCTRL =
+			DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc |
+			DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
+
 		dma_channels[dma_ch].TRIGSRC = usart_dma_get_trigsrc(usart);
 		dma_channels[dma_ch].CTRLA = DMA_CH_SINGLE_bm;
 
