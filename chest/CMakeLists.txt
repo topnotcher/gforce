@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
 	../drivers/xmega/twi/twi.c
 	../drivers/xmega/clock.c
 	../drivers/xmega/spi.c
+	../drivers/xmega/uart.c
 
 	../drivers/tlc59711.c
 )

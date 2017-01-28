@@ -3,9 +3,9 @@
 
 #include <avr/io.h>
 
-#include "malloc.h"
-#include "leds.h"
-#include "uart.h"
+#include <malloc.h>
+#include <leds.h>
+#include <drivers/xmega/uart.h>
 
 typedef struct {
 	led_spi_dev controller;
@@ -24,6 +24,7 @@ static void led_usart_write(const led_spi_dev *const);
 static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
 static void led_usart_dma_write(const led_spi_dev *const controller);
 static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart);
+static void led_usart_tx_isr(void *);
 
 led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 
@@ -75,6 +76,8 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 
 			controller->load = led_usart_load;
 			controller->write = led_usart_write;
+
+			uart_register_handler(uart_get_index(usart), UART_DRE_VEC, led_usart_tx_isr, dev);
 		}
 	}
 
@@ -140,8 +143,8 @@ static void led_usart_write(const led_spi_dev *const controller) {
 	dev->usart->CTRLA |= USART_DREINTLVL_LO_gc;
 }
 
-void led_usart_tx_isr(const led_spi_dev *const controller) {
-	led_usart_driver *dev = controller->dev;
+static void led_usart_tx_isr(void *const _dev) {
+	led_usart_driver *const dev = _dev;
 
 	dev->usart->DATA = dev->data[dev->bytes_written++];
 

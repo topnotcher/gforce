@@ -20,10 +20,10 @@ if(PLATFORM STREQUAL "xmega")
 		../drivers/xmega/twi/twi.c
 		../drivers/xmega/twi/master.c
 		../drivers/xmega/twi/slave.c
+		../drivers/xmega/uart.c
 
 		../common/buzz.c
 		../common/irrx.c
-		../common/uart.c
 	)
 elseif(PLATFORM STREQUAL "saml21")
 	set(SAM_PART "saml21e17b")

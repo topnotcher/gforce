@@ -31,12 +31,21 @@ typedef struct {
 	uint8_t tx_pos;
 } uart_dev_t;
 
+enum uart_vector {
+	UART_DRE_VEC,
+	UART_TXC_VEC,
+	UART_RXC_VEC,
 
-void uart_rx_isr(uart_dev_t *const);
-void uart_tx_isr(uart_dev_t *const);
+	UART_NUM_VEC
+};
+
+
 uint8_t uart_getchar(const uart_dev_t *const);
 void uart_write(const uart_dev_t *const, const uint8_t *const, const uint8_t, void (*)(void *buf));
 uart_dev_t *uart_init(USART_t *, const uint8_t, const uint8_t, const uint16_t, const uint8_t);
 uart_port_desc uart_port_info(const USART_t *const uart);
+
+int8_t uart_get_index(const USART_t *) __attribute__((const));
+void uart_register_handler(uint8_t, enum uart_vector, void (*)(void *), void *);
 
 #endif

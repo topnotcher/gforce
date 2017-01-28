@@ -95,11 +95,3 @@ static void mpc_rx_phasor_task(void *_params) {
 void mpc_phasor_send(mpc_driver_t *driver, const uint8_t addr, const uint8_t size, uint8_t *const buf) {
 	serialcomm_send(driver->ins, addr, size, buf, driver->tx_complete);
 }
-
-PHASOR_COMM_TXC_ISR {
-	uart_tx_isr(phasor_uart_dev);
-}
-
-PHASOR_COMM_RXC_ISR {
-	uart_rx_isr(phasor_uart_dev);
-}

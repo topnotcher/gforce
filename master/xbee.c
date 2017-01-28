@@ -157,11 +157,3 @@ static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 
 	return crc;
 }
-
-XBEE_TXC_ISR {
-	uart_tx_isr(xbee.uart);
-}
-
-XBEE_RXC_ISR {
-	uart_rx_isr(xbee.uart);
-}
