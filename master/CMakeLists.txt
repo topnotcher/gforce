@@ -21,8 +21,8 @@ set(PROJECT_SOURCES
 	../drivers/xmega/twi/master.c
 	../drivers/xmega/twi/slave.c
 	../drivers/xmega/twi/twi.c
+	../drivers/xmega/uart.c
 
-	../common/uart.c
 	../common/malloc.c
 	../common/mempool.c
 	../common/mpc.c

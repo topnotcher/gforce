@@ -9,7 +9,7 @@
 #include <malloc.h>
 #include <mempool.h>
 #include <mpc.h>
-#include <uart.h>
+#include <drivers/xmega/uart.h>
 
 #include "xbee.h"
 

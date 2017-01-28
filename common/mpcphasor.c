@@ -6,9 +6,10 @@
 #include <mempool.h>
 #include <malloc.h>
 #include <serialcomm.h>
-#include <uart.h>
 #include <mpc.h>
-#include "mpcphasor.h"
+#include <mpcphasor.h>
+
+#include <drivers/xmega/uart.h>
 
 #include <g4config.h>
 #include "config.h"

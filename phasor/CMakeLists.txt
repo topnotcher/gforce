@@ -9,6 +9,8 @@ set(PROJECT_SOURCES
 	irtx.c
 	trigger.c
 
+	../drivers/xmega/uart.c
+
 	../common/buzz.c
 	../common/irrx.c
 	../common/leds.c
@@ -17,7 +19,6 @@ set(PROJECT_SOURCES
 	../common/malloc.c
 	../common/mempool.c
 	../common/serialcomm.c
-	../common/uart.c
 	../common/mpc.c
 	../common/mpcphasor.c
 	../common/tasks.c
