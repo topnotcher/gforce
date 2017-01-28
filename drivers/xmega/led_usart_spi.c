@@ -23,7 +23,6 @@ static void led_usart_write(const led_spi_dev *const);
 
 static void led_usart_dma_load(const led_spi_dev *const, const uint8_t *const, const uint8_t);
 static void led_usart_dma_write(const led_spi_dev *const controller);
-static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart);
 static void led_usart_tx_isr(void *);
 
 led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
@@ -47,7 +46,7 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 		// DMA source address is incremented during transaction and reset at the
 		// end of every transaction; dest address is fixed.
 		dma_channels[dma_ch].ADDRCTRL = DMA_CH_SRCRELOAD_TRANSACTION_gc | DMA_CH_DESTRELOAD_TRANSACTION_gc | DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
-		dma_channels[dma_ch].TRIGSRC = led_usart_dma_get_trigsrc(usart);
+		dma_channels[dma_ch].TRIGSRC = usart_dma_get_trigsrc(usart);
 		dma_channels[dma_ch].CTRLA = DMA_CH_SINGLE_bm;
 
 		#pragma GCC diagnostic push
@@ -91,42 +90,6 @@ led_spi_dev *led_usart_init(USART_t *const usart, const int8_t dma_ch) {
 	usart->CTRLB |= USART_TXEN_bm;
 
 	return controller;
-}
-
-static uint8_t led_usart_dma_get_trigsrc(const USART_t *const usart) {
-#ifdef USARTC0
-	if (usart == &USARTC0)
-		return DMA_CH_TRIGSRC_USARTC0_DRE_gc;
-#endif
-#ifdef USARTC1
-	if (usart == &USARTC1)
-		return DMA_CH_TRIGSRC_USARTC1_DRE_gc;
-#endif
-#ifdef USARTD0
-	if (usart == &USARTD0)
-		return DMA_CH_TRIGSRC_USARTD0_DRE_gc;
-#endif
-#ifdef USARTD1
-	if (usart == &USARTD1)
-		return DMA_CH_TRIGSRC_USARTD1_DRE_gc;
-#endif
-#ifdef USARTE0
-	if (usart == &USARTE0)
-		return DMA_CH_TRIGSRC_USARTE0_DRE_gc;
-#endif
-#ifdef USARTE1
-	if (usart == &USARTE1)
-		return DMA_CH_TRIGSRC_USARTE1_DRE_gc
-#endif
-#ifdef USARTF0
-	if (usart == &USARTF0)
-		return DMA_CH_TRIGSRC_USARTF0_DRE_gc;
-#endif
-#ifdef USARTF1
-	if (usart == &USARTF1)
-		return DMA_CH_TRIGSRC_USARTF1_DRE_gc;
-#endif
-		return 0;
 }
 
 static void led_usart_load(const led_spi_dev *const controller, const uint8_t *const data, const uint8_t size) {

@@ -44,6 +44,7 @@ uint8_t uart_getchar(const uart_dev_t *const);
 void uart_write(const uart_dev_t *const, const uint8_t *const, const uint8_t, void (*)(void *buf));
 uart_dev_t *uart_init(USART_t *, const uint8_t, const uint8_t, const uint16_t, const uint8_t);
 uart_port_desc uart_port_info(const USART_t *const uart);
+uint8_t usart_dma_get_trigsrc(const USART_t *);
 
 int8_t uart_get_index(const USART_t *) __attribute__((const));
 void uart_register_handler(uint8_t, enum uart_vector, void (*)(void *), void *);

@@ -86,6 +86,43 @@ uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8
 	return uart;
 }
 
+uint8_t usart_dma_get_trigsrc(const USART_t *const usart) {
+#ifdef USARTC0
+	if (usart == &USARTC0)
+		return DMA_CH_TRIGSRC_USARTC0_DRE_gc;
+#endif
+#ifdef USARTC1
+	if (usart == &USARTC1)
+		return DMA_CH_TRIGSRC_USARTC1_DRE_gc;
+#endif
+#ifdef USARTD0
+	if (usart == &USARTD0)
+		return DMA_CH_TRIGSRC_USARTD0_DRE_gc;
+#endif
+#ifdef USARTD1
+	if (usart == &USARTD1)
+		return DMA_CH_TRIGSRC_USARTD1_DRE_gc;
+#endif
+#ifdef USARTE0
+	if (usart == &USARTE0)
+		return DMA_CH_TRIGSRC_USARTE0_DRE_gc;
+#endif
+#ifdef USARTE1
+	if (usart == &USARTE1)
+		return DMA_CH_TRIGSRC_USARTE1_DRE_gc;
+#endif
+#ifdef USARTF0
+	if (usart == &USARTF0)
+		return DMA_CH_TRIGSRC_USARTF0_DRE_gc;
+#endif
+#ifdef USARTF1
+	if (usart == &USARTF1)
+		return DMA_CH_TRIGSRC_USARTF1_DRE_gc;
+#endif
+		return 0;
+}
+
+
 uart_port_desc uart_port_info(const USART_t *const uart) {
 	uart_port_desc desc;
 
