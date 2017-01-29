@@ -1,3 +1,7 @@
+#include <stdbool.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/queue.h>
@@ -30,60 +34,155 @@ static struct {
 	void *ins;
 } usart_vector_table[USART_NUM_INST];
 
-static void uart_tx_interrupt_disable(const uart_dev_t *const);
-static void uart_tx_interrupt_enable(const uart_dev_t *const);
+static void uart_tx_interrupt_disable(const uart_dev_t *const) __attribute__((nonnull(1)));
+static void uart_tx_interrupt_enable(const uart_dev_t *const) __attribute__((nonnull(1)));
+
+static bool uart_init_rx(uart_dev_t *, uart_config_t *) __attribute__((nonnull(1, 2)));
+static bool uart_init_tx(uart_dev_t *, uart_config_t *) __attribute__((nonnull(1, 2)));
+static void uart_config_chsize(uart_config_t *) __attribute__((nonnull(1)));
+static void uart_config_stop_bits(uart_config_t *) __attribute__((nonnull(1)));
+static void uart_config_parity(uart_config_t *) __attribute__((nonnull(1)));
 
 static inline void usart_handler(uint8_t, uint8_t) __attribute__((always_inline));
 
 static void uart_rx_isr(void *);
 static void uart_tx_isr(void *);
 
-uart_dev_t *uart_init(USART_t *uart_hw, const uint8_t tx_queue_size, const uint8_t rx_queue_size,
-                     const uint16_t bsel, const uint8_t bscale) {
+uart_dev_t *uart_init(USART_t *uart_hw, uart_config_t *const config) {
 	uart_dev_t *uart;
-	uint8_t ctrla = 0, ctrlb = 0;
-	uart_port_desc port_info = uart_port_info(uart_hw);
-	int8_t usart_index = uart_get_index(uart_hw);
-	uart = smalloc(sizeof *uart);
+	bool initialized = false;
 
-	uart_hw->CTRLA = 0;
+	config->port_info = uart_port_info(uart_hw);
+	config->ctrla = 0;
+	config->ctrlb = 0;
+	config->ctrlc = 0;
 
-	if (rx_queue_size) {
-		uart->rx_queue = xQueueCreate(rx_queue_size, sizeof(uint8_t));
+	if ((uart = smalloc(sizeof *uart))) {
+		memset(uart, 0, sizeof(*uart));
 
-		uart_register_handler(usart_index, UART_RXC_VEC, uart_rx_isr, uart); 
+		uart->uart = uart_hw;
 
-		ctrla |= USART_RXCINTLVL_MED_gc;
-		ctrlb |= USART_RXEN_bm;
+		if (config->rx_queue_size)
+			initialized |= uart_init_rx(uart, config);
 
-		// Manual, page 237.
-		port_info.port->DIRCLR = 1 << port_info.rx_pin;
+		if (config->tx_queue_size)
+			initialized |= uart_init_tx(uart, config);
+
+		if (initialized) {
+			uart->tx_pos = 0;
+			uart->tx.len = 0;
+
+			config->bits = 8;
+			uart_config_chsize(config);
+			uart_config_stop_bits(config);
+			uart_config_parity(config);
+
+			uart_hw->BAUDCTRLA = (uint8_t)(config->bsel & 0x00FF);
+			uart_hw->BAUDCTRLB = (config->bscale << USART_BSCALE_gp) | (uint8_t)((config->bsel >> 8) & 0x0F);
+
+			uart_hw->CTRLC = config->ctrlc;
+			uart_hw->CTRLA = config->ctrla;
+			uart_hw->CTRLB = config->ctrlb;
+		}
 	}
-
-	if (tx_queue_size) {
-		uart->tx_queue = xQueueCreate(tx_queue_size, sizeof(struct _uart_tx_vec));
-
-		uart_register_handler(usart_index, UART_DRE_VEC, uart_tx_isr, uart); 
-
-		ctrlb |= USART_TXEN_bm;
-
-		// Manual, page 237.
-		port_info.port->OUTSET = 1 << port_info.tx_pin;
-		port_info.port->DIRSET = 1 << port_info.tx_pin;
-	}
-	
-	uart->uart = uart_hw;
-	uart->tx_pos = 0;
-	uart->tx.len = 0;
-
-	uart_hw->BAUDCTRLA = (uint8_t)(bsel & 0x00FF);
-	uart_hw->BAUDCTRLB = (bscale << USART_BSCALE_gp) | (uint8_t)((bsel >> 8) & 0x0F);
-
-	uart_hw->CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_8BIT_gc;
-	uart_hw->CTRLA = ctrla;
-	uart_hw->CTRLB = ctrlb;
 
 	return uart;
+}
+
+void uart_config_default(uart_config_t *const config) {
+	memset(config, 0, sizeof(*config));
+
+	config->bits = 8;
+	config->parity = UART_PARITY_NONE;
+	config->stop_bits = 1;
+}
+
+static void uart_config_chsize(uart_config_t *config) {
+	switch (config->bits) {
+	case 5:
+		config->ctrlc |= USART_CHSIZE_5BIT_gc;
+		break;
+
+	case 6:
+		config->ctrlc |= USART_CHSIZE_6BIT_gc;
+		break;
+
+	case 7:
+		config->ctrlc |= USART_CHSIZE_7BIT_gc;
+		break;
+
+	case 9:
+		config->ctrlc |= USART_CHSIZE_9BIT_gc;
+		break;
+
+	case 8:
+	default:
+		config->ctrlc = USART_CHSIZE_8BIT_gc;
+		break;
+	}
+}
+
+static void uart_config_stop_bits(uart_config_t *config) {
+	if (config->stop_bits == 2)
+		config->ctrlc |= USART_SBMODE_bm;
+}
+
+static void uart_config_parity(uart_config_t *config) {
+	switch (config->parity) {
+	case UART_PARITY_EVEN:
+		config->ctrlc |= USART_PMODE_EVEN_gc;
+		break;
+
+	case UART_PARITY_ODD:
+		config->ctrlc |= USART_PMODE_ODD_gc;
+		break;
+	default:
+	case UART_PARITY_NONE:
+		config->ctrlc |= USART_PMODE_DISABLED_gc;
+		break;
+	}
+}
+
+static bool uart_init_rx(uart_dev_t *const uart, uart_config_t *const config) {
+	int8_t usart_index = uart_get_index(uart->uart);
+
+	if (usart_index >= 0) {
+		uint8_t size = (config->bits == 9) ? sizeof(uint16_t) : sizeof(uint8_t);
+		uart->rx_queue = xQueueCreate(config->rx_queue_size, size);
+
+		uart_register_handler(usart_index, UART_RXC_VEC, uart_rx_isr, uart);
+
+		config->ctrla |= USART_RXCINTLVL_MED_gc;
+		config->ctrlb |= USART_RXEN_bm;
+
+		// Manual, page 237.
+		config->port_info.port->DIRCLR = 1 << config->port_info.rx_pin;
+
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static bool uart_init_tx(uart_dev_t *const uart, uart_config_t *const config) {
+	int8_t usart_index = uart_get_index(uart->uart);
+
+	if (usart_index >= 0) {
+		// TODO: implement 9 bit mode!
+		uart->tx_queue = xQueueCreate(config->tx_queue_size, sizeof(struct _uart_tx_vec));
+
+		uart_register_handler(usart_index, UART_DRE_VEC, uart_tx_isr, uart);
+
+		config->ctrlb |= USART_TXEN_bm;
+
+		// Manual, page 237.
+		config->port_info.port->OUTSET = 1 << config->port_info.tx_pin;
+		config->port_info.port->DIRSET = 1 << config->port_info.tx_pin;
+
+		return true;
+	} else {
+		return false;
+	}
 }
 
 uint8_t usart_dma_get_trigsrc(const USART_t *const usart) {

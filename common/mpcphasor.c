@@ -37,10 +37,15 @@ mpc_driver_t *mpc_phasor_init(void) {
 		addr = MPC_ADDR_PHASOR;
 	}
 
-	phasor_uart_dev = uart_init(
-			&PHASOR_COMM_USART, MPC_QUEUE_SIZE * 2, 24,
-			PHASOR_COMM_BSEL_VALUE, PHASOR_COMM_BSCALE_VALUE
-	);
+	uart_config_t config;
+	uart_config_default(&config);
+
+	config.tx_queue_size = MPC_QUEUE_SIZE * 2;
+	config.rx_queue_size = 24;
+	config.bsel = PHASOR_COMM_BSEL_VALUE;
+	config.bscale = PHASOR_COMM_BSCALE_VALUE;
+
+	phasor_uart_dev = uart_init(&PHASOR_COMM_USART, &config);
 
 	if (phasor_uart_dev && (mpc_driver = smalloc(sizeof *mpc_driver))) {
 

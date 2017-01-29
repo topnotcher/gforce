@@ -30,7 +30,15 @@ static void xbee_rx_process(uint8_t, uint8_t *);
 static void xbee_rx_task(void *params);
 
 void xbee_init(void) {
-	xbee.uart = uart_init(&XBEE_USART, MPC_QUEUE_SIZE * 2, 24, XBEE_BSEL_VALUE, XBEE_BSCALE_VALUE);
+	uart_config_t config;
+	uart_config_default(&config);
+
+	config.tx_queue_size = MPC_QUEUE_SIZE * 2;
+	config.rx_queue_size = 24;
+	config.bsel = XBEE_BSEL_VALUE;
+	config.bscale = XBEE_BSCALE_VALUE;
+
+	xbee.uart = uart_init(&XBEE_USART, &config);
 
 	XBEE_PORT.DIRSET = PIN7_bm /*on/sleep*/ | PIN1_bm /*xbee~RTS*/;
 	//xbeesleep - status output on xbee
