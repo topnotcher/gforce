@@ -46,6 +46,7 @@ DMA_CH_t *dma_channel_alloc(void) {
 
 			chan->CTRLA &= ~DMA_CH_ENABLE_bm;
 			chan->CTRLA = DMA_CH_RESET_bm;
+			break;
 		}
 	}
 	xTaskResumeAll();
