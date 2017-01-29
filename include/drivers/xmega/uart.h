@@ -7,6 +7,8 @@
 #ifndef UART_H
 #define UART_H
 
+typedef struct _uart_dev_t uart_dev_t;
+
 struct _uart_tx_vec {
 	const uint8_t *const buf;
 	uint8_t len;
@@ -19,17 +21,6 @@ typedef struct {
 	uint8_t rx_pin;
 	uint8_t xck_pin;
 } uart_port_desc;
-
-typedef struct {
-	QueueHandle_t rx_queue;
-	QueueHandle_t tx_queue;
-
-	USART_t *uart;
-
-	// only touchy from interrupt context.
-	struct _uart_tx_vec tx;
-	uint8_t tx_pos;
-} uart_dev_t;
 
 enum uart_parity_t {
 	UART_PARITY_NONE,

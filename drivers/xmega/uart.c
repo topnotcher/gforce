@@ -29,6 +29,17 @@
 #define USARTF0_INST_IDX 6
 #define USARTF1_INST_IDX 7
 
+struct _uart_dev_t {
+	QueueHandle_t rx_queue;
+	QueueHandle_t tx_queue;
+
+	USART_t *uart;
+
+	// only touchy from interrupt context.
+	struct _uart_tx_vec tx;
+	uint8_t tx_pos;
+};
+
 static struct {
 	void (*vectors[UART_NUM_VEC])(void *);
 	void *ins;
