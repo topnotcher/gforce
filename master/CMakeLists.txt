@@ -22,6 +22,7 @@ set(PROJECT_SOURCES
 	../drivers/xmega/twi/slave.c
 	../drivers/xmega/twi/twi.c
 	../drivers/xmega/uart.c
+	../drivers/xmega/dma.c
 
 	../common/malloc.c
 	../common/mempool.c

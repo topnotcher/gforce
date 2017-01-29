@@ -44,6 +44,7 @@ mpc_driver_t *mpc_phasor_init(void) {
 	config.rx_queue_size = 24;
 	config.bsel = PHASOR_COMM_BSEL_VALUE;
 	config.bscale = PHASOR_COMM_BSCALE_VALUE;
+	config.enable_tx_dma = true;
 
 	phasor_uart_dev = uart_init(&PHASOR_COMM_USART, &config);
 
