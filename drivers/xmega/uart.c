@@ -8,6 +8,7 @@
 
 #include <malloc.h>
 #include <drivers/xmega/uart.h>
+#include <drivers/xmega/dma.h>
 
 // This only applies to XMEGA A series... And not the a*b models...
 #if defined(USARTF1)
@@ -34,6 +35,7 @@ struct _uart_dev_t {
 	QueueHandle_t tx_queue;
 
 	USART_t *uart;
+	DMA_CH_t *dma;
 
 	// only touchy from interrupt context.
 	struct _uart_tx_vec tx;
@@ -45,8 +47,10 @@ static struct {
 	void *ins;
 } usart_vector_table[USART_NUM_INST];
 
-static void uart_tx_interrupt_disable(const uart_dev_t *const) __attribute__((nonnull(1)));
-static void uart_tx_interrupt_enable(const uart_dev_t *const) __attribute__((nonnull(1)));
+static void uart_tx_interrupt_disable(const uart_dev_t *) __attribute__((nonnull(1)));
+static void uart_tx_interrupt_enable(const uart_dev_t *) __attribute__((nonnull(1)));
+static void uart_dma_interrupt_disable(const uart_dev_t *) __attribute((nonnull(1)));
+static void uart_dma_interrupt_enable(const uart_dev_t *) __attribute((nonnull(1)));
 
 static bool uart_init_rx(uart_dev_t *, uart_config_t *) __attribute__((nonnull(1, 2)));
 static bool uart_init_tx(uart_dev_t *, uart_config_t *) __attribute__((nonnull(1, 2)));
@@ -58,6 +62,7 @@ static inline void usart_handler(uint8_t, uint8_t) __attribute__((always_inline)
 
 static void uart_rx_isr(void *);
 static void uart_tx_isr(void *);
+static void uart_dma_tx_isr(void *);
 
 uart_dev_t *uart_init(USART_t *uart_hw, uart_config_t *const config) {
 	uart_dev_t *uart;
@@ -103,6 +108,7 @@ uart_dev_t *uart_init(USART_t *uart_hw, uart_config_t *const config) {
 void uart_config_default(uart_config_t *const config) {
 	memset(config, 0, sizeof(*config));
 
+	config->enable_tx_dma = false;
 	config->bits = 8;
 	config->parity = UART_PARITY_NONE;
 	config->stop_bits = 1;
@@ -176,24 +182,45 @@ static bool uart_init_rx(uart_dev_t *const uart, uart_config_t *const config) {
 }
 
 static bool uart_init_tx(uart_dev_t *const uart, uart_config_t *const config) {
-	int8_t usart_index = uart_get_index(uart->uart);
+	bool success = false;
 
-	if (usart_index >= 0) {
+	if (config->enable_tx_dma) {
+		uart->dma = dma_channel_alloc();
+		int8_t chan_index = dma_get_channel_index(uart->dma);
+
+		if (uart->dma != NULL && chan_index >= 0) {
+			uart->dma->ADDRCTRL =
+				DMA_CH_DESTRELOAD_TRANSACTION_gc |
+				DMA_CH_SRCDIR_INC_gc | DMA_CH_DESTDIR_FIXED_gc;
+
+				uart->dma->TRIGSRC = usart_dma_get_trigsrc(uart->uart);
+				uart->dma->CTRLA = DMA_CH_SINGLE_bm;
+
+				dma_chan_set_destaddr(uart->dma, (void*)&uart->uart->DATA);
+				dma_register_handler(chan_index, uart_dma_tx_isr, uart);
+
+			success = true;
+		}
+	} else {
+		int8_t usart_index = uart_get_index(uart->uart);
+
+		if (usart_index >= 0) {
+			uart_register_handler(usart_index, UART_DRE_VEC, uart_tx_isr, uart);
+			success = true;
+		}
+	}
+
+	if (success) {
 		// TODO: implement 9 bit mode!
 		uart->tx_queue = xQueueCreate(config->tx_queue_size, sizeof(struct _uart_tx_vec));
-
-		uart_register_handler(usart_index, UART_DRE_VEC, uart_tx_isr, uart);
-
 		config->ctrlb |= USART_TXEN_bm;
 
 		// Manual, page 237.
 		config->port_info.port->OUTSET = 1 << config->port_info.tx_pin;
 		config->port_info.port->DIRSET = 1 << config->port_info.tx_pin;
-
-		return true;
-	} else {
-		return false;
 	}
+
+	return success;
 }
 
 uint8_t usart_dma_get_trigsrc(const USART_t *const usart) {
@@ -352,17 +379,42 @@ int8_t uart_get_index(const USART_t *const uart) {
 	return idx;
 }
 
-void uart_write(const uart_dev_t *const dev, const uint8_t *const data, const uint8_t len, void (*complete)(void *buf)) {
+void uart_write(uart_dev_t *const dev, const uint8_t *const data, const uint8_t len, void (*complete)(void *buf)) {
 	struct _uart_tx_vec vec = {
 		.buf = data,
 		.len = len,
 		.complete = complete
 	};
 
-	if (xQueueSend(dev->tx_queue, &vec, 0))
-		uart_tx_interrupt_enable(dev);
-	else
-		complete((void*)data);
+	if (dev->dma) {
+		bool queued;
+
+		if (!(queued = xQueueSend(dev->tx_queue, &vec, 0)))
+			complete((void*)data);
+
+		vTaskSuspendAll();
+		uart_dma_interrupt_disable(dev);
+
+		// if dev->tx_pos is set, the next transfer will be polled from the
+		// Queue in the TX complete interrupt. If it's not set, there's no
+		// ongoing transfer, so one should be started now.
+		// This is a bit stupid - we queue and then immediately dequeue the data.
+		if (queued && !dev->tx_pos && xQueueReceive(dev->tx_queue, &dev->tx, 0)) {
+			dev->tx_pos = 1;
+			dma_chan_set_srcaddr(dev->dma, (void *)dev->tx.buf);
+			dma_chan_set_transfer_count(dev->dma, dev->tx.len);
+
+			dma_chan_enable(dev->dma);
+		}
+
+		uart_dma_interrupt_enable(dev);
+		xTaskResumeAll();
+	} else {
+		if (xQueueSend(dev->tx_queue, &vec, 0))
+			uart_tx_interrupt_enable(dev);
+		else
+			complete((void*)data);
+	}
 }
 
 uint8_t uart_getchar(const uart_dev_t *const dev) {
@@ -379,7 +431,7 @@ static void uart_send_byte(uart_dev_t *const dev) {
 		dev->tx.complete((void*)dev->tx.buf);
 }
 
-void uart_tx_isr(void *const _dev) {
+static void uart_tx_isr(void *const _dev) {
 	uart_dev_t *const dev = _dev;
 
 	if (dev->tx_pos < dev->tx.len) {
@@ -395,16 +447,41 @@ void uart_tx_isr(void *const _dev) {
 	}
 }
 
+static void uart_dma_tx_isr(void *const _dev) {
+	uart_dev_t *const dev = _dev;
+	dev->dma->CTRLB |= DMA_CH_TRNIF_bm;
+
+	dev->tx.complete((void*)dev->tx.buf);
+
+	if (xQueueReceiveFromISR(dev->tx_queue, &dev->tx, NULL)) {
+		dma_chan_set_srcaddr(dev->dma, (void *)dev->tx.buf);
+		dma_chan_set_transfer_count(dev->dma, dev->tx.len);
+
+		dma_chan_enable(dev->dma);
+
+	} else {
+		dev->tx_pos = 0;
+	}
+}
+
 void uart_register_handler(uint8_t uart_index, enum uart_vector vector, void (*handler)(void *), void *ins) {
 	usart_vector_table[uart_index].vectors[vector] = handler;
 	usart_vector_table[uart_index].ins = ins;
 }
 
-void uart_rx_isr(void *const _dev) {
+static void uart_rx_isr(void *const _dev) {
 	uart_dev_t *const dev = _dev;
 
 	uint8_t data = dev->uart->DATA;
 	xQueueSendFromISR(dev->rx_queue, &data, NULL);
+}
+
+static void uart_dma_interrupt_disable(const uart_dev_t *const dev) {
+	dev->dma->CTRLB &= ~DMA_CH_TRNINTLVL_LO_gc;
+}
+
+static void uart_dma_interrupt_enable(const uart_dev_t *const dev) {
+	dev->dma->CTRLB |= DMA_CH_TRNINTLVL_LO_gc;
 }
 
 static void uart_tx_interrupt_disable(const uart_dev_t *const dev) {

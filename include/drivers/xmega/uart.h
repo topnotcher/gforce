@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdbool.h>
 #include <avr/io.h>
 
 #include <freertos/FreeRTOS.h>
@@ -45,6 +45,8 @@ typedef struct {
 	// should I just give in and change that?
 	uint8_t tx_queue_size;
 
+	bool enable_tx_dma;
+
 	uart_port_desc port_info;
 	uint8_t ctrla;
 	uint8_t ctrlb;
@@ -61,7 +63,7 @@ enum uart_vector {
 
 
 uint8_t uart_getchar(const uart_dev_t *const);
-void uart_write(const uart_dev_t *const, const uint8_t *const, const uint8_t, void (*)(void *buf));
+void uart_write(uart_dev_t *const, const uint8_t *const, const uint8_t, void (*)(void *buf));
 uart_dev_t *uart_init(USART_t *, uart_config_t *) __attribute__((nonnull(1, 2)));
 void uart_config_default(uart_config_t *const config) __attribute((nonnull(1)));
 uart_port_desc uart_port_info(const USART_t *const uart) __attribute__((nonnull(1)));
