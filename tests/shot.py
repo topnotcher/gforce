@@ -26,20 +26,19 @@ class TestShot(TestCase):
         await asyncio.sleep(self.start_timeout)
 
     async def _test_shot(self, sensor):
-        with (await self.lock):
-            try:
-                with self.dut.collect(MPC_CMD.IR_RX) as collect:
-                    self.dut.send_cmd(MPC_CMD.IR_RX, [sensor, 0x0c, 0x63, 0x88, 0xA6])
+        try:
+            with self.dut.collect(MPC_CMD.IR_RX) as collect:
+                self.dut.send_cmd(MPC_CMD.IR_RX, [sensor, 0x0c, 0x63, 0x88, 0xA6])
 
-                    shot = await asyncio.wait_for(collect(), timeout=1.0)
+                shot = await asyncio.wait_for(collect(), timeout=5.0)
 
-                    if shot.saddr != sensor:
-                        raise AssertionError('Shot %s but hit on %s' % (sensor, shot.saddr))
+                if shot.saddr != sensor:
+                    raise AssertionError('Shot %s but hit on %s' % (sensor, shot.saddr))
 
-            except asyncio.TimeoutError:
-                raise AssertionError('Timeout waiting for shot on %s' % sensor)
+        except asyncio.TimeoutError:
+            raise AssertionError('Timeout waiting for shot on %s' % sensor)
 
-            await asyncio.sleep(self.inter_shot)
+        await asyncio.sleep(self.inter_shot)
 
     async def test_shot_ls(self):
         await self._test_shot(MPC_ADDR.LS)

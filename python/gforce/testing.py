@@ -10,6 +10,8 @@ async def run_module(gf, name):
     sys.path.append(os.path.join(cwd, 'tests'))
     mod = importlib.import_module(name, package='tests')
 
+    case_lock = asyncio.Lock()
+
     test_classes = []
     for name, obj in inspect.getmembers(mod):
 
@@ -29,7 +31,12 @@ async def run_module(gf, name):
         futures = set()
         names = {}
         for name, case in test_methods.items():
-            future = asyncio.ensure_future(case())
+
+            async def _run_case(_case=case):
+                with (await case_lock):
+                    await asyncio.ensure_future(_case())
+
+            future = asyncio.ensure_future(_run_case())
             futures.add(future)
             names[future] = name
 
