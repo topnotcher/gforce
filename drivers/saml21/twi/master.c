@@ -28,7 +28,7 @@ static void twi_master_start_txn(const twi_master_t *);
 static void twi_master_txn_complete(twi_master_t *, int8_t);
 static void twi_master_isr(void *);
 
-twi_master_t *twi_master_init(Sercom *sercom, const const uint8_t baud) {
+twi_master_t *twi_master_init(Sercom *sercom, const uint8_t baud) {
 	int sercom_index = sercom_get_index(sercom);
 	twi_master_t *dev = smalloc(sizeof *dev);
 
