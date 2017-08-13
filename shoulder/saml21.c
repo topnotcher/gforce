@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <saml21/io.h>
 
 #include <freertos/FreeRTOS.h>
@@ -13,6 +12,7 @@
 #include <mpc.h>
 #include <mpctwi.h>
 #include <diag.h>
+#include <irrx.h>
 
 #include "main.h"
 
@@ -50,6 +50,7 @@ system_init_func(system_software_init) {
 	mpc_init();
 	diag_init();
 	led_init();
+	irrx_init();
 }
 
 void mpc_register_drivers(void) {

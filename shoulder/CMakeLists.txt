@@ -24,7 +24,7 @@ if(PLATFORM STREQUAL "xmega")
 		../drivers/xmega/dma.c
 
 		../common/buzz.c
-		../common/irrx.c
+		../common/irrx_xmega.c
 	)
 elseif(PLATFORM STREQUAL "saml21")
 	set(SAM_PART "saml21e17b")
@@ -57,6 +57,7 @@ set(PROJECT_SOURCES
 	../common/mempool.c
 	../common/mpctwi.c
 	../common/diag.c
+	../common/irrx.c
 
 	${PLATFORM_SOURCES}
 )

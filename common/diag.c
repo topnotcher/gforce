@@ -37,6 +37,3 @@ static void mpc_mem_usage(const mpc_pkt *const pkt) {
 	if (pkt->saddr == MPC_ADDR_MASTER)
 		mpc_send(pkt->saddr, MPC_CMD_DIAG_MEM_USAGE, sizeof(usage), (uint8_t*)&usage);
 }
-
-// TODO: this is not implemented on SAML21 yet
-void __attribute__((weak)) ir_rx_simulate(const uint8_t size, const uint8_t *buf) {}

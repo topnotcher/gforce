@@ -1,3 +1,8 @@
+#include <stdint.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+
 #ifndef IRRX_H
 #define IRRX_H
 
@@ -11,5 +16,7 @@ typedef struct __attribute__((packed)) {
 } ir_hdr_t;
 
 void ir_rx_simulate(const uint8_t size, const uint8_t *const data);
+void ir_rx_recive(uint16_t);
+void irrx_hw_init(QueueHandle_t);
 
 #endif

@@ -1,11 +1,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
-#include <drivers/xmega/util.h>
-#include <drivers/xmega/uart.h>
 #include <g4config.h>
 #include <mpc.h>
 #include <irrx.h>
@@ -16,7 +11,6 @@
 #include <freertos/queue.h>
 #include <freertos/task.h>
 
-#define _RXPIN_bm G4_PIN(IRRX_USART_RXPIN)
 
 #define MAX_PKT_SIZE 15
 #define RX_BUF_SIZE MAX_PKT_SIZE
@@ -56,34 +50,23 @@ static uint8_t process_rx_byte(rx_state_t *, uint8_t);
 static void ir_rx_task(void *);
 static void process_rx_data(rx_state_t *);
 static void crc(uint8_t *shift, uint8_t byte, const uint8_t poly);
-static void irrx_usart_rx_vect(void *);
 
-static QueueHandle_t simulate_rx_queue;
+static QueueHandle_t g_rx_queue;
+
+// TODO: this is not implemented on SAML21 yet
+void __attribute__((weak)) irrx_hw_init(QueueHandle_t _) {}
 
 void irrx_init(void) {
-	int8_t uart_index = uart_get_index(&IRRX_USART);
+
 	QueueHandle_t rx_queue = xQueueCreate(24, sizeof(uint16_t));
-
-	IRRX_USART_PORT.DIRCLR = _RXPIN_bm;
-
-	/** These values are from G4CONFIG, NOT board config **/
-	IRRX_USART.BAUDCTRLA = (uint8_t)(IR_USART_BSEL & 0x00FF);
-	IRRX_USART.BAUDCTRLB = (IR_USART_BSCALE << USART_BSCALE_gp) | (uint8_t)((IR_USART_BSEL >> 8) & 0x0F);
-
-	uart_register_handler(uart_index, UART_RXC_VEC, irrx_usart_rx_vect, rx_queue);
-
-	IRRX_USART.CTRLA |= USART_RXCINTLVL_MED_gc;
-	IRRX_USART.CTRLB |= USART_RXEN_bm;
-
-	//NOTE : removed 1<<USART_SBMODE_bp Why does LW use 2 stop bits?
-	IRRX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc;
-	
 	xTaskCreate(ir_rx_task, "ir-rx", 128, rx_queue, tskIDLE_PRIORITY + 3, (TaskHandle_t*)NULL);
+
+	irrx_hw_init(rx_queue);
 }
 
 static void ir_rx_task(void *p_queue) {
 	QueueHandle_t rx_queue = p_queue;
-	simulate_rx_queue = rx_queue;
+	g_rx_queue = rx_queue;
 
 	rx_state_t rx_state;
 	uint16_t data;
@@ -165,15 +148,15 @@ static uint8_t process_rx_byte(rx_state_t *rx_state, uint8_t data) {
 }
 
 void ir_rx_simulate(const uint8_t size, const uint8_t *const data) {
-	if (simulate_rx_queue) {
+	if (g_rx_queue) {
 		uint16_t rx_byte;
 
 		rx_byte = 0xFF;
-		xQueueSend(simulate_rx_queue, &rx_byte, portMAX_DELAY);
+		xQueueSend(g_rx_queue, &rx_byte, portMAX_DELAY);
 
 		for (uint8_t i = 0; i < size; ++i) {
 			rx_byte = *(data + i) | ((i > 2) ? (1 << 8) : 0);
-			xQueueSend(simulate_rx_queue, &rx_byte, 0);
+			xQueueSend(g_rx_queue, &rx_byte, 0);
 		}
 	}
 }
@@ -192,9 +175,6 @@ static void crc(uint8_t *const shift, uint8_t byte, const uint8_t poly) {
 	}
 }
 
-static void irrx_usart_rx_vect(void *param) {
-	QueueHandle_t rx_queue = param;
-	uint16_t value = ((IRRX_USART.STATUS & USART_RXB8_bm) ? 0x100 : 0x00) |  IRRX_USART.DATA;
-
-	xQueueSendFromISR(rx_queue, &value, NULL);
+void ir_rx_recive(uint16_t data) {
+	xQueueSend(g_rx_queue, &data, portMAX_DELAY);
 }
