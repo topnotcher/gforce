@@ -45,6 +45,10 @@ add_definitions(
 	-DF_CPU=${MCU_SPEED} --std=gnu11
 )
 
+if (NOT PLATFORM STREQUAL "saml21")
+	set_property(SOURCE ${SOURCES} APPEND APPEND_STRING PROPERTY COMPILE_FLAGS " -fpack-struct -fshort-enums ")
+endif()
+
 #
 # Definitions to use just for GForce sources (i.e. not FreeRTOS)
 #
@@ -64,7 +68,7 @@ set_property(SOURCE ${PROJECT_SOURCES} APPEND APPEND_STRING PROPERTY COMPILE_FLA
 # FreeRTOS: shut up.
 #
 set_property(SOURCE ${FREERTOS_SOURCES} APPEND_STRING PROPERTY COMPILE_FLAGS
-	"-Wno-pointer-to-int-cast -Wno-int-to-pointer-cast"
+	" -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast "
 )
 
 include_directories(
