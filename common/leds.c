@@ -66,7 +66,8 @@ typedef struct {
 //max sequence size = 58 right now @TODO.
 static uint8_t led_sequence_raw[58];
 
-static void led_set_brightness(const mpc_pkt * const pkt);
+static void handle_cmd_led_set_brightness(const mpc_pkt * const pkt);
+static void led_set_brightness(const uint8_t);
 static void led_timer_start(void);
 static void led_write(void);
 static void led_timer_tick(TimerHandle_t);
@@ -114,7 +115,7 @@ static portTASK_FUNCTION(leds_task, params) {
 
 	mpc_register_cmd(MPC_CMD_LED_SET_SEQ, set_seq_cmd);
 	mpc_register_cmd(MPC_CMD_LED_OFF, lights_off_cmd);
-	mpc_register_cmd(MPC_CMD_LED_SET_BRIGHTNESS, led_set_brightness);
+	mpc_register_cmd(MPC_CMD_LED_SET_BRIGHTNESS, handle_cmd_led_set_brightness);
 
 	// TODO: this just happens to be the only setting at the moment...
 	mpc_register_cmd(MPC_CMD_CONFIG, set_active_color_cmd);
@@ -295,28 +296,17 @@ void led_init(void) {
 	}
 }
 
-static void led_set_brightness(const mpc_pkt *const pkt) {
-	const uint8_t step = 4;
+void led_set_brightness(const uint8_t brightness) {
 	const uint8_t max = TLC59711_BRIGHTNESS_MAX;
-	const uint8_t min = 0x10;
+	const uint8_t min = 0x00;
 
-	uint8_t up = pkt->data[0];
-	uint8_t level = tlc59711_get_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE);
+	if (brightness >= min && brightness <= max)
+		tlc59711_set_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE, brightness);
+}
 
-	if (up) {
-		if (level < max)
-			level += step;
-		else
-			level = max;
-
-	} else {
-		if (level >= min)
-			level -= step;
-		else
-			level = min;
-	}
-
-	tlc59711_set_brightness(tlc, TLC59711_RED | TLC59711_GREEN | TLC59711_BLUE, level);
+static void handle_cmd_led_set_brightness(const mpc_pkt *const pkt) {
+	if (pkt->len >= 1)
+		led_set_brightness(pkt->data[0]);
 }
 
 static void led_timer_start(void) {
