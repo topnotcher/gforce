@@ -18,5 +18,6 @@ typedef struct __attribute__((packed)) {
 void ir_rx_simulate(const uint8_t size, const uint8_t *const data);
 void ir_rx_recive(uint16_t);
 void irrx_hw_init(QueueHandle_t);
+void g4_ir_crc(uint8_t *, uint8_t, const uint8_t);
 
 #endif

@@ -49,7 +49,6 @@ typedef struct {
 static uint8_t process_rx_byte(rx_state_t *, uint8_t);
 static void ir_rx_task(void *);
 static void process_rx_data(rx_state_t *);
-static void crc(uint8_t *shift, uint8_t byte, const uint8_t poly);
 
 static QueueHandle_t g_rx_queue;
 
@@ -135,7 +134,7 @@ static uint8_t process_rx_byte(rx_state_t *rx_state, uint8_t data) {
 				rx_state->state = RX_STATE_IDLE;
 
 		} else {
-			crc(&rx_state->crc, rx_state->buf[rx_state->bytes - 1], IR_CRC_POLY);
+			g4_ir_crc(&rx_state->crc, rx_state->buf[rx_state->bytes - 1], IR_CRC_POLY);
 		}
 
 		rx_state->buf[rx_state->bytes] = data;
@@ -161,7 +160,7 @@ void ir_rx_simulate(const uint8_t size, const uint8_t *const data) {
 	}
 }
 
-static void crc(uint8_t *const shift, uint8_t byte, const uint8_t poly) {
+void g4_ir_crc(uint8_t *const shift, uint8_t byte, const uint8_t poly) {
 	uint8_t fb;
 
 	for (uint8_t i = 0; i < 8; i++) {

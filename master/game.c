@@ -7,6 +7,7 @@
 #include "sounds.h"
 #include "game.h"
 #include "lights.h"
+#include "irrx.h"
 #include "xbee.h"
 
 #include <g4config.h>
@@ -18,6 +19,10 @@
 
 // Number of seconds to spend waiting for boards
 #define GFORCE_BOOT_TICKS 10
+
+
+// ID number of this vest - vest can't shoot itself.
+static const uint8_t VEST_ID = 27;
 
 typedef struct {
 	enum game_event_type type;
@@ -344,8 +349,12 @@ static void __stun_tick(void) {
  * Handle a shot command from infrared.
  */
 static void handle_shot(const mpc_pkt *const pkt) {
+	const command_t *const cmd = (command_t *)pkt->data;
 
 	if (!game_state.active || !game_state.playing || game_state.stunned)
+		return;
+
+	if ((((cmd->packs) >> 2) & 0x3F) == VEST_ID)
 		return;
 
 	xbee_send_pkt(pkt);
@@ -452,11 +461,17 @@ static void trigger_event(const mpc_pkt *const pkt) {
  * Cause the phasor to fire. This is unconditional: The phasor *will* fire.
  */
 static void process_trigger(void) {
-	static uint8_t data[] = {5, 3, 0xff, 0x0c, 0x63, 0x88, 0xa6};
+	//size, repeat, break, cmd, vest ID | packs, passkey, crc
+	uint8_t shot_cmd[] = {5, 3, 0xff, 0x0c, (VEST_ID << 2) | 0x03, 0x88, IR_CRC_SHIFT};
+	const uint8_t crc_offset = sizeof(shot_cmd)/sizeof(shot_cmd[0]) - 1;
+	const uint8_t pkt_start = 3;
+
+	for (uint8_t i = pkt_start; i < crc_offset; ++i)
+		g4_ir_crc(shot_cmd + crc_offset, shot_cmd[i], IR_CRC_POLY);
 
 	if (game_state.active) {
 		sound_play_effect(SOUND_LASER);
-		mpc_send(MPC_ADDR_PHASOR, MPC_CMD_IR_TX, sizeof(data), data);
+		mpc_send(MPC_ADDR_PHASOR, MPC_CMD_IR_TX, sizeof(shot_cmd), shot_cmd);
 	}
 }
 

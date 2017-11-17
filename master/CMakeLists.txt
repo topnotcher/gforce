@@ -30,6 +30,7 @@ set(PROJECT_SOURCES
 	../common/mpctwi.c
 	../common/mpcphasor.c
 	../common/serialcomm.c
+	../common/irrx.c
 )
 
 include_directories(../bsp)
