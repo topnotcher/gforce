@@ -7,6 +7,7 @@
 #include "g4config.h"
 
 #include <drivers/xmega/util.h>
+#include <drivers/xmega/uart.h>
 #include <leds.h>
 #include <mempool.h>
 
@@ -40,6 +41,7 @@ typedef struct {
 queue_t sendq;
 
 static mempool_t *bufpool;
+static void irtx_uart_tx_handler(void *);
 
 inline void irtx_init(void) {
 
@@ -62,6 +64,8 @@ inline void irtx_init(void) {
 
 	//NOTE : removed 1<<USART_SBMODE_bp Why does /LW use 2 stop bits?
 	IRTX_USART.CTRLC = USART_PMODE_DISABLED_gc | USART_CHSIZE_9BIT_gc;
+
+	uart_register_handler(uart_get_index(&IRTX_USART), UART_DRE_VEC, irtx_uart_tx_handler, NULL);
 
 	//assuming 32MHZ CPU clk per
 	IRTX_TIMER.CTRLA = TC_CLKSEL_DIV2_gc;
@@ -106,7 +110,7 @@ ISR(PORTC_INT0_vect) {
 
 }
 
-ISR(IRTX_USART_DRE_vect) {
+static void irtx_uart_tx_handler(void *_) {
 	irtx_pkt *pkt = sendq.pkts[sendq.read];
 	uint8_t data = pkt->data[sendq.byte];
 
