@@ -54,9 +54,6 @@ MEMORY
   lpram    (rwx) : ORIGIN = 0x30000000, LENGTH = 0x00002000
 }
 
-/* The stack size used by the application. NOTE: you need to adjust according to your application. */
-STACK_SIZE = DEFINED(STACK_SIZE) ? STACK_SIZE : DEFINED(__stack_size__) ? __stack_size__ : 0x1000;
-
 /* Section Definitions */
 SECTIONS
 {
@@ -159,9 +156,7 @@ SECTIONS
     {
         . = ALIGN(8);
         __stack_bottom = .;
-        . = . + STACK_SIZE;
-        . = ALIGN(8);
-        __stack_top = .;
+        __stack_top = ORIGIN(ram) + LENGTH(ram);
     } > ram
 
     . = ALIGN(4);
