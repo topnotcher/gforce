@@ -10,6 +10,7 @@
 #include <drivers/saml21/led_spi.h>
 
 #include <mpc.h>
+#include <settings.h>
 #include <mpctwi.h>
 #include <diag.h>
 #include <irrx.h>
@@ -48,6 +49,8 @@ system_init_func(system_board_init) {
 
 system_init_func(system_software_init) {
 	mpc_init();
+	settings_init();
+
 	diag_init();
 	led_init();
 	irrx_init();

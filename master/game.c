@@ -2,6 +2,7 @@
 #include <avr/io.h>
 
 #include <mpc.h>
+#include <settings.h>
 
 #include "display.h"
 #include "sounds.h"
@@ -501,9 +502,8 @@ static void handle_board_hello(const mpc_pkt *const pkt) {
 
 	boards_booted |= pkt->saddr;
 
-	// TODO: send board settings
-	uint8_t settings = 0x03;
-	mpc_send(pkt->saddr, MPC_CMD_CONFIG, sizeof(settings), &settings);
+	uint8_t settings[] = {SETTING_ACTIVE_COLOR, 0x03, SETTING_BRIGHTNESS, 0x10};
+	mpc_send(pkt->saddr, MPC_CMD_CONFIG, sizeof(settings), settings);
 
 	if (game_state.playing && game_state.active)
 		lights_on();

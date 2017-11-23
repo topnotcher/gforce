@@ -3,14 +3,14 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#include "twi_master.h"
+#include <drivers/xmega/twi/master.h>
 #include <mpc.h>
 #include <g4config.h>
 
 #include "charger.h"
 
-#include <FreeRTOS.h>
-#include <task.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #define CHG_SLAVE_ADDR 0x6B
 
@@ -47,7 +47,7 @@ void charger_init(void) {
 	PORTD.OUTSET = PIN6_bm;
 
 	/* @TODO define this baud rate somewhere*/
-	twim = twi_master_init(&TWIE.MASTER, /*155*/ 35, NULL, NULL);
+	twim = twi_master_init(&TWIE, /*155*/ 35);
 	twi_master_set_blocking(twim, charger_block, charger_wake_from_isr);
 
 	xTaskCreate(charger_task, "charger", 128, NULL, tskIDLE_PRIORITY + 1, &charger_task_handle);
@@ -97,8 +97,4 @@ static void charger_wake_from_isr(void) {
 
 static void charger_block(void) {
 	xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
-}
-
-ISR(TWIE_TWIM_vect) {
-	twi_master_isr(twim);
 }

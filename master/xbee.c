@@ -149,7 +149,7 @@ static void xbee_rx_pkt(mpc_pkt const *const pkt) {
 		if (pkt->data[0] != MPC_ADDR_MASTER)
 			mpc_send_cmd(pkt->data[0] & ~MPC_ADDR_MASTER, MPC_CMD_DIAG_MEM_USAGE);
 
-	} else if (pkt->cmd == MPC_CMD_LED_SET_BRIGHTNESS) {
+	} else if (pkt->cmd == MPC_CMD_CONFIG) {
 		mpc_send(MPC_ADDR_CHEST | MPC_ADDR_PHASOR | MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_BACK, pkt->cmd, pkt->len, (uint8_t*)pkt->data);
 	}
 }

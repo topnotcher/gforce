@@ -18,6 +18,7 @@
 #include <buzz.h>
 #include <irrx.h>
 #include <diag.h>
+#include <settings.h>
 
 #include <drivers/xmega/clock.h>
 #include <drivers/xmega/twi/master.h>
@@ -33,6 +34,7 @@ int main(void) {
 	sysclk_set_internal_32mhz();
 
 	mpc_init();
+	settings_init();
 	buzz_init();
 	diag_init();
 

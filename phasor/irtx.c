@@ -6,7 +6,7 @@
 #include "config.h"
 #include "g4config.h"
 
-#include <util.h>
+#include <drivers/xmega/util.h>
 #include <leds.h>
 #include <mempool.h>
 

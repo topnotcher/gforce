@@ -28,7 +28,6 @@ class Enum(enum.IntEnum):
 class MPC_CMD(Enum):
     LED_SET_SEQ = 0x41
     LED_OFF = 0x42
-    LED_SET_BRIGHTNESS = 0x62
 
     DIAG_PING = 0x50
     DIAG_MEM_USAGE = 0x4D

@@ -58,6 +58,7 @@ set(PROJECT_SOURCES
 	../common/mpctwi.c
 	../common/diag.c
 	../common/irrx.c
+	../common/settings.c
 
 	${PLATFORM_SOURCES}
 )

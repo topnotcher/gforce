@@ -6,6 +6,7 @@
 #include <avr/eeprom.h>
 
 #include <mpc.h>
+#include <settings.h>
 #include <mpctwi.h>
 #include <leds.h>
 #include <buzz.h>
@@ -47,6 +48,8 @@ system_init_func(system_configure_interrupts) {
 
 system_init_func(system_software_init) {
 	mpc_init();
+	settings_init();
+
 	buzz_init();
 	diag_init();
 

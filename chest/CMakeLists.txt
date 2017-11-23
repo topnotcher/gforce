@@ -16,6 +16,7 @@ set(PROJECT_SOURCES
 	../common/mpctwi.c
 	../common/mpc.c
 	../common/diag.c
+	../common/settings.c
 
 	../drivers/xmega/led_spi.c
 	../drivers/xmega/twi/master.c
