@@ -38,7 +38,7 @@ set(SOURCES ${PROJECT_SOURCES} ${FREERTOS_SOURCES} "${CMAKE_SOURCE_DIR}/../inclu
 # Definitions to use when building all sources
 #
 add_definitions(
-	-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums 
+	-funsigned-char -funsigned-bitfields
 	-finline-functions -finline-functions-called-once -finline-limit=1000
 	-finline-small-functions
 	-ffunction-sections -fdata-sections -Wl,-gc-sections
