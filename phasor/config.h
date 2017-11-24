@@ -21,11 +21,6 @@
 
 /** IR TX USART **/
 #define IRTX_USART USARTC1
-#define IRTX_USART_DRE_vect USARTC1_DRE_vect
-
-#define IRTX_USART_PORT PORTC
-#define IRTX_USART_TXPIN 7
-
 
 /** IR TX Timer **/
 #define IRTX_TIMER TCD0

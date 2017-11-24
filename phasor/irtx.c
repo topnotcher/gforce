@@ -16,8 +16,6 @@
 /**
  * Magic macros to minimize my configuration.
  */
-#define _TXPIN_bm G4_PIN(IRTX_USART_TXPIN)
-#define _TXPINCTRL G4_PINCTRL(IRTX_USART_TXPIN)
 #define _TIMERPIN G4_PIN(IRTX_TIMER_PIN)
 
 #define _CCXEN(cc) G4_CONCAT3(TC0_, cc, EN_bm)
@@ -42,17 +40,23 @@ queue_t sendq;
 
 static mempool_t *bufpool;
 static void irtx_uart_tx_handler(void *);
+static uint8_t tx_pin_bitmask;
+static PORT_t *usart_port;
 
 inline void irtx_init(void) {
+	uart_port_desc port_info = uart_port_info(&IRTX_USART);
+	volatile uint8_t *port_pinctrl = &port_info.port->PIN0CTRL;
+	tx_pin_bitmask = 1 << port_info.tx_pin;
+	usart_port = port_info.port;
 
-	IRTX_USART_PORT.OUTCLR = _TXPIN_bm;
-	IRTX_USART_PORT.DIRSET = _TXPIN_bm;
+	port_info.port->OUTSET = tx_pin_bitmask;
+	port_info.port->DIRSET = tx_pin_bitmask;
 
-	IRTX_USART_PORT._TXPINCTRL |= PORT_INVEN_bm;
+	port_pinctrl[port_info.tx_pin] |= PORT_INVEN_bm;
 
 	//configure interrupts
-	IRTX_USART_PORT.INT0MASK = _TXPIN_bm;
-	IRTX_USART_PORT.INTCTRL = PORT_INT0LVL_MED_gc;
+	port_info.port->INT0MASK = tx_pin_bitmask;
+	port_info.port->INTCTRL = PORT_INT0LVL_MED_gc;
 	//end interrupts
 
 	/** These values are from G4CONFIG, NOT board config **/
@@ -103,7 +107,7 @@ void irtx_send(const irtx_pkt *const pkt) {
 }
 
 ISR(PORTC_INT0_vect) {
-	if (!(IRTX_USART_PORT.IN & _TXPIN_bm))
+	if (!(usart_port->IN & tx_pin_bitmask))
 		IRTX_TIMER.CTRLB |= _CCXEN_bm;
 	else
 		IRTX_TIMER.CTRLB &= ~_CCXEN_bm;
