@@ -3,18 +3,6 @@
 #define BUZZ_PORT PORTA
 #define BUZZ_PIN PIN3_bm
 
-
-/**
- * Configuration specific to this board as required to work with includes etcetc
- */
-
-#define LED_PORT PORTD
-#define LED_SCLK_PIN 7
-#define LED_SOUT_PIN 5
-#define LED_SS_PIN 4
-#define LED_SPI SPID
-#define LED_TX_vect SPID_INT_vect
-
 /**************************************
  * IR TX configuration
  */
@@ -37,8 +25,6 @@
 
 #define IRRX_USART_PORT PORTD
 #define IRRX_USART_RXPIN 2
-
-
 
 
 /**************************************
