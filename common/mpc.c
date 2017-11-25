@@ -111,8 +111,8 @@ static void mpc_task(void *params) {
 	if (!(MPC_ADDR_BOARD & MPC_ADDR_MASTER)) {
 		mpc_register_cmd(MPC_CMD_HELLO, handle_master_hello);
 
-		// TODO
-		// mpc_register_cmd('S', handle_master_settings);
+		// wait 500ms to make sure other tasks are initialized. This is a bit of a hax...
+		vTaskDelay(configTICK_RATE_HZ / 2);
 		mpc_send_cmd(MPC_ADDR_MASTER, MPC_CMD_HELLO);
 	}
 
