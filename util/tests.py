@@ -6,6 +6,7 @@ import asyncio
 import functools
 import operator
 import time
+import binascii
 
 from tamp import Structure, uint16_t, uint8_t
 
@@ -121,6 +122,9 @@ async def shot(gf):
         print('No shot received')
 
 
+async def send_config(gf, data):
+    gf.send_cmd(MPC_CMD.CONFIG, list(data))
+
 async def discover(gf):
     try:
         with gf.collect(MPC_CMD.DIAG_RELAY) as collect:
@@ -172,6 +176,10 @@ def main():
         elif sys.argv[1] == 'test':
             mod = sys.argv[2]
             fn = lambda gf: run_module(gf, mod)
+
+        elif sys.argv[1] == 'config':
+            data = binascii.unhexlify(sys.argv[2])
+            fn = lambda gf: send_config(gf, data)
 
         loop.run_until_complete(fn(vest))
 
