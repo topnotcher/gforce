@@ -6,8 +6,6 @@
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/dma.h>
 
-#define SERCOM_INST_NUM 6
-
 static struct {
 	void *ins;
 	void (*isr)(void *ins);
@@ -19,21 +17,14 @@ static inline void sercom_isr_handler(int) __attribute__((always_inline));
 static void sercom_dummy_handler(void *);
 
 int sercom_get_index(const Sercom *const sercom) {
-	if (sercom == SERCOM0)
-		return 0;
-	else if (sercom == SERCOM1)
-		return 1;
-	else if (sercom == SERCOM2)
-		return 2;
-	else if (sercom == SERCOM3)
-		return 3;
-	else if (sercom == SERCOM4)
-		return 4;
-	else if (sercom == SERCOM5)
-		return 5;
-	else
-		return -1;
+	const Sercom *const instances[] = SERCOM_INSTS;
 
+	for (int i = 0; i < SERCOM_INST_NUM; ++i) {
+		if (sercom == instances[i])
+			return i;
+	}
+
+	return -1;
 }
 
 void sercom_register_handler(const int sercom_index, void (*isr)(void *), void *ins) {
@@ -136,10 +127,36 @@ static void sercom_dummy_handler(void *ins) {
 
 #define SERCOM_HANDLER(n) void SERCOM ## n ## _Handler(void) { sercom_isr_handler(n); }
 
+#ifdef SERCOM0
 SERCOM_HANDLER(0)
+#endif
+
+#ifdef SERCOM1
 SERCOM_HANDLER(1)
+#endif
+
+#ifdef SERCOM2
 SERCOM_HANDLER(2)
+#endif
+
+#ifdef SERCOM3
 SERCOM_HANDLER(3)
+#endif
+
+#ifdef SERCOM4
 SERCOM_HANDLER(4)
+#endif
+
+#ifdef SERCOM5
 SERCOM_HANDLER(5)
-static_assert(SERCOM_INST_NUM == 6, "Expected exactly 6 SERCOMs!!!");
+#endif
+
+#ifdef SERCOM6
+SERCOM_HANDLER(6)
+#endif
+
+#ifdef SERCOM7
+SERCOM_HANDLER(7)
+#endif
+
+static_assert(SERCOM_INST_NUM <= 8, "TOO MANY SERCOMS!!");
