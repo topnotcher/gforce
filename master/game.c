@@ -467,10 +467,14 @@ static void process_trigger(void) {
 	const uint8_t crc_offset = sizeof(shot_cmd)/sizeof(shot_cmd[0]) - 1;
 	const uint8_t pkt_start = 3;
 
-	for (uint8_t i = pkt_start; i < crc_offset; ++i)
-		g4_ir_crc(shot_cmd + crc_offset, shot_cmd[i], IR_CRC_POLY);
+	if (!game_state.active || !game_state.playing || game_state.stunned) {
+		return;
 
-	if (game_state.active) {
+	} else {
+
+		for (uint8_t i = pkt_start; i < crc_offset; ++i)
+			g4_ir_crc(shot_cmd + crc_offset, shot_cmd[i], IR_CRC_POLY);
+
 		sound_play_effect(SOUND_LASER);
 		mpc_send(MPC_ADDR_PHASOR, MPC_CMD_IR_TX, sizeof(shot_cmd), shot_cmd);
 	}
