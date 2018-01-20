@@ -24,14 +24,14 @@
 #define SOUND_POWER_DOWN 2
 
 typedef struct { 
-	uint8_t const * effect;
+	uint8_t const *effect;
 	uint16_t len;
 	uint16_t pos;
 } sound_player;
 
 typedef struct {
 	const uint16_t len;
-	const uint8_t effect[];
+	const uint8_t *effect;
 
 } sound_effect;
 
