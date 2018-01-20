@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief Peripheral I/O description for SAML21J18B
+ * \brief Peripheral I/O description for SAML21J17BU
  *
  * Copyright (c) 2017 Microchip Technology Inc.
  *
@@ -27,8 +27,8 @@
  *
  */
 
-#ifndef _SAML21J18B_PIO_
-#define _SAML21J18B_PIO_
+#ifndef _SAML21J17BU_PIO_
+#define _SAML21J17BU_PIO_
 
 #define PIN_PA00                            0  /**< \brief Pin Number for PA00 */
 #define PORT_PA00              (_UL_(1) <<  0) /**< \brief PORT Mask  for PA00 */
@@ -1383,4 +1383,4 @@
 #define PINMUX_PB17I_CCL_OUT3      ((PIN_PB17I_CCL_OUT3 << 16) | MUX_PB17I_CCL_OUT3)
 #define PORT_PB17I_CCL_OUT3    (_UL_(1) << 17)
 
-#endif /* _SAML21J18B_PIO_ */
+#endif /* _SAML21J17BU_PIO_ */
