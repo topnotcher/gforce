@@ -1,10 +1,7 @@
-#include <assert.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include <saml21/io.h>
-#include <saml21/core_cmFunc.h>
-#include <saml21/core_cm0plus.h>
 
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/dma.h>
@@ -110,26 +107,41 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 }
 
 int sercom_dma_rx_trigsrc(int sercom_index) {
+#if defined(__SAML21E17B__)
+	// sercom5 does not support DMA
 	if (sercom_index >= 0 && sercom_index < 5)
 		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
 	else
 		return -1;
+#elif defined(__SAMD51N20A__)
+	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
+		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
+	else
+		return -1;
+#else
+#error "Part not supported!"
+#endif
 }
 
 int sercom_dma_tx_trigsrc(int sercom_index) {
+#if defined(__SAML21E17B__)
+	// sercom5 does not support DMA
 	if (sercom_index >= 0 && sercom_index < 5)
 		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
 	else
 		return -1;
+#elif defined(__SAMD51N20A__)
+	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
+		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
+	else
+		return -1;
+#else
+#error "Part not supported!"
+#endif
 }
 
 static void sercom_isr_handler(void) {
-	const uint32_t ipsr = __get_IPSR();
-
-	// Per the Cortex M0+/M4 User guide, 16 = IRQ0.
-	const uint32_t irqn = (ipsr & 0x1FF) - 16;
-	const int sercom_index = irqn - SERCOM0_IRQn;
-
+	const int sercom_index = get_active_irqn() - SERCOM0_IRQn;
 	sercom_isr_table[sercom_index].isr(sercom_isr_table[sercom_index].ins);
 }
 
