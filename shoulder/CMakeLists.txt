@@ -37,6 +37,7 @@ elseif(PLATFORM STREQUAL "saml21")
 		../drivers/saml21/sercom.c
 		../drivers/saml21/led_spi.c
 		../drivers/saml21/dma.c
+		../drivers/saml21/isr.c
 	)
 
 else()

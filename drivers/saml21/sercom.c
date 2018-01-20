@@ -3,17 +3,19 @@
 #include <stdbool.h>
 
 #include <saml21/io.h>
+#include <saml21/core_cmFunc.h>
+#include <saml21/core_cm0plus.h>
+
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/dma.h>
+#include <drivers/saml21/isr.h>
 
 static struct {
 	void *ins;
 	void (*isr)(void *ins);
 } sercom_isr_table[SERCOM_INST_NUM];
 
-static bool isr_table_initialized;
-
-static inline void sercom_isr_handler(int) __attribute__((always_inline));
+static void sercom_isr_handler(void);
 static void sercom_dummy_handler(void *);
 
 int sercom_get_index(const Sercom *const sercom) {
@@ -28,6 +30,8 @@ int sercom_get_index(const Sercom *const sercom) {
 }
 
 void sercom_register_handler(const int sercom_index, void (*isr)(void *), void *ins) {
+	static bool isr_table_initialized;
+
 	if (!isr_table_initialized) {
 		for (int i = 0; i < SERCOM_INST_NUM; ++i) {
 			sercom_isr_table[i].isr = sercom_dummy_handler;
@@ -41,6 +45,8 @@ void sercom_register_handler(const int sercom_index, void (*isr)(void *), void *
 		sercom_isr_table[sercom_index].isr = isr;
 		sercom_isr_table[sercom_index].ins = ins;
 	}
+
+	nvic_register_isr(SERCOM0_IRQn + sercom_index, sercom_isr_handler);
 }
 
 void sercom_enable_irq(const int sercom_index) {
@@ -117,46 +123,16 @@ int sercom_dma_tx_trigsrc(int sercom_index) {
 		return -1;
 }
 
-static inline void sercom_isr_handler(const int sercom_index) {
+static void sercom_isr_handler(void) {
+	const uint32_t ipsr = __get_IPSR();
+
+	// Per the Cortex M0+/M4 User guide, 16 = IRQ0.
+	const uint32_t irqn = (ipsr & 0x1FF) - 16;
+	const int sercom_index = irqn - SERCOM0_IRQn;
+
 	sercom_isr_table[sercom_index].isr(sercom_isr_table[sercom_index].ins);
 }
 
 static void sercom_dummy_handler(void *ins) {
 	while (1);
 }
-
-#define SERCOM_HANDLER(n) void SERCOM ## n ## _Handler(void) { sercom_isr_handler(n); }
-
-#ifdef SERCOM0
-SERCOM_HANDLER(0)
-#endif
-
-#ifdef SERCOM1
-SERCOM_HANDLER(1)
-#endif
-
-#ifdef SERCOM2
-SERCOM_HANDLER(2)
-#endif
-
-#ifdef SERCOM3
-SERCOM_HANDLER(3)
-#endif
-
-#ifdef SERCOM4
-SERCOM_HANDLER(4)
-#endif
-
-#ifdef SERCOM5
-SERCOM_HANDLER(5)
-#endif
-
-#ifdef SERCOM6
-SERCOM_HANDLER(6)
-#endif
-
-#ifdef SERCOM7
-SERCOM_HANDLER(7)
-#endif
-
-static_assert(SERCOM_INST_NUM <= 8, "TOO MANY SERCOMS!!");
