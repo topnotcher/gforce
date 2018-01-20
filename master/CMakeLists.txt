@@ -37,6 +37,11 @@ include_directories(../bsp)
 
 include(../cmakedefs)
 
-add_definitions(-DW_SOUNDS=0)
+option(ENABLE_SOUND "Build with sound effects." OFF)
+if (ENABLE_SOUND)
+	add_definitions("-DW_SOUNDS=1")
+else()
+	add_definitions("-DW_SOUNDS=0")
+endif()
 
 add_avr_executable(main ${SOURCES})
