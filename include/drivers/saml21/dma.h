@@ -1,4 +1,4 @@
-#include <saml21/io.h>
+#include <sam.h>
 
 #ifndef SAML21_DMA_H
 #define SAML21_DMA_H

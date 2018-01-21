@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 #include <malloc.h>
 
 #include <drivers/saml21/led_spi.h>

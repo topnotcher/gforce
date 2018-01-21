@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include <drivers/twi/master.h>
-#include <saml21/io.h>
+#include <sam.h>
 
 #ifndef SAML21_TWI_MASTER_H
 #define SAML21_TWI_MASTER_H 

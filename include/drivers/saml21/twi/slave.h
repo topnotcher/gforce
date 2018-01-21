@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 #include <drivers/twi/slave.h>
 
 #ifndef SAML21_TWI_SLAVE_H

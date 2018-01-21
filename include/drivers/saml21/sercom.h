@@ -1,4 +1,4 @@
-#include <saml21/io.h>
+#include <sam.h>
 
 #ifndef SERCOM_H
 #define SERCOM_H

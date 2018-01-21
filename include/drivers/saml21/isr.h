@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 
 #ifndef SAML21_ISR_H
 #define SAML21_ISR_H

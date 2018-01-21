@@ -1,4 +1,4 @@
-#include <saml21/io.h>
+#include <sam.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

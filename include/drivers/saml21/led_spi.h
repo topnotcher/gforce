@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 #include <leds.h>
 
 #ifndef SAML21_LED_SPI_H

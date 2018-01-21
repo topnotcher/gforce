@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 #include <drivers/saml21/isr.h>
 
 static DeviceVectors vector_table __attribute__((aligned(256)));

@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include <malloc.h>
-#include <saml21/io.h>
+#include <sam.h>
 
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/twi/master.h>

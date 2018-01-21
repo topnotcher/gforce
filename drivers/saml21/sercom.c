@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <saml21/io.h>
+#include <sam.h>
 
 #include <drivers/saml21/sercom.h>
 #include <drivers/saml21/dma.h>
