@@ -7,6 +7,15 @@
 #include <drivers/sam/dma.h>
 #include <drivers/sam/isr.h>
 
+// TODO: HACK for SAMD51 (just to get it building). The SAML21 uses one IRQ for
+// the peripheral. SAMD51 uses 4. It defines 7 interrupt sources. sources 0,1,2
+// map to IRQs 0,1,2 while sources 3,4,5,6 map to IRQ 3. The interrupt source
+// corresponds to the bit position in the INTFLAG register.
+// (DS: 10.2.2: Interrupt Lien Mapping)
+#if defined(__SAMD51P20A__)
+const int SERCOM0_IRQn = SERCOM0_0_IRQn;
+#endif
+
 static struct {
 	void *ins;
 	void (*isr)(void *ins);
@@ -63,7 +72,7 @@ void sercom_enable_pm(int sercom_index) {
 	} else if (sercom_index == 5) {
 		MCLK->APBDMASK.reg |= MCLK_APBDMASK_SERCOM5;
 	}
-#elif defined(__SAMD51N20A__)
+#elif defined(__SAMD51P20A__)
 	if (sercom_index >= 0 && sercom_index < 2) {
 		MCLK->APBAMASK.reg |= 1 << (sercom_index + MCLK_APBAMASK_SERCOM0_Pos);
 	} else if (sercom_index >= 2 && sercom_index < 4) {
@@ -106,7 +115,7 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 		gclk_id = SERCOM5_GCLK_ID_SLOW;
 		initialized = &sercom5_gclk_slow_initialized;
 	}
-#elif defined(__SAMD51N20A__)
+#elif defined(__SAMD51P20A__)
 	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM) {
 		gclk_id = SERCOM0_GCLK_ID_SLOW;
 		initialized = &sercom_gclk_slow_initialized;
@@ -137,7 +146,7 @@ int sercom_dma_rx_trigsrc(int sercom_index) {
 		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
 	else
 		return -1;
-#elif defined(__SAMD51N20A__)
+#elif defined(__SAMD51P20A__)
 	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
 		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
 	else
@@ -154,7 +163,7 @@ int sercom_dma_tx_trigsrc(int sercom_index) {
 		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
 	else
 		return -1;
-#elif defined(__SAMD51N20A__)
+#elif defined(__SAMD51P20A__)
 	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
 		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
 	else

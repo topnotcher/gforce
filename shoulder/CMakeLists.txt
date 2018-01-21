@@ -42,6 +42,22 @@ elseif(PLATFORM STREQUAL "saml21")
 		../drivers/sam/isr.c
 	)
 
+elseif(PLATFORM STREQUAL "samd51")
+	include(${CMAKE_SOURCE_DIR}/samd51.cmake)
+	include(${CMAKE_SOURCE_DIR}/../build/sam.cmake)
+
+	message("-- Configuring for ${SAM_PART}")
+
+	set(PLATFORM_SOURCES
+		samd51.c
+		../drivers/sam/twi/slave.c
+		../drivers/sam/twi/master.c
+		../drivers/sam/sercom.c
+		../drivers/sam/led_spi.c
+		../drivers/sam/dma.c
+		../drivers/sam/isr.c
+	)
+
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")
 endif()
@@ -72,6 +88,8 @@ include(../cmakedefs)
 if(PLATFORM STREQUAL "xmega")
 	add_avr_executable(main ${SOURCES})
 elseif(PLATFORM STREQUAL "saml21")
+	add_arm_executable(main ${SOURCES})
+elseif(PLATFORM STREQUAL "samd51")
 	add_arm_executable(main ${SOURCES})
 else()
 	message(FATAL_ERROR "Unknown platform ${PLATFORM}.")

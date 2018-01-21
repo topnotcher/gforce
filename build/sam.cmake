@@ -44,7 +44,7 @@ function(add_arm_executable EXECUTABLE_NAME)
 
 	get_filename_component(TOOLCHAIN_DIRECTORY "${CMAKE_TOOLCHAIN_FILE}" DIRECTORY)
 
-	set(STARTUP_CODE "${TOOLCHAIN_DIRECTORY}/startup_saml21.c")
+	set(STARTUP_CODE "${TOOLCHAIN_DIRECTORY}/startup_${PLATFORM}.c")
 	list(APPEND ARGN "${STARTUP_CODE}")
 
 	add_executable(${elf_file} ${ARGN})
@@ -57,6 +57,7 @@ function(add_arm_executable EXECUTABLE_NAME)
 		PROPERTIES
 		LINK_FLAGS
 			"-Wl,-T${TOOLCHAIN_DIRECTORY}/${SAM_PART}.ld \
+			-mcpu=${SAM_CPU} \
 			-Wl,--entry=Reset_Handler \
 			-Wl,--gc-sections -Wl,-Map,${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${map_file}"
 	)

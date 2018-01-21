@@ -97,6 +97,12 @@
 #define configIDLE_SHOULD_YIELD		1
 #define configQUEUE_REGISTRY_SIZE	0
 
+// TODO HACK
+// SAMD51 only
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 1
+#define configKERNEL_INTERRUPT_PRIORITY 1
+// end SAMD51 hax
+
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 		0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )

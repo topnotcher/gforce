@@ -21,7 +21,9 @@ static void dmac_init(void) {
 		MCLK->AHBMASK.reg |= MCLK_AHBMASK_DMAC;
 
 		DMAC->CTRL.reg &= ~DMAC_CTRL_DMAENABLE;
+#if defined(__SAML21E17B__)
 		DMAC->CTRL.reg &= ~DMAC_CTRL_CRCENABLE;
+#endif
 
 		DMAC->CTRL.reg = DMAC_CTRL_SWRST;
 
@@ -48,8 +50,15 @@ int dma_channel_alloc(void) {
 	}
 
 	if (chan >= 0) {
-		DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE;
+// TODO HACK - added just to get it building.
+#if defined(__SAML21E17B__)
+		DMAC->CHID.reg = chan;
 		DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST;
+		while (DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST);
+#elif defined (__SAMD51P20A__)
+		DMAC->Channel[chan].CHCTRLA.reg = DMAC_CHCTRLA_SWRST;
+		while (DMAC->Channel[chan].CHCTRLA.reg & DMAC_CHCTRLA_SWRST);
+#endif
 	}
 	xTaskResumeAll();
 
@@ -66,7 +75,12 @@ DmacDescriptor *dma_channel_desc(int dma_channel) {
 void dma_start_transfer(const int dma_chan) {
 	dma_descriptors[dma_chan].BTCTRL.reg |= DMAC_BTCTRL_VALID;
 	portENTER_CRITICAL();
+// TODO HACK: Just to get it building.
+#if defined(__SAML21E17B__)
 	DMAC->CHID.reg = dma_chan;
 	DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
+#elif defined(__SAMD51P20A__)
+	DMAC->Channel[dma_chan].CHCTRLA.reg = DMAC_CHCTRLA_ENABLE;
+#endif
 	portEXIT_CRITICAL();
 }

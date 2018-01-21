@@ -93,9 +93,16 @@ static void configure_dma(led_spi_driver *const dev, const Sercom *const sercom)
 
 		// TODO - add a dma_function() for this. Should only access channel
 		// registers in a critical section (or with context switches disabled)...
+#if defined(__SAML21E17B__)
 		DMAC->CHID.reg = dev->dma_chan;
 		DMAC->CHCTRLB.reg =
 			DMAC_CHCTRLB_TRIGSRC(sercom_dma_tx_trigsrc(sercom_get_index(sercom))) |
 			DMAC_CHCTRLB_TRIGACT_BEAT;
+#elif defined(__SAMD51P20A__)
+		// TODO HACK: this whole thing
+		DMAC->Channel[dma_chan].CHCTRLA.reg =
+			DMAC_CHCTRLA_TRIGSRC(sercom_dma_tx_trigsrc(sercom_get_index(sercom))) |
+			DMAC_CHCTRLA_TRIGACT_BURST; // TODO HACK: -- just changed to compile
+#endif
 	}
 }
