@@ -27,12 +27,8 @@ static void init_exception_table(void) {
 }
 
 void nvic_register_isr(const uint32_t irq, void (*const handler)(void)) {
-// TODO HACK: just to get it buildling. Might be right though.
-#if defined(__SAML21E17B__)
-	void *handler_entry = &vector_table.pfnSYSTEM_Handler + irq;
-#elif defined(__SAMD51P20A__)
-	void *handler_entry = &vector_table.pfnPM_Handler + irq;
-#endif
+	// First 16 entries are always system handlers.
+	void *handler_entry = &vector_table.pvStack + 16 + irq;
 	init_exception_table();
 
 	__DSB();
