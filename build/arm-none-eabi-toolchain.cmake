@@ -14,7 +14,7 @@ find_program(ARM_SIZE arm-none-eabi-size)
 find_program(CMSIS_DAP_PROGRAMMER edbg)
 
 set(CMAKE_C_FLAGS_RELEASE "-O3" CACHE STRING "" FORCE)
-set(CMAKE_C_FLAGS_DEBUG "-O1 -gdwarf-3 -gstrict-dwarf" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS_DEBUG "-O0 -gdwarf-3 -gstrict-dwarf" CACHE STRING "" FORCE)
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -gdwarf-3 -gstrict-dwarf" CACHE STRING "" FORCE)
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
