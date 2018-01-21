@@ -41,9 +41,6 @@ MEMORY
   qspi     (rwx) : ORIGIN = 0x04000000, LENGTH = 0x01000000
 }
 
-/* The stack size used by the application. NOTE: you need to adjust according to your application. */
-STACK_SIZE = DEFINED(STACK_SIZE) ? STACK_SIZE : DEFINED(__stack_size__) ? __stack_size__ : 0x10000;
-
 /* Section Definitions */
 SECTIONS
 {
@@ -146,16 +143,15 @@ SECTIONS
         . = ALIGN(4);
         _ebss = . ;
         _ezero = .;
+		__heap_start = .;
     } > ram
 
     /* stack section */
     .stack (NOLOAD):
     {
         . = ALIGN(8);
-        _sstack = .;
-        . = . + STACK_SIZE;
-        . = ALIGN(8);
-        _estack = .;
+        __stack_bottom = .;
+        __stack_top = ORIGIN(ram) + LENGTH(ram);
     } > ram
 
     . = ALIGN(4);

@@ -27,7 +27,7 @@
  *
  */
 
-#include "samd51.h"
+#include <saml21/saml21.h>
 
 /* Initialize segments */
 extern uint32_t _sfixed;
@@ -37,8 +37,8 @@ extern uint32_t _srelocate;
 extern uint32_t _erelocate;
 extern uint32_t _szero;
 extern uint32_t _ezero;
-extern uint32_t _sstack;
-extern uint32_t _estack;
+extern uint32_t __stack_top;
+extern uint32_t __stack_bottom;
 
 /** \cond DOXYGEN_SHOULD_SKIP_THIS */
 int main(void);
@@ -241,7 +241,7 @@ __attribute__ ((section(".vectors")))
 const DeviceVectors exception_table = {
 
         /* Configure Initial Stack Pointer, using linker-generated symbols */
-        .pvStack                = (void*) (&_estack),
+        .pvStack                = (void*) (&__stack_top),
 
         .pfnReset_Handler       = (void*) Reset_Handler,
         .pfnNMI_Handler         = (void*) NMI_Handler,
