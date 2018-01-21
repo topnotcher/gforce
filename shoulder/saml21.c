@@ -3,11 +3,11 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include <drivers/saml21/twi/slave.h>
-#include <drivers/saml21/twi/master.h>
-#include <drivers/saml21/led_spi.h>
+#include <drivers/sam/twi/slave.h>
+#include <drivers/sam/twi/master.h>
+#include <drivers/sam/led_spi.h>
 
-#include <drivers/saml21/led_spi.h>
+#include <drivers/sam/led_spi.h>
 
 #include <mpc.h>
 #include <settings.h>

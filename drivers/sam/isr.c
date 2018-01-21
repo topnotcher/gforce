@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include <sam.h>
-#include <drivers/saml21/isr.h>
+#include <drivers/sam/isr.h>
 
 static DeviceVectors vector_table __attribute__((aligned(256)));
 extern DeviceVectors exception_table;

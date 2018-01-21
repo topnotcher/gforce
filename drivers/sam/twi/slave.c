@@ -5,8 +5,8 @@
 
 #include <sam.h>
 
-#include <drivers/saml21/sercom.h>
-#include <drivers/saml21/twi/slave.h>
+#include <drivers/sam/sercom.h>
+#include <drivers/sam/twi/slave.h>
 #include <malloc.h>
 
 struct _twi_slave_s {

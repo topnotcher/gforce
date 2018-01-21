@@ -5,9 +5,9 @@
 #include <sam.h>
 #include <malloc.h>
 
-#include <drivers/saml21/led_spi.h>
-#include <drivers/saml21/sercom.h>
-#include <drivers/saml21/dma.h>
+#include <drivers/sam/led_spi.h>
+#include <drivers/sam/sercom.h>
+#include <drivers/sam/dma.h>
 
 #include <freertos/FreeRTOS.h>
 

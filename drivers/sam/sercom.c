@@ -3,9 +3,9 @@
 
 #include <sam.h>
 
-#include <drivers/saml21/sercom.h>
-#include <drivers/saml21/dma.h>
-#include <drivers/saml21/isr.h>
+#include <drivers/sam/sercom.h>
+#include <drivers/sam/dma.h>
+#include <drivers/sam/isr.h>
 
 static struct {
 	void *ins;

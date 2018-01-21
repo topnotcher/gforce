@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include <drivers/saml21/dma.h>
+#include <drivers/sam/dma.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

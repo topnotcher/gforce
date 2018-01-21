@@ -4,8 +4,8 @@
 #include <malloc.h>
 #include <sam.h>
 
-#include <drivers/saml21/sercom.h>
-#include <drivers/saml21/twi/master.h>
+#include <drivers/sam/sercom.h>
+#include <drivers/sam/twi/master.h>
 
 struct _twi_master_s {
 	Sercom *sercom;

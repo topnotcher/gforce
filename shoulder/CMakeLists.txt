@@ -27,17 +27,19 @@ if(PLATFORM STREQUAL "xmega")
 		../common/irrx_xmega.c
 	)
 elseif(PLATFORM STREQUAL "saml21")
-	set(SAM_PART "saml21e17b")
-	message("Building for ${SAM_PART}")
+	include(${CMAKE_SOURCE_DIR}/saml21.cmake)
+	include(${CMAKE_SOURCE_DIR}/../build/sam.cmake)
+
+	message("-- Configuring for ${SAM_PART}")
 
 	set(PLATFORM_SOURCES
 		saml21.c
-		../drivers/saml21/twi/slave.c
-		../drivers/saml21/twi/master.c
-		../drivers/saml21/sercom.c
-		../drivers/saml21/led_spi.c
-		../drivers/saml21/dma.c
-		../drivers/saml21/isr.c
+		../drivers/sam/twi/slave.c
+		../drivers/sam/twi/master.c
+		../drivers/sam/sercom.c
+		../drivers/sam/led_spi.c
+		../drivers/sam/dma.c
+		../drivers/sam/isr.c
 	)
 
 else()
