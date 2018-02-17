@@ -60,7 +60,7 @@ static void process_setting(const uint8_t **const spec, const uint8_t *const end
 		if (cur->setting == setting) {
 			uint8_t setting_size = get_setting_size(cur->setting_type);
 			
-			if ((*spec) + setting_size - 1 <= end) {
+			if ((*spec) + setting_size - 1 <= end && cur->set_callback != NULL) {
 				memcpy(setting_value, *spec, setting_size);
 				cur->set_callback((const void *)setting_value);
 			}
