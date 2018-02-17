@@ -8,7 +8,6 @@
 
 #include <g4config.h>
 #include <mpc.h>
-#include "tasks.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
