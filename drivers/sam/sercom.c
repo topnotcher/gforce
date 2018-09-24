@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include <sam.h>
@@ -16,13 +17,35 @@
 const int SERCOM0_IRQn = SERCOM0_0_IRQn;
 #endif
 
-static struct {
-	void *ins;
-	void (*isr)(void *ins);
-} sercom_isr_table[SERCOM_INST_NUM];
+static sercom_t sercom_inst[SERCOM_INST_NUM];
 
 static void sercom_isr_handler(void);
-static void sercom_dummy_handler(void *);
+static void sercom_dummy_handler(sercom_t *sercom);
+
+sercom_t *sercom_init(const int sercom_index) {
+	static bool sercom_table_initialized;
+	sercom_t *inst = NULL;
+
+	if (!sercom_table_initialized) {
+		memset(sercom_inst, 0, sizeof(sercom_inst));
+
+		for (int i = 0; i < SERCOM_INST_NUM; ++i) {
+			sercom_inst[i].isr = sercom_dummy_handler;
+		}
+
+		sercom_table_initialized = true;
+	}
+
+	if (sercom_index < SERCOM_INST_NUM) {
+		Sercom *const instances[] = SERCOM_INSTS;
+		inst = &sercom_inst[sercom_index];
+
+		inst->hw = (Sercom*)instances[sercom_index];
+		inst->index = sercom_index;
+	}
+
+	return inst;
+}
 
 int sercom_get_index(const Sercom *const sercom) {
 	const Sercom *const instances[] = SERCOM_INSTS;
@@ -35,24 +58,11 @@ int sercom_get_index(const Sercom *const sercom) {
 	return -1;
 }
 
-void sercom_register_handler(const int sercom_index, void (*isr)(void *), void *ins) {
-	static bool isr_table_initialized;
-
-	if (!isr_table_initialized) {
-		for (int i = 0; i < SERCOM_INST_NUM; ++i) {
-			sercom_isr_table[i].isr = sercom_dummy_handler;
-			sercom_isr_table[i].ins = (void*)i; // for debugging: gets passed to dummy handler.
-		}
-
-		isr_table_initialized = true;
+void sercom_register_handler(sercom_t *sercom, void (*isr)(sercom_t *)) {
+	if (sercom != NULL) {
+		sercom->isr = isr;
+		nvic_register_isr(SERCOM0_IRQn + sercom->index, sercom_isr_handler);
 	}
-
-	if (sercom_index < SERCOM_INST_NUM) {
-		sercom_isr_table[sercom_index].isr = isr;
-		sercom_isr_table[sercom_index].ins = ins;
-	}
-
-	nvic_register_isr(SERCOM0_IRQn + sercom_index, sercom_isr_handler);
 }
 
 void sercom_enable_irq(const int sercom_index) {
@@ -175,9 +185,11 @@ int sercom_dma_tx_trigsrc(int sercom_index) {
 
 static void sercom_isr_handler(void) {
 	const int sercom_index = get_active_irqn() - SERCOM0_IRQn;
-	sercom_isr_table[sercom_index].isr(sercom_isr_table[sercom_index].ins);
+	sercom_t *const sercom = &sercom_inst[sercom_index];
+
+	sercom->isr(sercom);
 }
 
-static void sercom_dummy_handler(void *ins) {
+static void sercom_dummy_handler(sercom_t *sercom) {
 	while (1);
 }
