@@ -45,7 +45,7 @@ add_definitions(
 	-DF_CPU=${MCU_SPEED} --std=gnu11
 )
 
-if (NOT PLATFORM STREQUAL "saml21")
+if (NOT (PLATFORM STREQUAL "saml21" OR PLATFORM STREQUAL "samd51"))
 	set_property(SOURCE ${SOURCES} APPEND APPEND_STRING PROPERTY COMPILE_FLAGS " -fpack-struct -fshort-enums ")
 endif()
 
