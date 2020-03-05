@@ -75,7 +75,7 @@ function(add_arm_executable EXECUTABLE_NAME)
 	# program flash with edbg
 	add_custom_target(
 		program
-		${CMSIS_DAP_PROGRAMMER} -bpv -t atmel_cm0p -f ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${bin_file}
+		${CMSIS_DAP_PROGRAMMER} -bpv -t ${PLATFORM} -f ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${bin_file}
 		DEPENDS ${elf_file}
 		COMMENT "Uploading ${bin_file} to ${SAM_PART}..."
 		)

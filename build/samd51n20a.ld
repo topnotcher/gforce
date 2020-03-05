@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief Linker script for running in internal FLASH on the SAMD51P20A
+ * \brief Linker script for running in internal FLASH on the SAMD51N20A
  *
  * Copyright (c) 2017 Microchip Technology Inc.
  *
