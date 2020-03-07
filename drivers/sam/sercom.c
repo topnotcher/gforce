@@ -86,9 +86,9 @@ void sercom_enable_pm(int sercom_index) {
 	if (sercom_index >= 0 && sercom_index < 2) {
 		MCLK->APBAMASK.reg |= 1 << (sercom_index + MCLK_APBAMASK_SERCOM0_Pos);
 	} else if (sercom_index >= 2 && sercom_index < 4) {
-		MCLK->APBBMASK.reg |= 1 << (sercom_index + MCLK_APBBMASK_SERCOM2_Pos);
+		MCLK->APBBMASK.reg |= 1 << (sercom_index - 2 + MCLK_APBBMASK_SERCOM2_Pos);
 	} else if (sercom_index >= 4 && sercom_index <= 7) {
-		MCLK->APBDMASK.reg |= 1 << (sercom_index + MCLK_APBDMASK_SERCOM4_Pos);
+		MCLK->APBDMASK.reg |= 1 << (sercom_index - 4 + MCLK_APBDMASK_SERCOM4_Pos);
 	}
 #else
 	#error "Part not supported!"
@@ -96,7 +96,21 @@ void sercom_enable_pm(int sercom_index) {
 }
 
 void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
-	int gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
+	int gclk_index;
+
+#if defined(__SAML21E17B___)
+	gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
+#elif defined(__SAMD51N20A__)
+	if (sercom_index >= 0 && sercom_index < 2) {
+		gclk_index = SERCOM0_GCLK_ID_CORE + sercom_index;
+	} else if (sercom_index >= 2 && sercom_index < 4) {
+		gclk_index = SERCOM2_GCLK_ID_CORE + sercom_index - 2;
+	} else if (sercom_index >= 4 && sercom_index < 7) {
+		gclk_index = SERCOM4_GCLK_ID_CORE + sercom_index - 4;
+	}
+#else
+	#error "Part not supported!"
+#endif
 
 	// disable peripheral clock channel
 	GCLK->PCHCTRL[gclk_index].reg &= ~GCLK_PCHCTRL_CHEN;
@@ -131,7 +145,7 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 		initialized = &sercom_gclk_slow_initialized;
 	}
 #else
-#error "Part not supported!"
+	#error "Part not supported!"
 #endif
 
 	if (initialized && !(*initialized)) {
@@ -162,7 +176,7 @@ int sercom_dma_rx_trigsrc(int sercom_index) {
 	else
 		return -1;
 #else
-#error "Part not supported!"
+	#error "Part not supported!"
 #endif
 }
 

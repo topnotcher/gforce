@@ -38,8 +38,8 @@ led_spi_dev *led_spi_init(Sercom *sercom, uint8_t dopo) {
 		sercom_set_gclk_core(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
 		sercom_set_gclk_slow(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
 
-		sercom->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_ENABLE;
-		while (sercom->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_ENABLE);
+		sercom->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
+		while (sercom->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_SWRST);
 
 		uint32_t ctrla = SERCOM_SPI_CTRLA_MODE(0x03);
 		uint32_t ctrlb = 0; 
@@ -66,13 +66,14 @@ static void led_spi_load(const led_spi_dev *const controller, const uint8_t *con
 	led_spi_driver *dev = controller->dev;
 	DmacDescriptor *desc = dma_channel_desc(dev->dma_chan);
 
+	// See the SRCADDR description in the DS. This is how it says to calculate
+	// SRCADDR when SRCINC=1.
 	desc->SRCADDR.reg = (uint32_t)data + size;
 	desc->BTCNT.reg = size;
 }
 
 static void led_spi_write(const led_spi_dev *const controller) {
 	led_spi_driver *dev = controller->dev; 
-
 	dma_start_transfer(dev->dma_chan);
 }
 
@@ -94,15 +95,18 @@ static void configure_dma(led_spi_driver *const dev, const Sercom *const sercom)
 		// TODO - add a dma_function() for this. Should only access channel
 		// registers in a critical section (or with context switches disabled)...
 #if defined(__SAML21E17B__)
+		//note: assumed this is called from a critical section...
 		DMAC->CHID.reg = dev->dma_chan;
 		DMAC->CHCTRLB.reg =
 			DMAC_CHCTRLB_TRIGSRC(sercom_dma_tx_trigsrc(sercom_get_index(sercom))) |
 			DMAC_CHCTRLB_TRIGACT_BEAT;
-#elif defined(__SAMD51P20A__)
+#elif defined(__SAMD51N20A__)
 		// TODO HACK: this whole thing
 		DMAC->Channel[dma_chan].CHCTRLA.reg =
 			DMAC_CHCTRLA_TRIGSRC(sercom_dma_tx_trigsrc(sercom_get_index(sercom))) |
 			DMAC_CHCTRLA_TRIGACT_BURST; // TODO HACK: -- just changed to compile
+#else
+	#error "Unsupported part!"
 #endif
 	}
 }
