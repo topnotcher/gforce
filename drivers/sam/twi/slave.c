@@ -41,7 +41,6 @@ twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 		dev->end_txn = NULL;
 		dev->ins = NULL;
 
-		sercom_enable_pm(dev->sercom);
 		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 

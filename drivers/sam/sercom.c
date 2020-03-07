@@ -50,6 +50,8 @@ sercom_t *sercom_init(const int sercom_index) {
 
 		inst->hw = (Sercom*)get_hw_instance(sercom_index);
 		inst->index = sercom_index;
+
+		sercom_enable_pm(inst);
 	}
 
 	return inst;

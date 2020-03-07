@@ -35,7 +35,6 @@ led_spi_dev *led_spi_init(const int sercom_index, uint8_t dopo) {
 		dev->controller.load = led_spi_load;
 		configure_dma(dev, sercom);
 
-		sercom_enable_pm(sercom);
 		sercom_set_gclk_core(sercom, GCLK_PCHCTRL_GEN_GCLK0);
 		sercom_set_gclk_slow(sercom, GCLK_PCHCTRL_GEN_GCLK0);
 

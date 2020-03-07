@@ -39,7 +39,6 @@ twi_master_t *twi_master_init(const int sercom_index, const uint8_t baud) {
 	if (dev != NULL && dev->sercom != NULL) {
 		Sercom *const hw = dev->sercom->hw;
 
-		sercom_enable_pm(dev->sercom);
 		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 
