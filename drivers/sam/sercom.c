@@ -96,7 +96,7 @@ void sercom_enable_pm(int sercom_index) {
 }
 
 void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
-	int gclk_index;
+	int gclk_index = -1;
 
 #if defined(__SAML21E17B___)
 	gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
@@ -112,22 +112,25 @@ void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
 	#error "Part not supported!"
 #endif
 
-	// disable peripheral clock channel
-	GCLK->PCHCTRL[gclk_index].reg &= ~GCLK_PCHCTRL_CHEN;
-	while (GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN);
+	if (gclk_index >= 0) {
 
-	// set peripheral clock thannel generator to gclk_gen
-	GCLK->PCHCTRL[gclk_index].reg = gclk_gen;
+		// disable peripheral clock channel
+		GCLK->PCHCTRL[gclk_index].reg &= ~GCLK_PCHCTRL_CHEN;
+		while (GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN);
 
-	GCLK->PCHCTRL[gclk_index].reg |= GCLK_PCHCTRL_CHEN;
-	while (!(GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN));
+		// set peripheral clock thannel generator to gclk_gen
+		GCLK->PCHCTRL[gclk_index].reg = gclk_gen;
+
+		GCLK->PCHCTRL[gclk_index].reg |= GCLK_PCHCTRL_CHEN;
+		while (!(GCLK->PCHCTRL[gclk_index].reg & GCLK_PCHCTRL_CHEN));
+	}
 }
 
 void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 	static bool sercom_gclk_slow_initialized;
 
 	bool *initialized = NULL;
-	int gclk_id;
+	int gclk_id = -1;
 
 
 #if defined(__SAML21E17B__)
@@ -148,7 +151,7 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 	#error "Part not supported!"
 #endif
 
-	if (initialized && !(*initialized)) {
+	if (initialized && !(*initialized) && gclk_id >= 0) {
 		// disable peripheral clock channel
 		GCLK->PCHCTRL[gclk_id].reg &= ~GCLK_PCHCTRL_CHEN;
 		while (GCLK->PCHCTRL[gclk_id].reg & GCLK_PCHCTRL_CHEN);
