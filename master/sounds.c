@@ -8,6 +8,21 @@
 
 #include "sounds.h"
 
+#define SOUND_OUTPUT_PIN 4
+#define SOUND_OUTPUT TCD0.CCA
+
+
+#define SOUND_CONTROL_REGISTER_A TCD0.CTRLA
+#define SOUND_CONTROL_REGISTER_B TCD0.CTRLB
+
+#define SOUND_CONTROL_REGISTER_A_BITS TC_CLKSEL_DIV1_gc
+
+//TC0_CCAEN_bm might nto be right. Is this a T0 or a T1? FML.
+#define SOUND_CONTROL_REGISTER_B_BITS TC0_CCAEN_bm | TC_WGMODE_SS_gc
+
+//idfk
+#define SOUND_TIMER_FREQ 1
+
 #if W_SOUNDS == 1
 #include "g4_sounds.h"
 

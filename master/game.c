@@ -1,15 +1,13 @@
 #include <stdint.h>
-#include <avr/io.h>
 
 #include <mpc.h>
 #include <settings.h>
 
-#include "display.h"
 #include "sounds.h"
 #include "game.h"
 #include "lights.h"
 #include "irrx.h"
-#include "xbee.h"
+/* #include "xbee.h" */
 
 #include <g4config.h>
 
@@ -85,6 +83,14 @@ static void gforce_boot_tick(TimerHandle_t);
 static void _gforce_boot_tick(void);
 static void mpc_hello_received(const mpc_pkt *const);
 static void handle_board_hello(const mpc_pkt *const);
+
+
+// temporary
+void __attribute__((weak)) xbee_send(const uint8_t _cmd, const uint8_t _size, uint8_t *_data) {}
+void __attribute__((weak)) xbee_send_pkt(const mpc_pkt *_spkt) {}
+void __attribute__((weak)) display_write(const char *_s) { }
+void __attribute__((weak)) display_send(const uint8_t _1, const uint8_t _2, uint8_t * _3) { }
+void __attribute__((weak)) sound_play_effect(uint8_t _effect) {}
 
 
 void game_init(void) {
