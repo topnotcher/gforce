@@ -13,9 +13,9 @@
 #include "game.h"
 
 #include <drivers/sam/isr.h>
-
 #include <drivers/sam/twi/slave.h>
 #include <drivers/sam/twi/master.h>
+#include <drivers/sam/led_spi.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -47,6 +47,7 @@ int main(void) {
 	PORT[0].Group[1].OUTSET.reg = 1 << 4;
 
 	/* sound_init(); */
+	led_init();
 	mpc_init();
 	/* xbee_init(); */
 	game_init();
@@ -133,4 +134,22 @@ static void configure_clocks(void) {
 	PORT[0].Group[1].OUTSET.reg = 1 << 4;
 
 	WDT->CTRLA.reg &= ~WDT_CTRLA_ENABLE;
+}
+
+led_spi_dev *led_init_driver(void) {
+	// ~enable pin for LED controllers.
+	PORT[0].Group[1].DIRSET.reg = 1 << 14;
+	PORT[0].Group[1].OUTCLR.reg = 1 << 14;
+
+	// SERCOM4
+	// PB12 - MOSI (SERCOM4:0)
+	// PB13 - SCLK (SERCOM4:1)
+	PORT[0].Group[1].PMUX[6].reg = 0x02 | (0x02 << 4);
+
+	PORT[0].Group[1].DIRSET.reg = 1 << 12;
+	PORT[0].Group[1].DIRSET.reg = 1 << 13;
+	PORT[0].Group[1].PINCFG[12].reg |= PORT_PINCFG_PMUXEN;
+	PORT[0].Group[1].PINCFG[13].reg |= PORT_PINCFG_PMUXEN;
+
+	return led_spi_init(SERCOM4, 0);
 }

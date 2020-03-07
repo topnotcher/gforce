@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
 	game.c
 	lights.c
 
+	../drivers/tlc59711.c
+
 	../drivers/sam/twi/slave.c
 	../drivers/sam/twi/master.c
 	../drivers/sam/sercom.c
@@ -28,12 +30,14 @@ set(PROJECT_SOURCES
 	../drivers/sam/isr.c
 
 	../common/malloc.c
+	../common/leds.c
 	../common/mempool.c
 	../common/mpc.c
 	../common/mpctwi.c
 	# ../common/mpcphasor.c
 	#../common/serialcomm.c
 	../common/irrx.c
+	../common/settings.c
 )
 
 include(../cmakedefs)
