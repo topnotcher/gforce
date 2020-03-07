@@ -7,7 +7,7 @@
 #include <drivers/sam/twi/master.h>
 #include <drivers/sam/led_spi.h>
 
-#include <drivers/sam/led_spi.h>
+#include <drivers/sam/isr.h>
 
 #include <mpc.h>
 #include <settings.h>
@@ -17,7 +17,10 @@
 
 #include "main.h"
 
-//static void led_task(void *);
+// FreeRTOS hanndlers in port.c
+extern void vPortSVCHandler(void) __attribute__(( naked ));
+extern void xPortSysTickHandler(void) __attribute__(( naked ));
+extern void xPortPendSVHandler(void) __attribute__(( naked ));
 
 system_init_func(system_board_init) {
 	uint32_t val;
@@ -52,6 +55,11 @@ system_init_func(system_board_init) {
 }
 
 system_init_func(system_software_init) {
+	// Register the FreeRTOS handlers.
+	nvic_register_isr(SVCall_IRQn, vPortSVCHandler);
+	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
+	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
+
 	mpc_init();
 	settings_init();
 
