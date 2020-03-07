@@ -13,8 +13,6 @@
 
 #include "sounds.h"
 #include "xbee.h"
-#include "display.h"
-#include "ibutton.h"
 #include "game.h"
 
 
@@ -49,8 +47,6 @@ int main(void) {
 	xbee_init();
 	game_init();
 
-	display_init();
-
 	//ping hack: master receives a ping reply
 	//send it to the xbee.
 	mpc_register_cmd(MPC_CMD_DIAG_RELAY, xbee_relay_mpc);
@@ -60,8 +56,6 @@ int main(void) {
 
 	// memory usage reply...
 	mpc_register_cmd(MPC_CMD_DIAG_MEM_USAGE, xbee_relay_mpc);
-
-	ibutton_init();
 
 	vTaskStartScheduler();
 }

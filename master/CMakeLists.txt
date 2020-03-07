@@ -10,11 +10,8 @@ set(PROJECT_SOURCES
 	main.c
 	sounds.c
 	xbee.c
-	display.c
 	game.c
 	lights.c
-	ds2483.c
-	ibutton.c
 
 	../drivers/xmega/clock.c
 	../drivers/xmega/spi.c
