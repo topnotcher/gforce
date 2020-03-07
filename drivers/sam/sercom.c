@@ -22,6 +22,15 @@ static sercom_t sercom_inst[SERCOM_INST_NUM];
 static void sercom_isr_handler(void);
 static void sercom_dummy_handler(sercom_t *sercom);
 
+static Sercom *get_hw_instance(const int idx) {
+	if (idx >= 0 && idx < SERCOM_INST_NUM) {
+		return (Sercom *const[])SERCOM_INSTS[idx];
+	} else {
+		return NULL;
+	}
+}
+
+
 sercom_t *sercom_init(const int sercom_index) {
 	static bool sercom_table_initialized;
 	sercom_t *inst = NULL;
@@ -36,11 +45,10 @@ sercom_t *sercom_init(const int sercom_index) {
 		sercom_table_initialized = true;
 	}
 
-	if (sercom_index < SERCOM_INST_NUM) {
-		Sercom *const instances[] = SERCOM_INSTS;
+	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM) {
 		inst = &sercom_inst[sercom_index];
 
-		inst->hw = (Sercom*)instances[sercom_index];
+		inst->hw = (Sercom*)get_hw_instance(sercom_index);
 		inst->index = sercom_index;
 	}
 
@@ -48,10 +56,8 @@ sercom_t *sercom_init(const int sercom_index) {
 }
 
 int sercom_get_index(const Sercom *const sercom) {
-	const Sercom *const instances[] = SERCOM_INSTS;
-
 	for (int i = 0; i < SERCOM_INST_NUM; ++i) {
-		if (sercom == instances[i])
+		if (get_hw_instance(i) == sercom)
 			return i;
 	}
 
