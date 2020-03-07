@@ -14,6 +14,7 @@
 #include <leds.h>
 
 typedef struct {
+	sercom_t sercom;
 	led_spi_dev controller;
 	uint8_t dma_chan;
 } led_spi_driver;
@@ -23,20 +24,22 @@ static void led_spi_write(const led_spi_dev *);
 static void configure_dma(led_spi_driver *, const sercom_t *const);
 
 led_spi_dev *led_spi_init(const int sercom_index, uint8_t dopo) {
-	sercom_t *const sercom = sercom_init(sercom_index);
 	led_spi_driver *dev = smalloc(sizeof *dev);
 
-	if (sercom != NULL && dev != NULL) {
-		Sercom *hw = sercom->hw;
-		memset(dev, 0, sizeof *dev);
+	if (dev != NULL) {
+		memset(dev, 0, sizeof(*dev));
+	}
+
+	if (dev != NULL && sercom_init(sercom_index, &dev->sercom)) {
+		Sercom *hw = dev->sercom.hw;
 
 		dev->controller.dev = dev;
 		dev->controller.write = led_spi_write;
 		dev->controller.load = led_spi_load;
-		configure_dma(dev, sercom);
+		configure_dma(dev, &dev->sercom);
 
-		sercom_set_gclk_core(sercom, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_core(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 
 		hw->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
 		while (hw->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_SWRST);

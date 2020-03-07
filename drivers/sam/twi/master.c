@@ -8,7 +8,7 @@
 #include <drivers/sam/twi/master.h>
 
 struct _twi_master_s {
-	sercom_t *sercom;
+	sercom_t sercom;
 	twi_master_complete_txn_cb txn_complete;
 	void *ins;
 	uint8_t *txbuf;
@@ -33,14 +33,13 @@ twi_master_t *twi_master_init(const int sercom_index, const uint8_t baud) {
 
 	if (dev != NULL) {
 		memset(dev, 0, sizeof(*dev));
-		dev->sercom = sercom_init(sercom_index);
 	}
 
-	if (dev != NULL && dev->sercom != NULL) {
-		Sercom *const hw = dev->sercom->hw;
+	if (dev != NULL && sercom_init(sercom_index, &dev->sercom)) {
+		Sercom *const hw = dev->sercom.hw;
 
-		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_core(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 
 		// Disable module
 		// Parts of CTRLA and CTRLB are enabled-protected
@@ -68,8 +67,8 @@ twi_master_t *twi_master_init(const int sercom_index, const uint8_t baud) {
 			SERCOM_I2CM_INTENSET_MB |
 			SERCOM_I2CM_INTENSET_ERROR;
 
-		sercom_register_handler(dev->sercom, twi_master_isr);
-		sercom_enable_irq(dev->sercom);
+		sercom_register_handler(&dev->sercom, twi_master_isr);
+		sercom_enable_irq(&dev->sercom);
 	}
 
 	return dev;
@@ -95,7 +94,7 @@ void twi_master_write_read(twi_master_t *dev, uint8_t addr, uint8_t txbytes, uin
 }
 
 static void twi_master_start_txn(const twi_master_t *const dev) {
-	dev->sercom->hw->I2CM.ADDR.reg = SERCOM_I2CM_ADDR_ADDR(dev->addr | (dev->txbytes ? 0 : 1));
+	dev->sercom.hw->I2CM.ADDR.reg = SERCOM_I2CM_ADDR_ADDR(dev->addr | (dev->txbytes ? 0 : 1));
 }
 
 static void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
@@ -103,7 +102,7 @@ static void twi_master_txn_complete(twi_master_t *dev, int8_t status) {
 }
 
 static void twi_master_write_handler(twi_master_t *dev) {
-	Sercom *hw = dev->sercom->hw;
+	Sercom *hw = dev->sercom.hw;
 
 	if (hw->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK) {
 		// TODO: does the busstate need to be manually set?

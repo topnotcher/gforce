@@ -10,7 +10,7 @@
 #include <malloc.h>
 
 struct _twi_slave_s {
-	sercom_t *sercom;
+	sercom_t sercom;
 	void *ins;
 
 	twi_slave_begin_txn begin_txn;
@@ -31,20 +31,18 @@ twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 
 	if (dev != NULL) {
 		memset(dev, 0, sizeof(*dev));
-		dev->sercom = sercom_init(sercom_index);
 	}
 
-
-	if (dev != NULL && dev->sercom != NULL) {
+	if (dev != NULL && sercom_init(sercom_index, &dev->sercom)) {
 
 		dev->begin_txn = NULL;
 		dev->end_txn = NULL;
 		dev->ins = NULL;
 
-		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_core(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 
-		Sercom *const hw = dev->sercom->hw;
+		Sercom *const hw = dev->sercom.hw;
 
 		// Disable module
 		// Parts of CTRLA and CTRLB are enabled-protected
@@ -74,8 +72,8 @@ twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 			SERCOM_I2CS_INTENSET_DRDY |
 			SERCOM_I2CS_INTENSET_ERROR;
 
-		sercom_register_handler(dev->sercom, twi_slave_handler);
-		sercom_enable_irq(dev->sercom);
+		sercom_register_handler(&dev->sercom, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom);
 
 	}
 
@@ -84,7 +82,6 @@ twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 
 static void twi_slave_handler(sercom_t *s) {
 	twi_slave_t *dev = from_sercom(dev, s, sercom);
-
 	Sercom *hw = s->hw;
 
 	// TODO SMEN: smart mode - auto ack on DATA read

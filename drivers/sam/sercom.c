@@ -17,7 +17,7 @@
 const int SERCOM0_IRQn = SERCOM0_0_IRQn;
 #endif
 
-static sercom_t sercom_inst[SERCOM_INST_NUM];
+static sercom_t *sercom_inst[SERCOM_INST_NUM];
 
 static void sercom_isr_handler(void);
 static void sercom_dummy_handler(sercom_t *sercom);
@@ -30,31 +30,20 @@ static Sercom *get_hw_instance(const int idx) {
 	}
 }
 
-
-sercom_t *sercom_init(const int sercom_index) {
-	static bool sercom_table_initialized;
-	sercom_t *inst = NULL;
-
-	if (!sercom_table_initialized) {
-		memset(sercom_inst, 0, sizeof(sercom_inst));
-
-		for (int i = 0; i < SERCOM_INST_NUM; ++i) {
-			sercom_inst[i].isr = sercom_dummy_handler;
-		}
-
-		sercom_table_initialized = true;
-	}
-
-	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM) {
-		inst = &sercom_inst[sercom_index];
+bool sercom_init(const int sercom_index, sercom_t *const inst) {
+	if (inst != NULL && sercom_index >= 0 && sercom_index < SERCOM_INST_NUM) {
+		sercom_inst[sercom_index] = inst;
 
 		inst->hw = (Sercom*)get_hw_instance(sercom_index);
 		inst->index = sercom_index;
+		inst->isr = sercom_dummy_handler;
 
 		sercom_enable_pm(inst);
+
+		return true;
 	}
 
-	return inst;
+	return false;
 }
 
 int sercom_get_index(const Sercom *const sercom) {
@@ -212,7 +201,7 @@ int sercom_dma_tx_trigsrc(const sercom_t *const sercom) {
 
 static void sercom_isr_handler(void) {
 	const int sercom_index = get_active_irqn() - SERCOM0_IRQn;
-	sercom_t *const sercom = &sercom_inst[sercom_index];
+	sercom_t *const sercom = sercom_inst[sercom_index];
 
 	sercom->isr(sercom);
 }
