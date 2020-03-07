@@ -71,48 +71,50 @@ void sercom_register_handler(sercom_t *sercom, void (*isr)(sercom_t *)) {
 	}
 }
 
-void sercom_enable_irq(const int sercom_index) {
-	NVIC_EnableIRQ(SERCOM0_IRQn + sercom_index);
+void sercom_enable_irq(const sercom_t *const sercom) {
+	NVIC_EnableIRQ(SERCOM0_IRQn + sercom->index);
 }
 
-void sercom_disable_irq(const int sercom_index) {
-	NVIC_DisableIRQ(SERCOM0_IRQn + sercom_index);
+void sercom_disable_irq(const sercom_t *sercom) {
+	NVIC_DisableIRQ(SERCOM0_IRQn + sercom->index);
 }
 
-void sercom_enable_pm(int sercom_index) {
+void sercom_enable_pm(const sercom_t *const sercom) {
 
 // TODO: this would work better with a series define
 #if defined(__SAML21E17B__)
-	if (sercom_index >= 0 && sercom_index < 5) {
-		MCLK->APBCMASK.reg |= 1 << (sercom_index + MCLK_APBCMASK_SERCOM0_Pos);
-	} else if (sercom_index == 5) {
+	if (sercom->index >= 0 && sercom->index < 5) {
+		MCLK->APBCMASK.reg |= 1 << (sercom->index + MCLK_APBCMASK_SERCOM0_Pos);
+	} else if (sercom->index == 5) {
 		MCLK->APBDMASK.reg |= MCLK_APBDMASK_SERCOM5;
 	}
 #elif defined(__SAMD51N20A__)
-	if (sercom_index >= 0 && sercom_index < 2) {
-		MCLK->APBAMASK.reg |= 1 << (sercom_index + MCLK_APBAMASK_SERCOM0_Pos);
-	} else if (sercom_index >= 2 && sercom_index < 4) {
-		MCLK->APBBMASK.reg |= 1 << (sercom_index - 2 + MCLK_APBBMASK_SERCOM2_Pos);
-	} else if (sercom_index >= 4 && sercom_index <= 7) {
-		MCLK->APBDMASK.reg |= 1 << (sercom_index - 4 + MCLK_APBDMASK_SERCOM4_Pos);
+	if (sercom->index >= 0 && sercom->index < 2) {
+		MCLK->APBAMASK.reg |= 1 << (sercom->index + MCLK_APBAMASK_SERCOM0_Pos);
+	} else if (sercom->index >= 2 && sercom->index < 4) {
+		MCLK->APBBMASK.reg |= 1 << (sercom->index - 2 + MCLK_APBBMASK_SERCOM2_Pos);
+	} else if (sercom->index >= 4 && sercom->index <= 7) {
+		MCLK->APBDMASK.reg |= 1 << (sercom->index - 4 + MCLK_APBDMASK_SERCOM4_Pos);
 	}
 #else
 	#error "Part not supported!"
 #endif
 }
 
-void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
+void sercom_set_gclk_core(const sercom_t *const sercom, int gclk_gen) {
 	int gclk_index = -1;
 
-#if defined(__SAML21E17B___)
-	gclk_index = sercom_index + SERCOM0_GCLK_ID_CORE;
+#if defined(__SAML21E17B__)
+	if (sercom->index >= 0 && sercom->index <= SERCOM_INST_NUM) {
+		gclk_index = sercom->index + SERCOM0_GCLK_ID_CORE;
+	}
 #elif defined(__SAMD51N20A__)
-	if (sercom_index >= 0 && sercom_index < 2) {
-		gclk_index = SERCOM0_GCLK_ID_CORE + sercom_index;
-	} else if (sercom_index >= 2 && sercom_index < 4) {
-		gclk_index = SERCOM2_GCLK_ID_CORE + sercom_index - 2;
-	} else if (sercom_index >= 4 && sercom_index < 7) {
-		gclk_index = SERCOM4_GCLK_ID_CORE + sercom_index - 4;
+	if (sercom->index >= 0 && sercom->index < 2) {
+		gclk_index = SERCOM0_GCLK_ID_CORE + sercom->index;
+	} else if (sercom->index >= 2 && sercom->index < 4) {
+		gclk_index = SERCOM2_GCLK_ID_CORE + sercom->index - 2;
+	} else if (sercom->index >= 4 && sercom->index < 7) {
+		gclk_index = SERCOM4_GCLK_ID_CORE + sercom->index - 4;
 	}
 #else
 	#error "Part not supported!"
@@ -132,7 +134,7 @@ void sercom_set_gclk_core(int sercom_index, int gclk_gen) {
 	}
 }
 
-void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
+void sercom_set_gclk_slow(const sercom_t *const sercom, int gclk_gen) {
 	static bool sercom_gclk_slow_initialized;
 
 	bool *initialized = NULL;
@@ -141,15 +143,15 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 
 #if defined(__SAML21E17B__)
 	static bool sercom5_gclk_slow_initialized;
-	if (sercom_index >= 0 && sercom_index < 5) {
+	if (sercom->index >= 0 && sercom->index < 5) {
 		gclk_id = SERCOM0_GCLK_ID_SLOW;
 		initialized = &sercom_gclk_slow_initialized;
-	} else if (sercom_index == 5) {
+	} else if (sercom->index == 5) {
 		gclk_id = SERCOM5_GCLK_ID_SLOW;
 		initialized = &sercom5_gclk_slow_initialized;
 	}
 #elif defined(__SAMD51N20A__)
-	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM) {
+	if (sercom->index >= 0 && sercom->index < SERCOM_INST_NUM) {
 		gclk_id = SERCOM0_GCLK_ID_SLOW;
 		initialized = &sercom_gclk_slow_initialized;
 	}
@@ -172,16 +174,16 @@ void sercom_set_gclk_slow(int sercom_index, int gclk_gen) {
 	}
 }
 
-int sercom_dma_rx_trigsrc(int sercom_index) {
+int sercom_dma_rx_trigsrc(const sercom_t *const sercom) {
 #if defined(__SAML21E17B__)
 	// sercom5 does not support DMA
-	if (sercom_index >= 0 && sercom_index < 5)
-		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
+	if (sercom->index >= 0 && sercom->index < 5)
+		return SERCOM0_DMAC_ID_RX + (2 * sercom->index);
 	else
 		return -1;
 #elif defined(__SAMD51N20A__)
-	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
-		return SERCOM0_DMAC_ID_RX + (2 * sercom_index);
+	if (sercom->index >= 0 && sercom->index < SERCOM_INST_NUM)
+		return SERCOM0_DMAC_ID_RX + (2 * sercom->index);
 	else
 		return -1;
 #else
@@ -189,16 +191,16 @@ int sercom_dma_rx_trigsrc(int sercom_index) {
 #endif
 }
 
-int sercom_dma_tx_trigsrc(int sercom_index) {
+int sercom_dma_tx_trigsrc(const sercom_t *const sercom) {
 #if defined(__SAML21E17B__)
 	// sercom5 does not support DMA
-	if (sercom_index >= 0 && sercom_index < 5)
-		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
+	if (sercom->index >= 0 && sercom->index < 5)
+		return SERCOM0_DMAC_ID_TX + (2 * sercom->index);
 	else
 		return -1;
 #elif defined(__SAMD51N20A__)
-	if (sercom_index >= 0 && sercom_index < SERCOM_INST_NUM)
-		return SERCOM0_DMAC_ID_TX + (2 * sercom_index);
+	if (sercom->index >= 0 && sercom->index < SERCOM_INST_NUM)
+		return SERCOM0_DMAC_ID_TX + (2 * sercom->index);
 	else
 		return -1;
 #else

@@ -23,12 +23,12 @@ sercom_t *sercom_init(const int);
 
 int sercom_get_index(const Sercom *);
 void sercom_register_handler(sercom_t *, void (*)(sercom_t *));
-void sercom_enable_irq(int);
-void sercom_disable_irq(int);
-void sercom_enable_pm(int);
-void sercom_set_gclk_core(int, int);
-void sercom_set_gclk_slow(int, int);
+void sercom_enable_irq(const sercom_t *const) __attribute__((nonnull(1)));
+void sercom_disable_irq(const sercom_t *const) __attribute__((nonnull(1)));
+void sercom_enable_pm(const sercom_t *const) __attribute__((nonnull(1)));
+void sercom_set_gclk_core(const sercom_t *const, int) __attribute__((nonnull(1)));
+void sercom_set_gclk_slow(const sercom_t *const, int) __attribute__((nonnull(1)));
 
-int sercom_dma_rx_trigsrc(int);
-int sercom_dma_tx_trigsrc(int);
+int sercom_dma_rx_trigsrc(const sercom_t *const) __attribute__((nonnull(1)));
+int sercom_dma_tx_trigsrc(const sercom_t *const) __attribute__((nonnull(1)));
 #endif

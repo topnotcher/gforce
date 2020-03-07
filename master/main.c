@@ -67,7 +67,7 @@ int main(void) {
 
 void mpc_register_drivers(void) {
 	const uint8_t twi_tx_mask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
-	twi_master_t *twim = twi_master_init(SERCOM1, 14);
+	twi_master_t *twim = twi_master_init(1, 14);
 
 	/**
 	 * TWI Master PinMux
@@ -77,7 +77,7 @@ void mpc_register_drivers(void) {
 	PORT[0].Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
 	PORT[0].Group[0].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
 
-	twi_slave_t *twis = twi_slave_init(SERCOM3, MPC_ADDR_BOARD, twi_tx_mask);
+	twi_slave_t *twis = twi_slave_init(3, MPC_ADDR_BOARD, twi_tx_mask);
 
 	/**
 	 * TWI Slave PinMux
@@ -151,5 +151,5 @@ led_spi_dev *led_init_driver(void) {
 	PORT[0].Group[1].PINCFG[12].reg |= PORT_PINCFG_PMUXEN;
 	PORT[0].Group[1].PINCFG[13].reg |= PORT_PINCFG_PMUXEN;
 
-	return led_spi_init(SERCOM4, 0);
+	return led_spi_init(4, 0);
 }

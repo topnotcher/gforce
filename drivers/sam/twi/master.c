@@ -28,18 +28,20 @@ static void twi_master_start_txn(const twi_master_t *);
 static void twi_master_txn_complete(twi_master_t *, int8_t);
 static void twi_master_isr(sercom_t *);
 
-twi_master_t *twi_master_init(Sercom *hw, const uint8_t baud) {
-	int sercom_index = sercom_get_index(hw);
+twi_master_t *twi_master_init(const int sercom_index, const uint8_t baud) {
 	twi_master_t *dev = smalloc(sizeof *dev);
 
-	if (dev) {
+	if (dev != NULL) {
 		memset(dev, 0, sizeof(*dev));
-
 		dev->sercom = sercom_init(sercom_index);
+	}
 
-		sercom_enable_pm(sercom_index);
-		sercom_set_gclk_core(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
+	if (dev != NULL && dev->sercom != NULL) {
+		Sercom *const hw = dev->sercom->hw;
+
+		sercom_enable_pm(dev->sercom);
+		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
 
 		// Disable module
 		// Parts of CTRLA and CTRLB are enabled-protected
@@ -68,7 +70,7 @@ twi_master_t *twi_master_init(Sercom *hw, const uint8_t baud) {
 			SERCOM_I2CM_INTENSET_ERROR;
 
 		sercom_register_handler(dev->sercom, twi_master_isr);
-		sercom_enable_irq(sercom_index);
+		sercom_enable_irq(dev->sercom);
 	}
 
 	return dev;

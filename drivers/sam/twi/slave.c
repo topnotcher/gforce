@@ -26,24 +26,26 @@ static void twi_slave_handler(sercom_t *);
 static inline bool twi_slave_direction(const Sercom *) __attribute__((always_inline));
 
 // TODO: this mask has a different meaning than on the XMEGA
-twi_slave_t *twi_slave_init(Sercom *hw, uint8_t addr, uint8_t mask){
-
-	int sercom_index = sercom_get_index(hw);
-
+twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 	twi_slave_t *dev = smalloc(sizeof *dev);
 
-	if (dev) {
+	if (dev != NULL) {
 		memset(dev, 0, sizeof(*dev));
-
 		dev->sercom = sercom_init(sercom_index);
+	}
+
+
+	if (dev != NULL && dev->sercom != NULL) {
 
 		dev->begin_txn = NULL;
 		dev->end_txn = NULL;
 		dev->ins = NULL;
 
-		sercom_enable_pm(sercom_index);
-		sercom_set_gclk_core(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(sercom_index, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_enable_pm(dev->sercom);
+		sercom_set_gclk_core(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_slow(dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+
+		Sercom *const hw = dev->sercom->hw;
 
 		// Disable module
 		// Parts of CTRLA and CTRLB are enabled-protected
@@ -74,7 +76,7 @@ twi_slave_t *twi_slave_init(Sercom *hw, uint8_t addr, uint8_t mask){
 			SERCOM_I2CS_INTENSET_ERROR;
 
 		sercom_register_handler(dev->sercom, twi_slave_handler);
-		sercom_enable_irq(sercom_index);
+		sercom_enable_irq(dev->sercom);
 
 	}
 

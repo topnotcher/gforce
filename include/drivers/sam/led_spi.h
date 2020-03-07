@@ -5,5 +5,5 @@
 
 #ifndef SAML21_LED_SPI_H
 #define SAML21_LED_SPI_H
-led_spi_dev *led_spi_init(Sercom *, uint8_t);
+led_spi_dev *led_spi_init(const int, uint8_t);
 #endif
