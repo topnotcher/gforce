@@ -1,8 +1,5 @@
 #include <stdint.h>
 
-#include <avr/io.h>
-#include <avr/interrupt.h>
-
 #include "mpc.h"
 
 #ifndef XBEE_H

@@ -9,7 +9,7 @@
 #include <mpctwi.h>
 
 /* #include "sounds.h" */
-/* #include "xbee.h" */
+#include "xbee.h"
 #include "game.h"
 
 #include <drivers/sam/isr.h>
@@ -53,7 +53,7 @@ int main(void) {
 	/* sound_init(); */
 	led_init();
 	mpc_init();
-	/* xbee_init(); */
+	xbee_init();
 	game_init();
 
 	//ping hack: master receives a ping reply

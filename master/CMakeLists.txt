@@ -16,7 +16,7 @@ set(PROJECT_SOURCES
 
 	main.c
 	# sounds.c
-	# xbee.c
+	xbee.c
 	game.c
 	lights.c
 
@@ -35,7 +35,7 @@ set(PROJECT_SOURCES
 	../common/mpc.c
 	../common/mpctwi.c
 	# ../common/mpcphasor.c
-	#../common/serialcomm.c
+	../common/serialcomm.c
 	../common/irrx.c
 	../common/settings.c
 )
