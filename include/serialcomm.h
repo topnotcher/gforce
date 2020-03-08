@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <avr/io.h>
 
 #include "mempool.h"
 
