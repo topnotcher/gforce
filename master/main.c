@@ -16,6 +16,7 @@
 #include <drivers/sam/twi/slave.h>
 #include <drivers/sam/twi/master.h>
 #include <drivers/sam/led_spi.h>
+#include <drivers/sam/port.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -37,6 +38,40 @@ extern void xPortPendSVHandler(void) __attribute__(( naked ));
 
 /* static void xbee_relay_mpc(const mpc_pkt *const pkt); */
 static void configure_clocks(void);
+static void sys_reset_request(void) {
+	NVIC_SystemReset();
+}
+
+static void configure_pack_on_interrupt(void) {
+	// enable EIC bus clock
+	MCLK->APBAMASK.reg |= MCLK_APBAMASK_EIC;
+
+	// Reset the EIC
+	EIC->CTRLA.reg = EIC_CTRLA_SWRST;
+	while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_SWRST);
+
+	// PB05 = EXTINT5
+	port_pinmux(PINMUX_PB05A_EIC_EXTINT5);
+
+	// Select ULP32K oscillator (enabled by deafult)
+	EIC->CTRLA.reg |= EIC_CTRLA_CKSEL;
+
+	// Configure rising edge detection for EXTINT5
+	EIC->CONFIG[0].reg &= ~EIC_CONFIG_SENSE5_Msk;
+	EIC->CONFIG[0].reg |= EIC_CONFIG_SENSE5(EIC_CONFIG_SENSE5_RISE_Val);
+	EIC->ASYNCH.reg |= EIC_ASYNCH_ASYNCH(1 << 5);
+
+	// Enable EIC
+	EIC->CTRLA.reg |= EIC_CTRLA_ENABLE;
+	while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_ENABLE);
+
+	// Enable the IRQ for PACK ON.
+	nvic_register_isr(EIC_5_IRQn, sys_reset_request);
+	NVIC_EnableIRQ(EIC_5_IRQn);
+
+	// Enable interrupt for EXTINT5
+	EIC->INTENSET.reg = EIC_INTENSET_EXTINT(1 << 5);
+}
 
 int main(void) {
 	configure_clocks();
@@ -45,6 +80,15 @@ int main(void) {
 	nvic_register_isr(SVCall_IRQn, vPortSVCHandler);
 	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
 	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
+
+	// Set PB05 (pack on switch input) to input
+	PORT[0].Group[1].DIRCLR.reg = 1 << 5;
+	PORT[0].Group[1].PINCFG[5].reg = PORT_PINCFG_INEN;
+
+	// if the pack is off, configure an interrupt for when it is turned on.
+	if (!(PORT[0].Group[1].IN.reg & (1 << 5))) {
+		configure_pack_on_interrupt();
+	}
 
 	// Pack on / off
 	PORT[0].Group[1].DIRSET.reg = 1 << 4;
