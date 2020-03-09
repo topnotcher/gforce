@@ -28,6 +28,7 @@ set(PROJECT_SOURCES
 	../drivers/sam/led_spi.c
 	../drivers/sam/dma.c
 	../drivers/sam/isr.c
+	../drivers/sam/port.c
 
 	../common/malloc.c
 	../common/leds.c
