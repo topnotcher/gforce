@@ -3,7 +3,7 @@
  *
  * \brief Component description for PAC
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -269,7 +269,7 @@ typedef union { // __I to avoid read-modify-write on write-to-clear register
     __I uint32_t TCC1_:1;          /*!< bit:     12  TCC1                               */
     __I uint32_t TC2_:1;           /*!< bit:     13  TC2                                */
     __I uint32_t TC3_:1;           /*!< bit:     14  TC3                                */
-    __I uint32_t TAL_:1;           /*!< bit:     15  TAL                                */
+    __I uint32_t :1;               /*!< bit:     15  Reserved                           */
     __I uint32_t RAMECC_:1;        /*!< bit:     16  RAMECC                             */
     __I uint32_t :15;              /*!< bit: 17..31  Reserved                           */
   } bit;                       /*!< Structure used for bit  access                  */
@@ -308,11 +308,9 @@ typedef union { // __I to avoid read-modify-write on write-to-clear register
 #define PAC_INTFLAGB_TC2            (_U_(0x1) << PAC_INTFLAGB_TC2_Pos)
 #define PAC_INTFLAGB_TC3_Pos        14           /**< \brief (PAC_INTFLAGB) TC3 */
 #define PAC_INTFLAGB_TC3            (_U_(0x1) << PAC_INTFLAGB_TC3_Pos)
-#define PAC_INTFLAGB_TAL_Pos        15           /**< \brief (PAC_INTFLAGB) TAL */
-#define PAC_INTFLAGB_TAL            (_U_(0x1) << PAC_INTFLAGB_TAL_Pos)
 #define PAC_INTFLAGB_RAMECC_Pos     16           /**< \brief (PAC_INTFLAGB) RAMECC */
 #define PAC_INTFLAGB_RAMECC         (_U_(0x1) << PAC_INTFLAGB_RAMECC_Pos)
-#define PAC_INTFLAGB_MASK           _U_(0x0001FEFF) /**< \brief (PAC_INTFLAGB) MASK Register */
+#define PAC_INTFLAGB_MASK           _U_(0x00017EFF) /**< \brief (PAC_INTFLAGB) MASK Register */
 
 /* -------- PAC_INTFLAGC : (PAC Offset: 0x1C) (R/W 32) Peripheral interrupt flag status - Bridge C -------- */
 #if !(defined(__ASSEMBLY__) || defined(__IAR_SYSTEMS_ASM__))
@@ -499,7 +497,7 @@ typedef union {
     uint32_t TCC1_:1;          /*!< bit:     12  TCC1 APB Protect Enable            */
     uint32_t TC2_:1;           /*!< bit:     13  TC2 APB Protect Enable             */
     uint32_t TC3_:1;           /*!< bit:     14  TC3 APB Protect Enable             */
-    uint32_t TAL_:1;           /*!< bit:     15  TAL APB Protect Enable             */
+    uint32_t :1;               /*!< bit:     15  Reserved                           */
     uint32_t RAMECC_:1;        /*!< bit:     16  RAMECC APB Protect Enable          */
     uint32_t :15;              /*!< bit: 17..31  Reserved                           */
   } bit;                       /*!< Structure used for bit  access                  */
@@ -538,11 +536,9 @@ typedef union {
 #define PAC_STATUSB_TC2             (_U_(0x1) << PAC_STATUSB_TC2_Pos)
 #define PAC_STATUSB_TC3_Pos         14           /**< \brief (PAC_STATUSB) TC3 APB Protect Enable */
 #define PAC_STATUSB_TC3             (_U_(0x1) << PAC_STATUSB_TC3_Pos)
-#define PAC_STATUSB_TAL_Pos         15           /**< \brief (PAC_STATUSB) TAL APB Protect Enable */
-#define PAC_STATUSB_TAL             (_U_(0x1) << PAC_STATUSB_TAL_Pos)
 #define PAC_STATUSB_RAMECC_Pos      16           /**< \brief (PAC_STATUSB) RAMECC APB Protect Enable */
 #define PAC_STATUSB_RAMECC          (_U_(0x1) << PAC_STATUSB_RAMECC_Pos)
-#define PAC_STATUSB_MASK            _U_(0x0001FEFF) /**< \brief (PAC_STATUSB) MASK Register */
+#define PAC_STATUSB_MASK            _U_(0x00017EFF) /**< \brief (PAC_STATUSB) MASK Register */
 
 /* -------- PAC_STATUSC : (PAC Offset: 0x3C) (R/  32) Peripheral write protection status - Bridge C -------- */
 #if !(defined(__ASSEMBLY__) || defined(__IAR_SYSTEMS_ASM__))

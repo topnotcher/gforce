@@ -3,7 +3,7 @@
  *
  * \brief Component description for NVMCTRL
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -599,64 +599,8 @@ typedef struct {
 } Nvmctrl;
 #endif /* !(defined(__ASSEMBLY__) || defined(__IAR_SYSTEMS_ASM__)) */
 
-#define SECTION_NVMCTRL_CB
-
-#define SECTION_NVMCTRL_CBW0
-
-#define SECTION_NVMCTRL_CBW1
-
-#define SECTION_NVMCTRL_CBW2
-
-#define SECTION_NVMCTRL_CBW3
-
-#define SECTION_NVMCTRL_CBW4
-
-#define SECTION_NVMCTRL_CBW5
-
-#define SECTION_NVMCTRL_CBW6
-
-#define SECTION_NVMCTRL_CBW7
-
-#define SECTION_NVMCTRL_FS
-
-#define SECTION_NVMCTRL_GB
-
 #define SECTION_NVMCTRL_SW0
-
-#define SECTION_NVMCTRL_SW1
-
-#define SECTION_NVMCTRL_SW2
-
-#define SECTION_NVMCTRL_SW3
-
-#define SECTION_NVMCTRL_SW4
-
-#define SECTION_NVMCTRL_SW5
-
-#define SECTION_NVMCTRL_SW6
-
-#define SECTION_NVMCTRL_SW7
-
 #define SECTION_NVMCTRL_TEMP_LOG
-
-#define SECTION_NVMCTRL_TEMP_LOG_W0
-
-#define SECTION_NVMCTRL_TEMP_LOG_W1
-
-#define SECTION_NVMCTRL_TEMP_LOG_W2
-
-#define SECTION_NVMCTRL_TEMP_LOG_W3
-
-#define SECTION_NVMCTRL_TEMP_LOG_W4
-
-#define SECTION_NVMCTRL_TEMP_LOG_W5
-
-#define SECTION_NVMCTRL_TEMP_LOG_W6
-
-#define SECTION_NVMCTRL_TEMP_LOG_W7
-
-#define SECTION_NVMCTRL_TLATCH
-
 #define SECTION_NVMCTRL_USER
 
 /*@}*/
@@ -702,24 +646,6 @@ typedef struct {
 #define ADC1_FUSES_BIASREFBUF_Pos   19           /**< \brief (NVMCTRL_SW0) ADC Bias Reference Buffer Scaling */
 #define ADC1_FUSES_BIASREFBUF_Msk   (_U_(0x7) << ADC1_FUSES_BIASREFBUF_Pos)
 #define ADC1_FUSES_BIASREFBUF(value) (ADC1_FUSES_BIASREFBUF_Msk & ((value) << ADC1_FUSES_BIASREFBUF_Pos))
-
-#define FUSES_BOD12USERLEVEL_ADDR   NVMCTRL_USER
-#define FUSES_BOD12USERLEVEL_Pos    17           /**< \brief (NVMCTRL_USER) BOD12 User Level */
-#define FUSES_BOD12USERLEVEL_Msk    (_U_(0x3F) << FUSES_BOD12USERLEVEL_Pos)
-#define FUSES_BOD12USERLEVEL(value) (FUSES_BOD12USERLEVEL_Msk & ((value) << FUSES_BOD12USERLEVEL_Pos))
-
-#define FUSES_BOD12_ACTION_ADDR     NVMCTRL_USER
-#define FUSES_BOD12_ACTION_Pos      23           /**< \brief (NVMCTRL_USER) BOD12 Action */
-#define FUSES_BOD12_ACTION_Msk      (_U_(0x3) << FUSES_BOD12_ACTION_Pos)
-#define FUSES_BOD12_ACTION(value)   (FUSES_BOD12_ACTION_Msk & ((value) << FUSES_BOD12_ACTION_Pos))
-
-#define FUSES_BOD12_DIS_ADDR        NVMCTRL_USER
-#define FUSES_BOD12_DIS_Pos         16           /**< \brief (NVMCTRL_USER) BOD12 Disable */
-#define FUSES_BOD12_DIS_Msk         (_U_(0x1) << FUSES_BOD12_DIS_Pos)
-
-#define FUSES_BOD12_HYST_ADDR       NVMCTRL_USER
-#define FUSES_BOD12_HYST_Pos        25           /**< \brief (NVMCTRL_USER) BOD12 Hysteresis */
-#define FUSES_BOD12_HYST_Msk        (_U_(0x1) << FUSES_BOD12_HYST_Pos)
 
 #define FUSES_BOD33USERLEVEL_ADDR   NVMCTRL_USER
 #define FUSES_BOD33USERLEVEL_Pos    1            /**< \brief (NVMCTRL_USER) BOD33 User Level */

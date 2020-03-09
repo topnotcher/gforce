@@ -3,7 +3,7 @@
  *
  * \brief Instance description for TCC4
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *

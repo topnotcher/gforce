@@ -3,7 +3,7 @@
  *
  * \brief Instance description for DSU
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -42,19 +42,6 @@
 #define REG_DSU_DCC1               (0x41002014) /**< \brief (DSU) Debug Communication Channel 1 */
 #define REG_DSU_DID                (0x41002018) /**< \brief (DSU) Device Identification */
 #define REG_DSU_CFG                (0x4100201C) /**< \brief (DSU) Configuration */
-#define REG_DSU_MBCTRL             (0x41002040) /**< \brief (DSU) MBIST Control */
-#define REG_DSU_MBCONFIG           (0x41002044) /**< \brief (DSU) MBIST Configuration */
-#define REG_DSU_MBWORD             (0x41002048) /**< \brief (DSU) MBIST Background Word */
-#define REG_DSU_MBGSTAT            (0x4100204C) /**< \brief (DSU) MBIST Global Status */
-#define REG_DSU_MBDFAIL            (0x41002050) /**< \brief (DSU) MBIST Fail Data */
-#define REG_DSU_MBDEXP             (0x41002054) /**< \brief (DSU) MBIST Expected Data */
-#define REG_DSU_MBAFAIL            (0x41002058) /**< \brief (DSU) MBIST Fail Address */
-#define REG_DSU_MBCONTEXT          (0x4100205C) /**< \brief (DSU) MBIST Fail Context */
-#define REG_DSU_MBENABLE0          (0x41002060) /**< \brief (DSU) MBIST Memory Enable 0 */
-#define REG_DSU_MBBUSY0            (0x41002068) /**< \brief (DSU) MBIST Memory Busy 0 */
-#define REG_DSU_MBSTATUS0          (0x41002070) /**< \brief (DSU) MBIST Memory Status 0 */
-#define REG_DSU_DCFG0              (0x410020F0) /**< \brief (DSU) Device Configuration 0 */
-#define REG_DSU_DCFG1              (0x410020F4) /**< \brief (DSU) Device Configuration 1 */
 #define REG_DSU_ENTRY0             (0x41003000) /**< \brief (DSU) CoreSight ROM Table Entry 0 */
 #define REG_DSU_ENTRY1             (0x41003004) /**< \brief (DSU) CoreSight ROM Table Entry 1 */
 #define REG_DSU_END                (0x41003008) /**< \brief (DSU) CoreSight ROM Table End */
@@ -82,19 +69,6 @@
 #define REG_DSU_DCC1               (*(RwReg  *)0x41002014UL) /**< \brief (DSU) Debug Communication Channel 1 */
 #define REG_DSU_DID                (*(RoReg  *)0x41002018UL) /**< \brief (DSU) Device Identification */
 #define REG_DSU_CFG                (*(RwReg  *)0x4100201CUL) /**< \brief (DSU) Configuration */
-#define REG_DSU_MBCTRL             (*(RwReg  *)0x41002040UL) /**< \brief (DSU) MBIST Control */
-#define REG_DSU_MBCONFIG           (*(RwReg  *)0x41002044UL) /**< \brief (DSU) MBIST Configuration */
-#define REG_DSU_MBWORD             (*(RwReg  *)0x41002048UL) /**< \brief (DSU) MBIST Background Word */
-#define REG_DSU_MBGSTAT            (*(RwReg  *)0x4100204CUL) /**< \brief (DSU) MBIST Global Status */
-#define REG_DSU_MBDFAIL            (*(RoReg  *)0x41002050UL) /**< \brief (DSU) MBIST Fail Data */
-#define REG_DSU_MBDEXP             (*(RoReg  *)0x41002054UL) /**< \brief (DSU) MBIST Expected Data */
-#define REG_DSU_MBAFAIL            (*(RoReg  *)0x41002058UL) /**< \brief (DSU) MBIST Fail Address */
-#define REG_DSU_MBCONTEXT          (*(RoReg  *)0x4100205CUL) /**< \brief (DSU) MBIST Fail Context */
-#define REG_DSU_MBENABLE0          (*(RwReg  *)0x41002060UL) /**< \brief (DSU) MBIST Memory Enable 0 */
-#define REG_DSU_MBBUSY0            (*(RoReg  *)0x41002068UL) /**< \brief (DSU) MBIST Memory Busy 0 */
-#define REG_DSU_MBSTATUS0          (*(RwReg  *)0x41002070UL) /**< \brief (DSU) MBIST Memory Status 0 */
-#define REG_DSU_DCFG0              (*(RwReg  *)0x410020F0UL) /**< \brief (DSU) Device Configuration 0 */
-#define REG_DSU_DCFG1              (*(RwReg  *)0x410020F4UL) /**< \brief (DSU) Device Configuration 1 */
 #define REG_DSU_ENTRY0             (*(RoReg  *)0x41003000UL) /**< \brief (DSU) CoreSight ROM Table Entry 0 */
 #define REG_DSU_ENTRY1             (*(RoReg  *)0x41003004UL) /**< \brief (DSU) CoreSight ROM Table Entry 1 */
 #define REG_DSU_END                (*(RoReg  *)0x41003008UL) /**< \brief (DSU) CoreSight ROM Table End */

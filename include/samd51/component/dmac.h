@@ -3,7 +3,7 @@
  *
  * \brief Component description for DMAC
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -37,7 +37,7 @@
 /*@{*/
 
 #define DMAC_U2503
-#define REV_DMAC                    0x100
+#define REV_DMAC                    0x101
 
 /* -------- DMAC_CTRL : (DMAC Offset: 0x00) (R/W 16) Control -------- */
 #if !(defined(__ASSEMBLY__) || defined(__IAR_SYSTEMS_ASM__))

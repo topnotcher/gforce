@@ -3,7 +3,7 @@
  *
  * \brief Top header file for SAMD51
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -43,8 +43,12 @@
   #include "samd51j18a.h"
 #elif defined(__SAMD51J19A__) || defined(__ATSAMD51J19A__)
   #include "samd51j19a.h"
+#elif defined(__SAMD51J19B__) || defined(__ATSAMD51J19B__)
+  #include "samd51j19b.h"
 #elif defined(__SAMD51J20A__) || defined(__ATSAMD51J20A__)
   #include "samd51j20a.h"
+#elif defined(__SAMD51J20C__) || defined(__ATSAMD51J20C__)
+  #include "samd51j20c.h"
 #elif defined(__SAMD51N19A__) || defined(__ATSAMD51N19A__)
   #include "samd51n19a.h"
 #elif defined(__SAMD51N20A__) || defined(__ATSAMD51N20A__)

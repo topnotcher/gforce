@@ -3,7 +3,7 @@
  *
  * \brief Component description for MCLK
  *
- * Copyright (c) 2017 Microchip Technology Inc.
+ * Copyright (c) 2019 Microchip Technology Inc.
  *
  * \asf_license_start
  *
@@ -309,7 +309,7 @@ typedef union {
     uint32_t TCC1_:1;          /*!< bit:     12  TCC1 APB Clock Enable              */
     uint32_t TC2_:1;           /*!< bit:     13  TC2 APB Clock Enable               */
     uint32_t TC3_:1;           /*!< bit:     14  TC3 APB Clock Enable               */
-    uint32_t TAL_:1;           /*!< bit:     15  TAL APB Clock Enable               */
+    uint32_t :1;               /*!< bit:     15  Reserved                           */
     uint32_t RAMECC_:1;        /*!< bit:     16  RAMECC APB Clock Enable            */
     uint32_t :15;              /*!< bit: 17..31  Reserved                           */
   } bit;                       /*!< Structure used for bit  access                  */
@@ -344,11 +344,9 @@ typedef union {
 #define MCLK_APBBMASK_TC2           (_U_(0x1) << MCLK_APBBMASK_TC2_Pos)
 #define MCLK_APBBMASK_TC3_Pos       14           /**< \brief (MCLK_APBBMASK) TC3 APB Clock Enable */
 #define MCLK_APBBMASK_TC3           (_U_(0x1) << MCLK_APBBMASK_TC3_Pos)
-#define MCLK_APBBMASK_TAL_Pos       15           /**< \brief (MCLK_APBBMASK) TAL APB Clock Enable */
-#define MCLK_APBBMASK_TAL           (_U_(0x1) << MCLK_APBBMASK_TAL_Pos)
 #define MCLK_APBBMASK_RAMECC_Pos    16           /**< \brief (MCLK_APBBMASK) RAMECC APB Clock Enable */
 #define MCLK_APBBMASK_RAMECC        (_U_(0x1) << MCLK_APBBMASK_RAMECC_Pos)
-#define MCLK_APBBMASK_MASK          _U_(0x0001FED7) /**< \brief (MCLK_APBBMASK) MASK Register */
+#define MCLK_APBBMASK_MASK          _U_(0x00017ED7) /**< \brief (MCLK_APBBMASK) MASK Register */
 
 /* -------- MCLK_APBCMASK : (MCLK Offset: 0x1C) (R/W 32) APBC Mask -------- */
 #if !(defined(__ASSEMBLY__) || defined(__IAR_SYSTEMS_ASM__))
