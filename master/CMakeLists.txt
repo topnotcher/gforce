@@ -20,6 +20,7 @@ set(PROJECT_SOURCES
 	game.c
 	lights.c
 	config.c
+	debug.c
 
 	../drivers/tlc59711.c
 
