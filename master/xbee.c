@@ -54,18 +54,6 @@ static uint8_t xbee_getchar(const struct xbee_s *const dev);
 void xbee_init(void) {
 	// SERCOM0 MUX: RXPO = 1, TXPO = 2
 
-	// XBEE_TX_MASTER_RX = SER0:1 = PC16
-	// XBEE_RX_MASTER_TX = SER0:0 = PC17
-	// XBEE_~RTS = SER0:2 = PC18
-	// XBEE_CTS = SER0:3 = PC19
-	// Enable MUX for sercom pins: PC16-19 set to function D.
-	PORT[0].Group[2].PMUX[8].reg = 0x03 | (0x03 << 4);
-	PORT[0].Group[2].PMUX[9].reg = 0x03 | (0x03 << 4);
-	PORT[0].Group[2].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[2].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[2].PINCFG[18].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[2].PINCFG[19].reg |= PORT_PINCFG_PMUXEN;
-
 	// XBEE_~TCP_CONN = PC20: set to input with pullup
 	PORT[0].Group[2].DIRCLR.reg = 1 << 20;
 	PORT[0].Group[2].PINCFG[20].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;

@@ -1,5 +1,10 @@
+#include <stdint.h>
+#include <sam.h>
+
 #ifndef BOARD_CONFIG_H
 #define BOARD_CONFIG_H
+
+void configure_pinmux(void);
 
 /**
  * MPC TWI Configuration

@@ -19,6 +19,7 @@ set(PROJECT_SOURCES
 	xbee.c
 	game.c
 	lights.c
+	config.c
 
 	../drivers/tlc59711.c
 

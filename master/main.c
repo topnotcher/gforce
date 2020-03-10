@@ -50,9 +50,6 @@ static void configure_pack_on_interrupt(void) {
 	EIC->CTRLA.reg = EIC_CTRLA_SWRST;
 	while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_SWRST);
 
-	// PB05 = EXTINT5
-	port_pinmux(PINMUX_PB05A_EIC_EXTINT5);
-
 	// Select ULP32K oscillator (enabled by deafult)
 	EIC->CTRLA.reg |= EIC_CTRLA_CKSEL;
 
@@ -80,6 +77,8 @@ int main(void) {
 	nvic_register_isr(SVCall_IRQn, vPortSVCHandler);
 	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
 	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
+
+	configure_pinmux();
 
 	// Set PB05 (pack on switch input) to input
 	PORT[0].Group[1].DIRCLR.reg = 1 << 5;
@@ -116,25 +115,7 @@ int main(void) {
 void mpc_register_drivers(void) {
 	const uint8_t twi_tx_mask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
 	twi_master_t *twim = twi_master_init(MPC_MASTER_SERCOM, 14);
-
-	/**
-	 * TWI Master PinMux
-	 */
-	PORT[0].Group[0].PMUX[8].reg = 0x02 | (0x02 << 4);
-
-	PORT[0].Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[0].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
-
 	twi_slave_t *twis = twi_slave_init(MPC_SLAVE_SERCOM, MPC_ADDR_BOARD, twi_tx_mask);
-
-	/**
-	 * TWI Slave PinMux
-	 */
-	// TODO WRCONFIG
-	PORT[0].Group[0].PMUX[11].reg = 0x02 | (0x02 << 4);
-
-	PORT[0].Group[0].PINCFG[22].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[0].PINCFG[23].reg |= PORT_PINCFG_PMUXEN;
 
 	mpc_register_driver(mpctwi_init(twim, twis, MPC_ADDR_BOARD, twi_tx_mask));
 
@@ -188,16 +169,6 @@ led_spi_dev *led_init_driver(void) {
 	// ~enable pin for LED controllers.
 	PORT[0].Group[1].DIRSET.reg = 1 << 14;
 	PORT[0].Group[1].OUTCLR.reg = 1 << 14;
-
-	// SERCOM4
-	// PB12 - MOSI (SERCOM4:0)
-	// PB13 - SCLK (SERCOM4:1)
-	PORT[0].Group[1].PMUX[6].reg = 0x02 | (0x02 << 4);
-
-	PORT[0].Group[1].DIRSET.reg = 1 << 12;
-	PORT[0].Group[1].DIRSET.reg = 1 << 13;
-	PORT[0].Group[1].PINCFG[12].reg |= PORT_PINCFG_PMUXEN;
-	PORT[0].Group[1].PINCFG[13].reg |= PORT_PINCFG_PMUXEN;
 
 	return led_spi_init(LED_SERCOM, 0);
 }
