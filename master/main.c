@@ -81,17 +81,17 @@ int main(void) {
 	configure_pinmux();
 
 	// Set PB05 (pack on switch input) to input
-	PORT[0].Group[1].DIRCLR.reg = 1 << 5;
-	PORT[0].Group[1].PINCFG[5].reg = PORT_PINCFG_INEN;
+	pin_set_input(PIN_PACK_ON);
+	pin_set_config(PIN_PACK_ON, PORT_PINCFG_INEN);
 
 	// if the pack is off, configure an interrupt for when it is turned on.
-	if (!(PORT[0].Group[1].IN.reg & (1 << 5))) {
+	if (!pin_get(PIN_PACK_ON)) {
 		configure_pack_on_interrupt();
 	}
 
-	// Pack on / off
-	PORT[0].Group[1].DIRSET.reg = 1 << 4;
-	PORT[0].Group[1].OUTSET.reg = 1 << 4;
+	// set ~power off signal to output and high
+	pin_set_output(PIN_PACK_POWER_OFF);
+	pin_set(PIN_PACK_POWER_OFF, true);
 
 	/* sound_init(); */
 	led_init();
@@ -157,18 +157,11 @@ static void configure_clocks(void) {
 
 	// wait for the switch to complete
 	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
-
-	// Pack on / off
-	PORT[0].Group[1].DIRSET.reg = 1 << 4;
-	PORT[0].Group[1].OUTSET.reg = 1 << 4;
-
-	WDT->CTRLA.reg &= ~WDT_CTRLA_ENABLE;
 }
 
 led_spi_dev *led_init_driver(void) {
-	// ~enable pin for LED controllers.
-	PORT[0].Group[1].DIRSET.reg = 1 << 14;
-	PORT[0].Group[1].OUTCLR.reg = 1 << 14;
+	pin_set_output(PIN_LED_CONTROLLER_OFF);
+	pin_set(PIN_LED_CONTROLLER_OFF, false);
 
 	return led_spi_init(LED_SERCOM, 0);
 }

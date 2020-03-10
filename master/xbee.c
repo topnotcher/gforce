@@ -12,6 +12,7 @@
 #include <drivers/sam/sercom.h>
 #include <drivers/sam/dma.h>
 #include <drivers/sam/isr.h>
+#include <drivers/sam/port.h>
 
 #include "xbee.h"
 
@@ -55,22 +56,22 @@ void xbee_init(void) {
 	// SERCOM0 MUX: RXPO = 1, TXPO = 2
 
 	// XBEE_~TCP_CONN = PC20: set to input with pullup
-	PORT[0].Group[2].DIRCLR.reg = 1 << 20;
-	PORT[0].Group[2].PINCFG[20].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
-	PORT[0].Group[2].OUTSET.reg = 1 << 20;
+	pin_set_input(PIN_XBEE_TCP_CONN);
+	pin_set_config(PIN_XBEE_TCP_CONN, PORT_PINCFG_PULLEN | PORT_PINCFG_INEN);
+	pin_set(PIN_XBEE_TCP_CONN, true);
 
 	// XBEE_~RST = PC21: set to output, hold in reset.
-	PORT[0].Group[2].DIRSET.reg = 1 << 21;
-	PORT[0].Group[2].OUTCLR.reg = 1 << 21;
+	pin_set_output(PIN_XBEE_RST);
+	pin_set(PIN_XBEE_RST, false);
 
 	// XBEE_SLEEP_RQ = PA18: set to output, disable sleep.
-	PORT[0].Group[0].DIRSET.reg = 1 << 18;
-	PORT[0].Group[0].OUTCLR.reg = 1 << 18;
+	pin_set_output(PIN_XBEE_SLEEP_REQUEST);
+	pin_set(PIN_XBEE_SLEEP_REQUEST, false);
 
 	// XBEE_AWAKE = PA19: set to input, pull low.
-	PORT[0].Group[0].DIRCLR.reg = 1 << 19;
-	PORT[0].Group[0].PINCFG[19].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
-	PORT[0].Group[0].OUTCLR.reg = 1 << 19;
+	pin_set_input(PIN_XBEE_AWAKE);
+	pin_set_config(PIN_XBEE_AWAKE, PORT_PINCFG_PULLEN | PORT_PINCFG_INEN);
+	pin_set(PIN_XBEE_AWAKE, false);
 
 	memset(&xbee, 0, sizeof(xbee));
 	if (sercom_init(0, &xbee.sercom)) {
@@ -111,26 +112,25 @@ void xbee_init(void) {
 static void xbee_rx_task(void *params) {
 
 	// assert ~RST
-	PORT[0].Group[2].OUTCLR.reg = 1 << 21;
+	pin_set(PIN_XBEE_RST, false);
 
 	// Deassert TX - page 48 of XBee DS: this brings it up in command mode with
 	// known parameters...
-	PORT[0].Group[2].PINCFG[17].reg &= ~PORT_PINCFG_PMUXEN;
-	PORT[0].Group[2].DIRSET.reg = 1 << 17;
-	PORT[0].Group[2].OUTCLR.reg = 1 << 17;
+	pin_set_output(PIN_XBEE_TX);
+	pin_set(PIN_XBEE_TX, false);
+	pin_disable_pinmux(PIN_XBEE_TX);
 
 	// leave RST asserted for 50ms
 	vTaskDelay(configTICK_RATE_HZ/20);
 
 	// deassert ~RST
-	PORT[0].Group[2].OUTSET.reg = 1 << 21;
+	pin_set(PIN_XBEE_RST, true);
 
 	// wait another 50ms (BREAK)
 	// TODO: this should wait for the xbee to send OK
 	vTaskDelay(configTICK_RATE_HZ/20);
 
-	// reenable MUX for TX PIN.
-	PORT[0].Group[2].PINCFG[17].reg |= PORT_PINCFG_PMUXEN;
+	pin_enable_pinmux(PIN_XBEE_TX);
 
 	//xbee should be in command mode now. Ideally we should wait to read OK\r from xbee.
 	// tell the xbee to switch to 750000 baud
