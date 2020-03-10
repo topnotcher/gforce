@@ -23,7 +23,7 @@ static void led_spi_load(const led_spi_dev *, const uint8_t *, const uint8_t);
 static void led_spi_write(const led_spi_dev *);
 static void configure_dma(led_spi_driver *, const sercom_t *const);
 
-led_spi_dev *led_spi_init(const int sercom_index, uint8_t dopo) {
+led_spi_dev *led_spi_init(const int sercom_index, uint8_t dopo, uint8_t gclk_id) {
 	led_spi_driver *dev = smalloc(sizeof *dev);
 
 	if (dev != NULL) {
@@ -38,8 +38,8 @@ led_spi_dev *led_spi_init(const int sercom_index, uint8_t dopo) {
 		dev->controller.load = led_spi_load;
 		configure_dma(dev, &dev->sercom);
 
-		sercom_set_gclk_core(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(&dev->sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_core(&dev->sercom, gclk_id);
+		sercom_set_gclk_slow(&dev->sercom, gclk_id);
 
 		hw->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
 		while (hw->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_SWRST);

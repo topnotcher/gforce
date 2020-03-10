@@ -86,8 +86,8 @@ void xbee_init(void) {
 		xbee.tx_queue = xQueueCreate(5, sizeof(struct _tx_vec));
 		configure_dma();
 
-		sercom_set_gclk_core(&xbee.sercom, GCLK_PCHCTRL_GEN_GCLK0);
-		sercom_set_gclk_slow(&xbee.sercom, GCLK_PCHCTRL_GEN_GCLK0);
+		sercom_set_gclk_core(&xbee.sercom, GCLK_PCHCTRL_GEN_GCLK1);
+		sercom_set_gclk_slow(&xbee.sercom, GCLK_PCHCTRL_GEN_GCLK1);
 
 		xbee.sercom.hw->USART.CTRLA.reg = SERCOM_USART_CTRLA_SWRST;
 		while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_SWRST);

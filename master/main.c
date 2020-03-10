@@ -11,6 +11,7 @@
 /* #include "sounds.h" */
 #include "xbee.h"
 #include "game.h"
+#include "debug.h"
 
 #include <drivers/sam/isr.h>
 #include <drivers/sam/twi/slave.h>
@@ -37,7 +38,6 @@ extern void xPortSysTickHandler(void) __attribute__(( naked ));
 extern void xPortPendSVHandler(void) __attribute__(( naked ));
 
 /* static void xbee_relay_mpc(const mpc_pkt *const pkt); */
-static void configure_clocks(void);
 static void sys_reset_request(void) {
 	NVIC_SystemReset();
 }
@@ -127,41 +127,10 @@ void mpc_register_drivers(void) {
 /* } */
 
 
-static void configure_clocks(void) {
-	uint32_t val;
-
-	// Ensure DFLL48M is enabled.
-	OSCCTRL->DFLLCTRLA.reg = OSCCTRL_DFLLCTRLA_ENABLE;
-	while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_ENABLE);
-
-	// Initiate a software reset of the GCLK module.  This will set GCLK0 to
-	// DFLL48 @ 48MHz. (enabled above)
-	GCLK->CTRLA.reg = GCLK_CTRLA_SWRST;
-	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST);
-
-	// Enable the external crystal oscillator XOSC1
-	val = OSCCTRL_XOSCCTRL_ENALC;
-	val |= OSCCTRL_XOSCCTRL_ENABLE;
-	val |= OSCCTRL_XOSCCTRL_IMULT(4);
-	val |= OSCCTRL_XOSCCTRL_IPTAT(3);
-	val |= OSCCTRL_XOSCCTRL_XTALEN;
-	OSCCTRL->XOSCCTRL[1].reg = val;
-	while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1));
-
-	// Set GCLK_MAIN to run off of XOSC1
-	val = GCLK_GENCTRL_SRC_XOSC1;
-	val |= GCLK_GENCTRL_GENEN;
-	val |= GCLK_GENCTRL_DIV(1);
-
-	GCLK->GENCTRL[0].reg = val;
-
-	// wait for the switch to complete
-	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
-}
 
 led_spi_dev *led_init_driver(void) {
 	pin_set_output(PIN_LED_CONTROLLER_OFF);
 	pin_set(PIN_LED_CONTROLLER_OFF, false);
 
-	return led_spi_init(LED_SERCOM, 0);
+	return led_spi_init(LED_SERCOM, 0, 1);
 }

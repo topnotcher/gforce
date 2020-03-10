@@ -92,5 +92,5 @@ led_spi_dev *led_init_driver(void) {
 	PORT[0].Group[0].PINCFG[4].reg |= PORT_PINCFG_PMUXEN;
 	PORT[0].Group[0].PINCFG[5].reg |= PORT_PINCFG_PMUXEN;
 
-	return led_spi_init(0, 0);
+	return led_spi_init(0, 0, 1);
 }

@@ -5,6 +5,7 @@
 #define BOARD_CONFIG_H
 
 void configure_pinmux(void);
+void configure_clocks(void);
 
 /**
  * GPIO assignments

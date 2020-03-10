@@ -78,3 +78,35 @@ void configure_pinmux(void) {
 	for (size_t i = 0; i < sizeof(pinmux_config)/sizeof(pinmux_config[0]); ++i)
 		port_pinmux(pinmux_config[i]);
 }
+
+void configure_clocks(void) {
+	uint32_t val;
+
+	// Ensure DFLL48M is enabled.
+	OSCCTRL->DFLLCTRLA.reg = OSCCTRL_DFLLCTRLA_ENABLE;
+	while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_ENABLE);
+
+	// Initiate a software reset of the GCLK module.  This will set GCLK0 to
+	// DFLL48 @ 48MHz. (enabled above)
+	GCLK->CTRLA.reg = GCLK_CTRLA_SWRST;
+	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST);
+
+	// Enable the external crystal oscillator XOSC1
+	val = OSCCTRL_XOSCCTRL_ENALC;
+	val |= OSCCTRL_XOSCCTRL_ENABLE;
+	val |= OSCCTRL_XOSCCTRL_IMULT(4);
+	val |= OSCCTRL_XOSCCTRL_IPTAT(3);
+	val |= OSCCTRL_XOSCCTRL_XTALEN;
+	OSCCTRL->XOSCCTRL[1].reg = val;
+	while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1));
+
+	// Set GCLK1 to run off of XOSC1
+	val = GCLK_GENCTRL_SRC_XOSC1;
+	val |= GCLK_GENCTRL_GENEN;
+	val |= GCLK_GENCTRL_DIV(1);
+
+	GCLK->GENCTRL[1].reg = val;
+
+	// wait for the switch to complete
+	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
+}
