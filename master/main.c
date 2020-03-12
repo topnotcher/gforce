@@ -12,6 +12,7 @@
 #include "xbee.h"
 #include "game.h"
 #include "debug.h"
+#include "mpcipc.h"
 
 #include <drivers/sam/isr.h>
 #include <drivers/sam/twi/slave.h>
@@ -113,11 +114,12 @@ int main(void) {
 }
 
 void mpc_register_drivers(void) {
-	const uint8_t twi_tx_mask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST | MPC_ADDR_BACK;
+	const uint8_t twi_tx_mask = MPC_ADDR_RS | MPC_ADDR_LS | MPC_ADDR_CHEST;
 	twi_master_t *twim = twi_master_init(MPC_MASTER_SERCOM, 14);
 	twi_slave_t *twis = twi_slave_init(MPC_SLAVE_SERCOM, MPC_ADDR_BOARD, twi_tx_mask);
 
 	mpc_register_driver(mpctwi_init(twim, twis, MPC_ADDR_BOARD, twi_tx_mask));
+	mpc_register_driver(mpc_loopback_init(MPC_ADDR_BOARD, MPC_ADDR_BACK));
 
 	/* mpc_register_driver(mpc_phasor_init()); */
 }

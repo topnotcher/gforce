@@ -21,6 +21,7 @@ set(PROJECT_SOURCES
 	lights.c
 	config.c
 	debug.c
+	mpcipc.c
 
 	../drivers/tlc59711.c
 

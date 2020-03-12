@@ -46,10 +46,9 @@ class MPC_CMD(Enum):
 class MPC_ADDR(Enum):
     CHEST = 0x01
     LS = 0x02
-    BACK = 0x04
     RS = 0x08
     PHASOR = 0x10
-    MASTER = 0x40
+    BACK = 0x04
 
 
 class IR_CMD(Enum):

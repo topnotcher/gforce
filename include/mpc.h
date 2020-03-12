@@ -12,6 +12,8 @@
 
 #define MPC_PKT_MAX_SIZE 64
 
+#define MPC_ADDR_MASTER MPC_ADDR_BACK
+
 typedef struct {
 	uint8_t len;
 	uint8_t cmd;
