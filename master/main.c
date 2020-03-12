@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <sam.h>
@@ -33,15 +34,17 @@ const int LED_SERCOM = 4;
 const int MPC_MASTER_SERCOM = 1;
 const int MPC_SLAVE_SERCOM = 3;
 
+// Power switch state
+static bool power_on = false;
+
 // FreeRTOS hanndlers in port.c
 extern void vPortSVCHandler(void) __attribute__(( naked ));
 extern void xPortSysTickHandler(void) __attribute__(( naked ));
 extern void xPortPendSVHandler(void) __attribute__(( naked ));
 
+void init_task(void *_params);
+
 /* static void xbee_relay_mpc(const mpc_pkt *const pkt); */
-static void sys_reset_request(void) {
-	NVIC_SystemReset();
-}
 
 static void configure_pack_on_interrupt(void) {
 	// enable EIC bus clock
@@ -64,7 +67,7 @@ static void configure_pack_on_interrupt(void) {
 	while (EIC->SYNCBUSY.reg & EIC_SYNCBUSY_ENABLE);
 
 	// Enable the IRQ for PACK ON.
-	nvic_register_isr(EIC_5_IRQn, sys_reset_request);
+	nvic_register_isr(EIC_5_IRQn, NVIC_SystemReset);
 	NVIC_EnableIRQ(EIC_5_IRQn);
 
 	// Enable interrupt for EXTINT5
@@ -79,26 +82,34 @@ int main(void) {
 	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
 	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
 
+	xTaskCreate(init_task, "init", 128, NULL, tskIDLE_PRIORITY + 1, NULL);
+	vTaskStartScheduler();
+}
+
+void init_task(void *_params) {
 	configure_pinmux();
 
 	// Set PB05 (pack on switch input) to input
 	pin_set_input(PIN_PACK_ON);
 	pin_set_config(PIN_PACK_ON, PORT_PINCFG_INEN);
 
-	// if the pack is off, configure an interrupt for when it is turned on.
-	if (!pin_get(PIN_PACK_ON)) {
-		configure_pack_on_interrupt();
-	}
-
-	// set ~power off signal to output and high
+	// set ~power off signal to output and set high. There is a bug in the
+	// board that prevents setting this low.
 	pin_set_output(PIN_PACK_POWER_OFF);
 	pin_set(PIN_PACK_POWER_OFF, true);
 
-	/* sound_init(); */
-	led_init();
-	mpc_init();
-	xbee_init();
-	game_init();
+	power_on = pin_get(PIN_PACK_ON);
+
+	if (!power_on) {
+		// if the pack is off, configure an interrupt for when it is turned on.
+		configure_pack_on_interrupt();
+	} else {
+		led_init();
+		mpc_init();
+		xbee_init();
+		game_init();
+		/* sound_init(); */
+	}
 
 	//ping hack: master receives a ping reply
 	//send it to the xbee.
@@ -110,7 +121,9 @@ int main(void) {
 	// memory usage reply...
 	/* mpc_register_cmd(MPC_CMD_DIAG_MEM_USAGE, xbee_relay_mpc); */
 
-	vTaskStartScheduler();
+	while (1) {
+		vTaskSuspend(NULL);
+	}
 }
 
 void mpc_register_drivers(void) {
