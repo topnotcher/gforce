@@ -1,8 +1,10 @@
 #include <stdbool.h>
+
 #include <stddef.h>
 
 #include <g4config.h>
 #include <mpc.h>
+#include <malloc.h>
 #include "config.h"
 
 #include <freertos/FreeRTOS.h>
@@ -15,6 +17,11 @@ _Static_assert(MPC_DISABLE_CRC, "CRCs are not disabled.");
 #define _crc_ibutton_update(crc, data) ((data == data) ? 0 : 0)
 #define mpc_crc(crc, data) ((MPC_DISABLE_CRC) ? 0 : _crc_ibutton_update(crc, data))
 
+struct mpc_driver_list;
+struct mpc_driver_list {
+	mpc_driver_t *driver;
+	struct mpc_driver_list *next;
+};
 
 
 #define MAX_MPC_DRIVERS 2
@@ -23,7 +30,7 @@ static struct {
 	uint8_t addr;
 	mempool_t *mempool;
 	QueueHandle_t rx_queue;
-	mpc_driver_t *drivers[MAX_MPC_DRIVERS];
+	struct mpc_driver_list *drivers;
 } mpc_monostate;
 
 
@@ -44,27 +51,32 @@ static uint8_t *mpc_alloc(uint8_t *);
 
 bool mpc_register_driver(mpc_driver_t *driver) {
 	bool status = false;
+	struct mpc_driver_list *item = smalloc(sizeof(*item));
 
-	if (driver != NULL) {
+	if (driver != NULL && item != NULL) {
+		item->driver = driver;
+		item->next = NULL;
 
-		mpc_driver_t **slot = mpc_monostate.drivers;
-		for (uint8_t i = 0; i < MAX_MPC_DRIVERS && *slot != NULL; ++i)
-			++slot;
+		struct mpc_driver_list **slot = &mpc_monostate.drivers;
+		while (*slot)
+			slot = &((*slot)->next);
 
-		if (*slot == NULL) {
-
-			// TODO: meeeh
+		if (mpc_monostate.drivers == NULL) {
+			// Use the first driver to configure the global address.
 			mpc_monostate.addr = driver->addr;
-
-			driver->tx_complete = mempool_putref;
-			driver->alloc_buf = mpc_alloc;
-			driver->rx_queue = mpc_monostate.rx_queue;
-
-			status = driver->registered(driver);
-
-			if (status)
-				*slot = driver;
 		}
+
+		driver->tx_complete = mempool_putref;
+		driver->alloc_buf = mpc_alloc;
+		driver->rx_queue = mpc_monostate.rx_queue;
+
+		if (driver->registered)
+			status = driver->registered(driver);
+		else
+			status = true;
+
+		if (status)
+			*slot = item;
 	}
 
 	return status;
@@ -173,10 +185,12 @@ void mpc_send(const uint8_t addr, const uint8_t cmd, const uint8_t len, uint8_t 
 			pkt->chksum = mpc_crc(pkt->chksum, data[i]);
 		}
 
-		for (uint8_t i = 0; i < MAX_MPC_DRIVERS && mpc_monostate.drivers[i];  ++i) {
-			mpc_driver_t *driver = mpc_monostate.drivers[i];
-			if (addr & (driver)->addrmask)
-				(driver)->tx(driver, addr, sizeof(*pkt) + pkt->len, mempool_getref(pkt));
+		struct mpc_driver_list *cur = mpc_monostate.drivers;
+		while (cur) {
+			if (addr & (cur->driver)->addrmask)
+				(cur->driver)->tx(cur->driver, addr, sizeof(*pkt) + pkt->len, mempool_getref(pkt));
+
+			cur = cur->next;
 		}
 
 		mempool_putref(pkt);
