@@ -26,6 +26,7 @@ static struct xbee_s {
 	serialcomm_t *comm;
 	mempool_t *mempool;
 	QueueHandle_t tx_queue;
+	QueueHandle_t rx_queue;
 	TaskHandle_t tx_task;
 	TaskHandle_t rx_task;
 	sercom_t sercom;
@@ -42,12 +43,13 @@ static void xbee_rx_pkt(mpc_pkt const *const);
 static uint8_t xbee_pkt_chksum(mpc_pkt const *const);
 static void xbee_rx_process(uint8_t, uint8_t *);
 static void xbee_rx_task(void *params);
+static void xbee_rx_isr(void);
 static void xbee_tx_task(void *params);
 static void configure_dma(void);
 static void xbee_tx_complete(void);
 
-static void xbee_write_cmd(const char *const);
-static void xbee_write_cmd_complete(void *);
+static void xbee_cmd(const char *const);
+static void xbee_read_ok(void);
 
 static void xbee_write(struct xbee_s *const dev, const uint8_t *const data, const uint8_t len, void (*complete)(void *buf));
 static uint8_t xbee_getchar(const struct xbee_s *const dev);
@@ -84,6 +86,7 @@ void xbee_init(void) {
 		xbee.mempool = init_mempool(MPC_PKT_MAX_SIZE, MPC_QUEUE_SIZE);
 		xbee.comm = serialcomm_init(driver, MPC_ADDR_BOARD);
 		xbee.tx_queue = xQueueCreate(5, sizeof(struct _tx_vec));
+		xbee.rx_queue = xQueueCreate(MPC_PKT_MAX_SIZE, sizeof(uint8_t));
 		configure_dma();
 
 		sercom_set_gclk_core(&xbee.sercom, GCLK_PCHCTRL_GEN_GCLK1);
@@ -102,6 +105,10 @@ void xbee_init(void) {
 		xbee.sercom.hw->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
 		while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
 
+		nvic_register_isr(SERCOM0_2_IRQn, xbee_rx_isr);
+		NVIC_EnableIRQ(SERCOM0_2_IRQn);
+		xbee.sercom.hw->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
+
 		if (xbee.comm != NULL && xbee.mempool != NULL) {
 			xTaskCreate(xbee_rx_task, "xbee-rx", 256, NULL, tskIDLE_PRIORITY + 1, &xbee.rx_task);
 			xTaskCreate(xbee_tx_task, "xbee-tx", 256, NULL, tskIDLE_PRIORITY + 1, &xbee.tx_task);
@@ -110,7 +117,6 @@ void xbee_init(void) {
 }
 
 static void xbee_rx_task(void *params) {
-
 	// assert ~RST
 	pin_set(PIN_XBEE_RST, false);
 
@@ -126,31 +132,28 @@ static void xbee_rx_task(void *params) {
 	// deassert ~RST
 	pin_set(PIN_XBEE_RST, true);
 
-	// wait another 50ms (BREAK)
-	// TODO: this should wait for the xbee to send OK
-	vTaskDelay(configTICK_RATE_HZ/20);
-
+	//xbee should be in command mode as soon as we see the OK.
+	xbee_read_ok();
 	pin_enable_pinmux(PIN_XBEE_TX);
 
-	//xbee should be in command mode now. Ideally we should wait to read OK\r from xbee.
-	// tell the xbee to switch to 750000 baud
-	xbee_write_cmd("ATBD0xB71B0,AC\r");
-	// TODO read okay?
-	vTaskDelay(configTICK_RATE_HZ/20);
+	// Tell the xbee to switch to 750000 baud
+	// Or don't because at 48mhz right now and without DMA, it can't even.
+	// xbee_cmd("ATBD0xB71B0,AC\r");
 
-	xbee.sercom.hw->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_ENABLE;
-	while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
-	xbee.sercom.hw->USART.BAUD.reg = 0;
+	// Switch the baud rate on our side.
+	// xbee.sercom.hw->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_ENABLE;
+	// while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
+	// xbee.sercom.hw->USART.BAUD.reg = 0;
 
-	xbee.sercom.hw->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
-	while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
+	// xbee.sercom.hw->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
+	// while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
 
 	// Enable sleep
-	xbee_write_cmd("ATSM4,SO0x40,AC\r");
+	xbee_cmd("ATSM4,SO0x40,AC\r");
 
 	// Well... For now.. Since the tcp conn LED is hooked up wrong on the
 	// xbee... turn the led on manually to indicate successful configuration.
-	xbee_write_cmd("ATP54,CN\r");
+	xbee_cmd("ATP54,CN\r");
 
 	// TODO apply stored config from eeprom?
 
@@ -160,6 +163,12 @@ static void xbee_rx_task(void *params) {
 
 		xbee_rx_process(rx_size, rx_buf);
 	}
+}
+
+static void xbee_rx_isr(void) {
+	uint8_t val = xbee.sercom.hw->USART.DATA.reg;
+	xbee.sercom.hw->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
+	xQueueSendFromISR(xbee.rx_queue, &val, NULL);
 }
 
 static void xbee_tx_task(void *params) {
@@ -292,15 +301,38 @@ static uint8_t xbee_pkt_chksum(mpc_pkt const *const pkt) {
 	return 0;
 }
 
-static void xbee_write_cmd(const char *const cmd) {
-	xbee_write(&xbee, (const uint8_t*)cmd, strlen(cmd), xbee_write_cmd_complete);
-	/* xbee_write_cmd_complete(NULL); */
-	while (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) != pdTRUE);
+static void xbee_cmd(const char *const cmd) {
+	size_t len = strlen(cmd);
+	uint8_t num_cmds = 1;
+	xbee_write(&xbee, (const uint8_t*)cmd, len, NULL);
+
+	// count the commas because they indicate the number of OK replies to expect.
+	for (const char *cptr = cmd; cptr < cmd + len; ++cptr) {
+		if (*cptr == ',')
+			num_cmds += 1;
+	}
+
+	for (uint8_t i = 0; i < num_cmds; ++i)
+		xbee_read_ok();
 }
 
-static void xbee_write_cmd_complete(void *_buf) {
-	// TODO: stupid hack
-	xTaskNotify(xbee.rx_task, 0, eNoAction);
+static void xbee_read_ok(void) {
+	uint8_t idx = 0;
+	const char expect[] = "OK\r";
+
+	while (1) {
+		char c = xbee_getchar(&xbee);
+		if (c == expect[idx]) {
+			idx += 1;
+
+			if (idx == (sizeof(expect) - 1)) {
+				return;
+			}
+
+		} else {
+			idx = 0;
+		}
+	}
 }
 
 static void xbee_write(struct xbee_s *const dev, const uint8_t *const data, const uint8_t len, void (*complete)(void *buf)) {
@@ -315,8 +347,9 @@ static void xbee_write(struct xbee_s *const dev, const uint8_t *const data, cons
 }
 
 static uint8_t xbee_getchar(const struct xbee_s *const dev) {
-	vTaskSuspend(NULL);
-	return 0;
+	uint8_t val;
+	xQueueReceive(xbee.rx_queue, &val, portMAX_DELAY);
+	return val;
 }
 
 static void configure_dma(void) {
@@ -331,7 +364,7 @@ static void configure_dma(void) {
 
 		desc->BTCNT.reg = 0;
 		desc->DESCADDR.reg = 0;
-		desc->DSTADDR.reg = (uint32_t)&xbee.sercom.hw->SPI.DATA.reg;
+		desc->DSTADDR.reg = (uint32_t)&xbee.sercom.hw->USART.DATA.reg;
 
 		DMAC->Channel[xbee.dma_chan].CHCTRLA.reg =
 			DMAC_CHCTRLA_TRIGSRC(sercom_dma_tx_trigsrc(&xbee.sercom)) |
