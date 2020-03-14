@@ -163,7 +163,6 @@ static void xbee_rx_task(void *params) {
 
 static void xbee_rx_isr(sercom_t *const sercom) {
 	uint8_t val = xbee.sercom.hw->USART.DATA.reg;
-	xbee.sercom.hw->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 	xQueueSendFromISR(xbee.rx_queue, &val, NULL);
 }
 
