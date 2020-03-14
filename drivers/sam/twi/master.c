@@ -67,8 +67,10 @@ twi_master_t *twi_master_init(const int sercom_index, const uint8_t baud) {
 			SERCOM_I2CM_INTENSET_MB |
 			SERCOM_I2CM_INTENSET_ERROR;
 
-		sercom_register_handler(&dev->sercom, twi_master_isr);
-		sercom_enable_irq(&dev->sercom);
+		sercom_register_handler(&dev->sercom, SERCOM_I2CM_INTENSET_MB_Pos, twi_master_isr);
+		sercom_register_handler(&dev->sercom, SERCOM_I2CM_INTENSET_ERROR_Pos, twi_master_isr);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CM_INTENSET_MB_Pos);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CM_INTENSET_ERROR_Pos);
 	}
 
 	return dev;

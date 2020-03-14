@@ -72,8 +72,20 @@ twi_slave_t *twi_slave_init(const int sercom_index, uint8_t addr, uint8_t mask){
 			SERCOM_I2CS_INTENSET_DRDY |
 			SERCOM_I2CS_INTENSET_ERROR;
 
-		sercom_register_handler(&dev->sercom, twi_slave_handler);
-		sercom_enable_irq(&dev->sercom);
+		sercom_register_handler(&dev->sercom, SERCOM_I2CS_INTFLAG_AMATCH_Pos, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CS_INTFLAG_AMATCH_Pos);
+
+		sercom_register_handler(&dev->sercom, SERCOM_I2CS_INTFLAG_DRDY_Pos, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CS_INTFLAG_DRDY_Pos);
+
+		sercom_register_handler(&dev->sercom, SERCOM_I2CS_INTFLAG_DRDY_Pos, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CS_INTFLAG_DRDY_Pos);
+
+		sercom_register_handler(&dev->sercom, SERCOM_I2CS_INTFLAG_PREC_Pos, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CS_INTFLAG_PREC_Pos);
+
+		sercom_register_handler(&dev->sercom, SERCOM_I2CS_INTFLAG_ERROR_Pos, twi_slave_handler);
+		sercom_enable_irq(&dev->sercom, SERCOM_I2CS_INTFLAG_ERROR_Pos);
 
 	}
 

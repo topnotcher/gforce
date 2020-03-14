@@ -13,14 +13,14 @@
 // map to IRQs 0,1,2 while sources 3,4,5,6 map to IRQ 3. The interrupt source
 // corresponds to the bit position in the INTFLAG register.
 // (DS: 10.2.2: Interrupt Lien Mapping)
-#if defined(__SAMD51N20A__)
-const int SERCOM0_IRQn = SERCOM0_0_IRQn;
-#endif
 
 static sercom_t *sercom_inst[SERCOM_INST_NUM];
 
-static void sercom_isr_handler(void);
+static void sercom_isr_handler_multiplex(void);
+static void sercom_isr_handler_dedicated(void);
 static void sercom_dummy_handler(sercom_t *sercom);
+static int sercom_get_irqn(const sercom_t *const, uint8_t);
+static bool sercom_int_is_multiplexed(const sercom_t *const, uint8_t);
 
 static Sercom *get_hw_instance(const int idx) {
 	if (idx >= 0 && idx < SERCOM_INST_NUM) {
@@ -36,7 +36,9 @@ bool sercom_init(const int sercom_index, sercom_t *const inst) {
 
 		inst->hw = (Sercom*)get_hw_instance(sercom_index);
 		inst->index = sercom_index;
-		inst->isr = sercom_dummy_handler;
+		for (int i = 0; i < SERCOM_INT_NUM; ++i) {
+			inst->isr[i] = sercom_dummy_handler;
+		}
 
 		sercom_enable_pm(inst);
 
@@ -55,19 +57,42 @@ int sercom_get_index(const Sercom *const sercom) {
 	return -1;
 }
 
-void sercom_register_handler(sercom_t *sercom, void (*isr)(sercom_t *)) {
-	if (sercom != NULL) {
-		sercom->isr = isr;
-		nvic_register_isr(SERCOM0_IRQn + sercom->index, sercom_isr_handler);
+static int sercom_get_irqn(const sercom_t *const sercom, uint8_t int_num) {
+	int inst_irq_base = SERCOM_IRQ_BASE + sercom->index * SERCOM_IRQ_NUM;
+
+	if (sercom_int_is_multiplexed(sercom, int_num)) {
+		return inst_irq_base + SERCOM_IRQ_NUM - 1;
+	} else {
+		return inst_irq_base + int_num;
 	}
 }
 
-void sercom_enable_irq(const sercom_t *const sercom) {
-	NVIC_EnableIRQ(SERCOM0_IRQn + sercom->index);
+static bool sercom_int_is_multiplexed(const sercom_t *const sercom, uint8_t int_num) {
+	return int_num >= SERCOM_IRQ_NUM - 1;
 }
 
-void sercom_disable_irq(const sercom_t *sercom) {
-	NVIC_DisableIRQ(SERCOM0_IRQn + sercom->index);
+void sercom_register_handler(sercom_t *sercom, uint8_t int_num, void (*isr)(sercom_t *)) {
+	if (sercom == NULL || int_num >= SERCOM_INT_NUM || isr == NULL)
+		return;
+
+	sercom->isr[int_num] = isr;
+	int irqn = sercom_get_irqn(sercom, int_num);
+
+	if (sercom_int_is_multiplexed(sercom, int_num)) {
+		nvic_register_isr(irqn, sercom_isr_handler_multiplex);
+	} else {
+		nvic_register_isr(irqn, sercom_isr_handler_dedicated);
+	}
+}
+
+void sercom_enable_irq(const sercom_t *const sercom, uint8_t int_num) {
+	const int irq = sercom_get_irqn(sercom, int_num);
+	NVIC_EnableIRQ(irq);
+}
+
+void sercom_disable_irq(const sercom_t *sercom, uint8_t int_num) {
+	const int irq = sercom_get_irqn(sercom, int_num);
+	NVIC_DisableIRQ(irq);
 }
 
 void sercom_enable_pm(const sercom_t *const sercom) {
@@ -199,11 +224,33 @@ int sercom_dma_tx_trigsrc(const sercom_t *const sercom) {
 #endif
 }
 
-static void sercom_isr_handler(void) {
-	const int sercom_index = get_active_irqn() - SERCOM0_IRQn;
+static void sercom_isr_handler_dedicated(void) {
+	const int irq_offset = get_active_irqn() - SERCOM_IRQ_BASE;
+	const int sercom_index = irq_offset / SERCOM_IRQ_NUM;
+	const int int_num = irq_offset % SERCOM_IRQ_NUM;
 	sercom_t *const sercom = sercom_inst[sercom_index];
 
-	sercom->isr(sercom);
+	sercom->isr[int_num](sercom_inst[sercom_index]);
+}
+
+static void sercom_isr_handler_multiplex(void) {
+	const int irq_offset = get_active_irqn() - SERCOM_IRQ_BASE;
+	const int sercom_index = irq_offset / SERCOM_IRQ_NUM;
+	const int int_num = irq_offset % SERCOM_IRQ_NUM;
+	sercom_t *const sercom = sercom_inst[sercom_index];
+
+	uint8_t check_flags = sercom->hw->USART.INTFLAG.reg & sercom->hw->USART.INTENSET.reg;
+	for (uint8_t i = 0; i < SERCOM_INT_NUM && check_flags; ++i) {
+		uint8_t bit = 1 << i;
+
+		// INTFLAG etc are at the same location regardless of mode, so it
+		// doesn't matter that we refer to USART here.
+		if (check_flags & bit) {
+			// Call the handler for _each_ matching interrupt...
+			sercom->isr[int_num](sercom);
+			check_flags ^= bit;
+		}
+	}
 }
 
 static void sercom_dummy_handler(sercom_t *sercom) {

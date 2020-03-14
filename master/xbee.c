@@ -43,7 +43,7 @@ static void xbee_rx_pkt(mpc_pkt const *const);
 static uint8_t xbee_pkt_chksum(mpc_pkt const *const);
 static void xbee_rx_process(uint8_t, uint8_t *);
 static void xbee_rx_task(void *params);
-static void xbee_rx_isr(void);
+static void xbee_rx_isr(sercom_t *);
 static void xbee_tx_task(void *params);
 static void configure_dma(void);
 static void xbee_tx_complete(void);
@@ -105,8 +105,8 @@ void xbee_init(void) {
 		xbee.sercom.hw->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
 		while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
 
-		nvic_register_isr(SERCOM0_2_IRQn, xbee_rx_isr);
-		NVIC_EnableIRQ(SERCOM0_2_IRQn);
+		sercom_register_handler(&xbee.sercom, SERCOM_USART_INTENSET_RXC_Pos, xbee_rx_isr);
+		sercom_enable_irq(&xbee.sercom, SERCOM_USART_INTENSET_RXC_Pos);
 		xbee.sercom.hw->USART.INTENSET.reg = SERCOM_USART_INTENSET_RXC;
 
 		if (xbee.comm != NULL && xbee.mempool != NULL) {
@@ -148,12 +148,8 @@ static void xbee_rx_task(void *params) {
 	// xbee.sercom.hw->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
 	// while (xbee.sercom.hw->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE);
 
-	// Enable sleep
-	xbee_cmd("ATSM4,SO0x40,AC\r");
-
-	// Well... For now.. Since the tcp conn LED is hooked up wrong on the
-	// xbee... turn the led on manually to indicate successful configuration.
-	xbee_cmd("ATP54,CN\r");
+	// Enable sleep and set the tcp conn LED on (since it's hooked up wrong)
+	xbee_cmd("ATSM4,SO0x40,P54,CN\r");
 
 	// TODO apply stored config from eeprom?
 
@@ -165,7 +161,7 @@ static void xbee_rx_task(void *params) {
 	}
 }
 
-static void xbee_rx_isr(void) {
+static void xbee_rx_isr(sercom_t *const sercom) {
 	uint8_t val = xbee.sercom.hw->USART.DATA.reg;
 	xbee.sercom.hw->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 	xQueueSendFromISR(xbee.rx_queue, &val, NULL);
