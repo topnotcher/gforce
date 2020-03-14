@@ -241,13 +241,14 @@ static void sercom_isr_handler_multiplex(void) {
 
 	// INTFLAG etc are at the same location regardless of mode, so it
 	// doesn't matter that we refer to USART here.
-	for (uint8_t i = 0; i < SERCOM_INT_NUM && sercom->hw->USART.INTFLAG.reg != 0; ++i) {
+	uint8_t check_flags = sercom->hw->USART.INTFLAG.reg ^ sercom->hw->USART.INTENSET.reg;
+	for (uint8_t i = 0; i < SERCOM_INT_NUM && check_flags != 0; ++i) {
 		uint8_t bit = 1 << i;
 
-		if (sercom->hw->USART.INTENSET.reg & sercom->hw->USART.INTFLAG.reg & bit) {
+		if (check_flags & bit) {
 			// Call the handler for _each_ matching interrupt...
 			sercom->isr[int_num](sercom);
-			sercom->hw->USART.INTFLAG.reg = bit;
+			check_flags ^= bit;
 		}
 	}
 }
