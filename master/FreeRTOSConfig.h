@@ -84,12 +84,13 @@
 #define configUSE_TICK_HOOK			0
 #define configCPU_CLOCK_HZ			( ( unsigned long ) 48000000 )
 #define configTICK_RATE_HZ			( ( TickType_t ) 256 )
-#define configMAX_PRIORITIES		( 16 )
+#define configMAX_PRIORITIES		( 32 )
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION (1)
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )
 #define configTOTAL_HEAP_SIZE		( (size_t ) ( 1500 ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TIMERS		1
-#define configTIMER_TASK_PRIORITY		tskIDLE_PRIORITY + 10
+#define configTIMER_TASK_PRIORITY		16
 #define configTIMER_TASK_STACK_DEPTH		128
 #define configTIMER_QUEUE_LENGTH		10
 #define configUSE_TRACE_FACILITY	0
