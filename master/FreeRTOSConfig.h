@@ -84,18 +84,19 @@
 #define configUSE_TICK_HOOK			0
 #define configCPU_CLOCK_HZ			( ( unsigned long ) 48000000 )
 #define configTICK_RATE_HZ			( ( TickType_t ) 256 )
-#define configMAX_PRIORITIES		( 4 )
-#define configMINIMAL_STACK_SIZE	( ( unsigned short ) 85 )
+#define configMAX_PRIORITIES		( 16 )
+#define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )
 #define configTOTAL_HEAP_SIZE		( (size_t ) ( 1500 ) )
-#define configMAX_TASK_NAME_LEN		( 8 )
+#define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TIMERS		1
 #define configTIMER_TASK_PRIORITY		tskIDLE_PRIORITY + 10
 #define configTIMER_TASK_STACK_DEPTH		128
 #define configTIMER_QUEUE_LENGTH		10
 #define configUSE_TRACE_FACILITY	0
-#define configUSE_16_BIT_TICKS		1
+#define configUSE_16_BIT_TICKS		0
 #define configIDLE_SHOULD_YIELD		1
 #define configQUEUE_REGISTRY_SIZE	0
+#define configUSE_TICKLESS_IDLE 1
 
 // TODO HACK
 // SAMD51 only
