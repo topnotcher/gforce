@@ -90,7 +90,7 @@ void __attribute__((weak)) xbee_send(const uint8_t _cmd, const uint8_t _size, ui
 void __attribute__((weak)) xbee_send_pkt(const mpc_pkt *_spkt) {}
 void __attribute__((weak)) display_write(const char *_s) { }
 void __attribute__((weak)) display_send(const uint8_t _1, const uint8_t _2, uint8_t * _3) { }
-void __attribute__((weak)) sound_play_effect(uint8_t _effect) {}
+void __attribute__((weak)) sound_play_effect(typeof(SOUND_LASER) _effect) {}
 
 
 void game_init(void) {

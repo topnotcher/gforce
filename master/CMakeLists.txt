@@ -15,7 +15,7 @@ include(${CMAKE_SOURCE_DIR}/../build/sam.cmake)
 set(PROJECT_SOURCES
 
 	main.c
-	# sounds.c
+	sounds.c
 	xbee.c
 	game.c
 	lights.c
