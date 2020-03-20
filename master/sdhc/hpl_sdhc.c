@@ -31,17 +31,58 @@
  *
  */
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include "utils_assert.h"
 #include "hpl_mci_sync.h"
 #include "conf_sd_mmc.h"
 #include "hri_sdhc_d51.h"
 
+#include <stdbool.h>
+#include <sam.h>
+#include <drivers/sam/isr.h>
+
 #define HSMCI_SLOT_0_SIZE 4
 
 static void _mci_reset(const void *const hw);
 static void _mci_set_speed(const void *const hw, uint32_t speed, uint8_t prog_clock_mode);
-static bool _mci_wait_busy(const void *const hw);
-static bool _mci_send_cmd_execute(const void *const hw, uint32_t cmdr, uint32_t cmd, uint32_t arg);
+/* static bool _mci_wait_busy(const void *const hw); */
+static bool _mci_send_cmd_execute(struct _mci_sync_device *const mci_dev, uint32_t cmdr, uint32_t cmd, uint32_t arg);
+
+
+static struct _mci_sync_device *_global_hw = NULL;
+
+#define _BIT(x) (1u << (x))
+
+
+void SDHC0_Handler(void) {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+	_global_hw->err_mask &= SDHC0->EISTR.reg;
+	_global_hw->int_mask &= SDHC0->NISTR.reg;
+	SDHC0->EISTR.reg |= _global_hw->err_mask;
+	SDHC0->NISTR.reg |= _global_hw->int_mask;
+
+	if (_global_hw->int_mask || _global_hw->err_mask)
+		xSemaphoreGiveFromISR(_global_hw->sem, &xHigherPriorityTaskWoken);
+
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+static bool wait_for_int(struct _mci_sync_device *const hw, const uint32_t mask, const uint32_t err_mask) {
+	hw->int_mask = mask;
+	hw->err_mask = err_mask;
+
+	((Sdhc*)(hw->hw))->EISIER.reg |= err_mask;
+	((Sdhc*)(hw->hw))->NISIER.reg |= mask;
+	xSemaphoreTake(hw->sem, portMAX_DELAY);
+
+	((Sdhc*)(hw->hw))->EISIER.reg &= ~err_mask;
+	((Sdhc*)(hw->hw))->NISIER.reg &= ~mask;
+
+	return !hw->err_mask;
+}
 
 /**
  * \brief Reset the SDHC interface
@@ -115,30 +156,6 @@ static void _mci_set_speed(const void *const hw, uint32_t speed, uint8_t prog_cl
 }
 
 /**
- * \brief Wait the end of busy signal on data line
- *
- * \param hw       The pointer to MCI hardware instance
- * \return true if success, otherwise false
- */
-static bool _mci_wait_busy(const void *const hw)
-{
-	uint32_t busy_wait = 0xFFFFFFFF;
-	uint32_t psr;
-
-	ASSERT(hw);
-
-	do {
-		psr = hri_sdhc_read_PSR_reg(hw);
-
-		if (busy_wait-- == 0) {
-			_mci_reset(hw);
-			return false;
-		}
-	} while (!(psr & SDHC_PSR_DATLL(1)));
-	return true;
-}
-
-/**
  * \brief Send a command
  *
  * \param hw         The pointer to MCI hardware instance
@@ -148,9 +165,13 @@ static bool _mci_wait_busy(const void *const hw)
  *
  * \return true if success, otherwise false
  */
-static bool _mci_send_cmd_execute(const void *const hw, uint32_t cmdr, uint32_t cmd, uint32_t arg)
+static bool _mci_send_cmd_execute(struct _mci_sync_device *const mci_dev, uint32_t cmdr, uint32_t cmd, uint32_t arg)
 {
-	uint32_t sr;
+	uint32_t err_mask = 0;
+	void *hw;
+
+	ASSERT(mci_dev && mci_dev->hw);
+	hw = mci_dev->hw;
 	ASSERT(hw);
 
 	cmdr |= SDHC_CR_CMDIDX(cmd) | SDHC_CR_CMDTYP_NORMAL;
@@ -175,35 +196,38 @@ static bool _mci_send_cmd_execute(const void *const hw, uint32_t cmdr, uint32_t 
 	hri_sdhc_write_ARG1R_reg(hw, arg);
 	hri_sdhc_write_CR_reg(hw, cmdr);
 
-	/* Wait end of command */
-	do {
-		sr = hri_sdhc_read_EISTR_reg(hw);
-
-		if (cmd & MCI_RESP_CRC) {
-			if (sr
-			    & (SDHC_EISTR_CMDTEO | SDHC_EISTR_CMDEND | SDHC_EISTR_CMDIDX | SDHC_EISTR_DATTEO | SDHC_EISTR_DATEND
-			       | SDHC_EISTR_ADMA)) {
-				_mci_reset(hw);
-				hri_sdhc_set_EISTR_reg(hw, SDHC_EISTR_MASK);
-				return false;
-			}
-		} else {
-			if (sr
-			    & (SDHC_EISTR_CMDTEO | SDHC_EISTR_CMDEND | SDHC_EISTR_CMDIDX | SDHC_EISTR_CMDCRC | SDHC_EISTR_DATCRC
-			       | SDHC_EISTR_DATTEO | SDHC_EISTR_DATEND | SDHC_EISTR_ADMA)) {
-				_mci_reset(hw);
-				hri_sdhc_set_EISTR_reg(hw, SDHC_EISTR_MASK);
-				return false;
-			}
-		}
-	} while (!hri_sdhc_get_NISTR_CMDC_bit(hw));
-	if (!(cmdr & SDHC_CR_DPSEL_DATA)) {
-		hri_sdhc_set_NISTR_CMDC_bit(hw);
+	if (cmd & MCI_RESP_CRC) {
+		err_mask = (
+			SDHC_EISTR_CMDTEO | SDHC_EISTR_CMDEND | SDHC_EISTR_CMDIDX |
+			SDHC_EISTR_DATTEO | SDHC_EISTR_DATEND | SDHC_EISTR_ADMA
+		);
+	} else {
+		err_mask = (
+			SDHC_EISTR_CMDTEO | SDHC_EISTR_CMDEND | SDHC_EISTR_CMDIDX |
+			SDHC_EISTR_CMDCRC | SDHC_EISTR_DATCRC | SDHC_EISTR_DATTEO |
+			SDHC_EISTR_DATEND | SDHC_EISTR_ADMA
+		);
 	}
+
+	/* Wait end of command */
+	if (!wait_for_int(mci_dev, SDHC_NISTR_CMDC, err_mask)) {
+		_mci_reset(hw);
+		return false;
+	}
+
+	/* TODO: wat??
+	 if (!(cmdr & SDHC_CR_DPSEL_DATA)) {
+		hri_sdhc_set_NISTR_CMDC_bit(hw);
+	}*/
+
 	if (cmd & MCI_RESP_BUSY) {
-		if (!_mci_wait_busy(hw)) {
-			return false;
-		}
+		uint32_t psr = hri_sdhc_read_PSR_reg(hw);
+		// XXX: This was busy waiting and polling the register. Spec and linux
+		// kernel indicate that the TRFC interrupt should fire in this case.
+		// When I tried using just the interrupt, the driver hung somewhere.
+		// Rather than investigate, I just added the below if statement.
+		if (!(psr & SDHC_PSR_DATLL(1)))
+			wait_for_int(mci_dev, SDHC_NISTR_TRFC, 0);
 	}
 
 	return true;
@@ -217,6 +241,12 @@ int32_t _mci_sync_init(struct _mci_sync_device *const mci_dev, void *const hw)
 	ASSERT(mci_dev && hw);
 
 	mci_dev->hw = hw;
+
+	// TODO
+	_global_hw = mci_dev;
+	NVIC_EnableIRQ(SDHC0_IRQn);
+
+	mci_dev->sem = xSemaphoreCreateBinary();
 
 	hri_sdhc_set_SRR_SWRSTALL_bit(hw);
 	while (hri_sdhc_get_SRR_SWRSTALL_bit(hw))
@@ -351,7 +381,7 @@ bool _mci_sync_send_cmd(struct _mci_sync_device *const mci_dev, uint32_t cmd, ui
 	hri_sdhc_clear_TMR_DMAEN_bit(hw);
 	hri_sdhc_write_BCR_reg(hw, 0);
 
-	return _mci_send_cmd_execute(hw, 0, cmd, arg);
+	return _mci_send_cmd_execute(mci_dev, 0, cmd, arg);
 }
 
 /**
@@ -437,7 +467,7 @@ bool _mci_sync_adtc_start(struct _mci_sync_device *const mci_dev, uint32_t cmd, 
 	mci_dev->mci_sync_block_size = block_size;
 	mci_dev->mci_sync_nb_block   = nb_block;
 
-	return _mci_send_cmd_execute(hw, SDHC_CR_DPSEL_DATA, cmd, arg);
+	return _mci_send_cmd_execute(mci_dev, SDHC_CR_DPSEL_DATA, cmd, arg);
 }
 
 /**
@@ -461,6 +491,7 @@ bool _mci_sync_read_word(struct _mci_sync_device *const mci_dev, uint32_t *value
 	uint32_t sr;
 	uint8_t  nbytes;
 	void *   hw;
+	const uint32_t err_mask = SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND;
 
 	ASSERT(mci_dev && mci_dev->hw);
 	hw = mci_dev->hw;
@@ -471,15 +502,10 @@ bool _mci_sync_read_word(struct _mci_sync_device *const mci_dev, uint32_t *value
 	             : 4;
 
 	if (mci_dev->mci_sync_trans_pos % mci_dev->mci_sync_block_size == 0) {
-		do {
-			sr = hri_sdhc_read_EISTR_reg(hw);
-
-			if (sr & (SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND)) {
-				_mci_reset(hw);
-				return false;
-			}
-		} while (!hri_sdhc_get_NISTR_BRDRDY_bit(hw));
-		hri_sdhc_set_NISTR_BRDRDY_bit(hw);
+		if (!wait_for_int(mci_dev, SDHC_NISTR_BRDRDY, err_mask)) {
+			_mci_reset(hw);
+			return false;
+		}
 	}
 
 	/* Read data */
@@ -508,15 +534,11 @@ bool _mci_sync_read_word(struct _mci_sync_device *const mci_dev, uint32_t *value
 	}
 
 	/* Wait end of transfer */
-	do {
-		sr = hri_sdhc_read_EISTR_reg(hw);
+	if (!wait_for_int(mci_dev, SDHC_NISTR_TRFC, err_mask)) {
+		_mci_reset(hw);
+		return false;
+	}
 
-		if (sr & (SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND)) {
-			_mci_reset(hw);
-			return false;
-		}
-	} while (!hri_sdhc_get_NISTR_TRFC_bit(hw));
-	hri_sdhc_set_NISTR_TRFC_bit(hw);
 	return true;
 }
 
@@ -525,9 +547,9 @@ bool _mci_sync_read_word(struct _mci_sync_device *const mci_dev, uint32_t *value
  */
 bool _mci_sync_write_word(struct _mci_sync_device *const mci_dev, uint32_t value)
 {
-	uint32_t sr;
 	uint8_t  nbytes;
 	void *   hw;
+	const uint32_t err_mask = SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND;
 
 	ASSERT(mci_dev && mci_dev->hw);
 	hw = mci_dev->hw;
@@ -535,15 +557,10 @@ bool _mci_sync_write_word(struct _mci_sync_device *const mci_dev, uint32_t value
 	/* Wait data available */
 	nbytes = 4; //( mci_dev->mci_sync_block_size & 0x3 ) ? 1 : 4;
 	if (mci_dev->mci_sync_trans_pos % mci_dev->mci_sync_block_size == 0) {
-		do {
-			sr = hri_sdhc_read_EISTR_reg(hw);
-
-			if (sr & (SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND)) {
-				_mci_reset(hw);
-				return false;
-			}
-		} while (!hri_sdhc_get_NISTR_BWRRDY_bit(hw));
-		hri_sdhc_set_NISTR_BWRRDY_bit(hw);
+		if (!wait_for_int(mci_dev, SDHC_NISTR_BWRRDY, err_mask)) {
+			_mci_reset(hw);
+			return false;
+		}
 	}
 	/* Write data */
 	hri_sdhc_write_BDPR_reg(hw, value);
@@ -554,15 +571,11 @@ bool _mci_sync_write_word(struct _mci_sync_device *const mci_dev, uint32_t value
 	}
 
 	/* Wait end of transfer */
-	do {
-		sr = hri_sdhc_read_EISTR_reg(hw);
+	if (!wait_for_int(mci_dev, SDHC_NISTR_TRFC, err_mask)) {
+		_mci_reset(hw);
+		return false;
+	}
 
-		if (sr & (SDHC_EISTR_DATTEO | SDHC_EISTR_DATCRC | SDHC_EISTR_DATEND)) {
-			_mci_reset(hw);
-			return false;
-		}
-	} while (!hri_sdhc_get_NISTR_TRFC_bit(hw));
-	hri_sdhc_set_NISTR_TRFC_bit(hw);
 	return true;
 }
 

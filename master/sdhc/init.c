@@ -78,7 +78,9 @@ void SDMMC_ACCESS_0_example(void *_params)
 		sdio_read_extended(0, 0, 0, 1, sd_mmc_block, 22);
 	}
 #endif
-	while(1);
+	while(1) {
+		vTaskSuspend(NULL);
+	}
 }
 
 void sd_mmc_stack_init(void)

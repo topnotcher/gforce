@@ -34,6 +34,9 @@
 #ifndef _HPL_MCI_H_INCLUDED
 #define _HPL_MCI_H_INCLUDED
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include "compiler.h"
 
 #ifdef __cplusplus
@@ -70,8 +73,11 @@ extern "C" {
  * \brief mci sync device structure
  */
 struct _mci_sync_device {
-	void *   hw;
+	void * hw;
+	SemaphoreHandle_t *sem;
 	uint64_t mci_sync_trans_pos;
+	uint32_t int_mask;
+	uint32_t err_mask;
 	uint16_t mci_sync_block_size;
 	uint16_t mci_sync_nb_block;
 };
