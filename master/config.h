@@ -12,6 +12,7 @@ void configure_clocks(void);
  */
 typedef enum {
 	PIN_SD_POWER_OFF = PIN_PA07,
+	PIN_SD_CD = PIN_PA06,
 
 	// Xbee pins
 	PIN_XBEE_SLEEP_REQUEST = PIN_PA18,
