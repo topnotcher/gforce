@@ -91,6 +91,7 @@ void configure_clocks(void) {
 	GCLK->CTRLA.reg = GCLK_CTRLA_SWRST;
 	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST);
 
+
 	// Enable the external crystal oscillator XOSC1
 	val = OSCCTRL_XOSCCTRL_ENALC;
 	val |= OSCCTRL_XOSCCTRL_ENABLE;
@@ -109,4 +110,75 @@ void configure_clocks(void) {
 
 	// wait for the switch to complete
 	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
+
+	// Set GCLK2 to run off off DFLL48M
+	val = GCLK_GENCTRL_SRC_DFLL;
+	val |= GCLK_GENCTRL_GENEN;
+	val |= GCLK_GENCTRL_DIV(1);
+
+	GCLK->GENCTRL[2].reg = val;
+
+	// wait for the switch to complete
+	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2);
+
+
+
+
+
+	// Enable the external crystal oscillator XOSC0
+	val = OSCCTRL_XOSCCTRL_ENALC;
+	val |= OSCCTRL_XOSCCTRL_ENABLE;
+	val |= OSCCTRL_XOSCCTRL_IMULT(4);
+	val |= OSCCTRL_XOSCCTRL_IPTAT(3);
+	val |= OSCCTRL_XOSCCTRL_XTALEN;
+	OSCCTRL->XOSCCTRL[0].reg = val;
+	while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_XOSCRDY0));
+
+	// Set GCLK3 to run off of XOSC1
+	val = GCLK_GENCTRL_SRC_XOSC0;
+	val |= GCLK_GENCTRL_GENEN;
+	val |= GCLK_GENCTRL_DIV(1);
+
+	GCLK->GENCTRL[3].reg = val;
+	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3);
+
+
+
+
+
+	// GCLK[3] from OSCULP32K
+	/* val = GCLK_GENCTRL_SRC_OSCULP32K; */
+	/* val |= GCLK_GENCTRL_GENEN; */
+	/* val |= GCLK_GENCTRL_DIV(1); */
+    /*  */
+	/* GCLK->GENCTRL[3].reg = val; */
+
+	// wait for the switch to complete
+	/* while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3); */
+
+	/* pm_set_periph_clock(OSCCTRL_GCLK_ID_FDPLL0, GCLK_PCHCTRL_GEN_GCLK3, true); */
+	/* pm_set_periph_clock(OSCCTRL_GCLK_ID_FDPLL0, GCLK_PCHCTRL_GEN_GCLK1, true); */
+
+	/* OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDR(3499); */
+	/* OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDR(9); */
+	OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDR(19);
+	while (OSCCTRL->Dpll[0].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_DPLLRATIO);
+
+	/* OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS | OSCCTRL_DPLLCTRLB_WUF; */
+	OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_XOSC1 | OSCCTRL_DPLLCTRLB_LBYPASS | OSCCTRL_DPLLCTRLB_WUF;
+
+	OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
+	while (OSCCTRL->Dpll[0].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_ENABLE);
+
+	while (!(OSCCTRL->Dpll[0].DPLLSTATUS.reg & (OSCCTRL_DPLLSTATUS_CLKRDY | OSCCTRL_DPLLSTATUS_LOCK)));
+
+	// GCLK[0] CPU from DPLL0
+	val = GCLK_GENCTRL_SRC_DPLL0;
+	val |= GCLK_GENCTRL_GENEN;
+	val |= GCLK_GENCTRL_DIV(1);
+
+	GCLK->GENCTRL[0].reg = val;
+
+	// wait for the switch to complete
+	while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
 }
