@@ -5,7 +5,15 @@
 #include <sam.h>
 #include <drivers/sam/isr.h>
 
-static DeviceVectors vector_table __attribute__((aligned(256)));
+// alignment = 2^n > (PERIPH_COUNT_IRQn + 16) * 4
+#if defined(__SAMD51N20A__)
+	static DeviceVectors vector_table __attribute__((aligned(1024)));
+#elif defined(__SAML21E17B__)
+	static DeviceVectors vector_table __attribute__((aligned(256)));
+#else
+	#error "Unsupported part!"
+#endif
+
 extern DeviceVectors exception_table;
 
 static void init_exception_table(void) __attribute__((constructor));
