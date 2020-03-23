@@ -14,12 +14,15 @@ typedef uint8_t __attribute__((aligned)) __aligned;
  */
 void *smalloc(size_t size) {
 	void *addr;
+	size_t rem;
 
 	portENTER_CRITICAL(); {
 		addr = &__heap_start + heap_offset;
 		heap_offset += size;
+		rem = size % __alignof__(__aligned);
 
-		heap_offset += __alignof__(__aligned) - (size % __alignof__(__aligned));
+		if (rem)
+			heap_offset += __alignof__(__aligned) - rem;
 	}; portEXIT_CRITICAL();
 
 	//@TODO check for overflow, throw an error
