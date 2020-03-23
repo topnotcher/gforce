@@ -77,11 +77,6 @@ static void configure_pack_on_interrupt(void) {
 int main(void) {
 	configure_clocks();
 
-	// Register the FreeRTOS ISRs.
-	nvic_register_isr(SVCall_IRQn, vPortSVCHandler);
-	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
-	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
-
 	// Critical sections in FreeRTOS work by masking interrupt priorities. By
 	// default, all interrupts are priority 0 (highest), which is not maskable.
 	// Thus, if we enable IRQs without setting a priorioty, there will be no
@@ -90,9 +85,13 @@ int main(void) {
 	for (int i = -14; i < PERIPH_COUNT_IRQn; ++i) {
 		// Except for SVC, which is used to start the scheduler.
 		if (i != SVCall_IRQn)
-			NVIC_SetPriority(i, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+			NVIC_SetPriority(i, configMAX_SYSCALL_INTERRUPT_PRIORITY >> (8 - __NVIC_PRIO_BITS));
 	}
 
+	// Register the FreeRTOS ISRs.
+	nvic_register_isr(SVCall_IRQn, vPortSVCHandler);
+	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
+	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
 
 	xTaskCreate(init_task, "init", 128, NULL, tskIDLE_PRIORITY + 1, NULL);
 	vTaskStartScheduler();

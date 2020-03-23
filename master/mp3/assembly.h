@@ -319,19 +319,10 @@ static __inline int FASTABS(int x)
 	return t;
 }
 
-static __inline int CLZ(int x)
+static __inline unsigned int CLZ(int x)
 {
-	int numZeros;
-
-	if (!x)
-		return (sizeof(int) * 8);
-
-	numZeros = 0;
-	while (!(x & 0x80000000)) {
-		numZeros++;
-		x <<= 1;
-	}
-
+	unsigned int numZeros;
+	asm volatile ( "clz %0, %1" : "=r" ( numZeros ) : "r" ( x ) );
 	return numZeros;
 }
 
