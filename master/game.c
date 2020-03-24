@@ -260,6 +260,7 @@ static void start_game_cmd(command_t const *const cmd) {
 		game_settings.stun_time = 0;
 
 	start_countdown(settings->prestart + 1, &start_game_activate);
+	sound_play_effect(SOUND_PRE_GAME_START);
 }
 
 /**
@@ -310,7 +311,7 @@ static void stop_game(void) {
 
 	lights_off();
 
-	sound_play_effect(SOUND_POWER_DOWN);
+	sound_play_effect(SOUND_GAME_END);
 	xTimerStop(game_timer, portMAX_DELAY);
 	xTimerStop(stun_timer, portMAX_DELAY);
 
@@ -408,6 +409,7 @@ static void do_stun(void) {
 	game_state.stunned = 1;
 	game_countdown_time = game_settings.stun_time;
 
+	sound_play_effect(SOUND_STUN);
 	lights_stun();
 
 	xTimerStart(stun_timer, portMAX_DELAY);
