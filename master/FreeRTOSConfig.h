@@ -63,6 +63,9 @@
     1 tab == 4 spaces!
 */
 
+#include <drivers/sam/isr.h>
+
+
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
@@ -78,8 +81,9 @@
  * See http://www.freertos.org/a00110.html.
  *----------------------------------------------------------*/
 
-#define configUSE_MUTEXES           0
-#define configUSE_PREEMPTION		0
+#define configUSE_MUTEXES           1
+#define configUSE_COUNTING_SEMAPHORES           1
+#define configUSE_PREEMPTION		1
 #define configUSE_IDLE_HOOK			0
 #define configUSE_TICK_HOOK			0
 #define configCPU_CLOCK_HZ			( ( unsigned long ) 120000000 )
@@ -87,7 +91,6 @@
 #define configMAX_PRIORITIES		( 32 )
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION (1)
 #define configMINIMAL_STACK_SIZE	( ( unsigned short ) 128 )
-#define configTOTAL_HEAP_SIZE		( (size_t ) ( 1500 ) )
 #define configMAX_TASK_NAME_LEN		( 16 )
 #define configUSE_TIMERS		1
 #define configTIMER_TASK_PRIORITY		16
@@ -95,14 +98,23 @@
 #define configTIMER_QUEUE_LENGTH		10
 #define configUSE_TRACE_FACILITY	0
 #define configUSE_16_BIT_TICKS		0
-#define configIDLE_SHOULD_YIELD		1
+#define configIDLE_SHOULD_YIELD		0
 #define configQUEUE_REGISTRY_SIZE	0
 #define configUSE_TICKLESS_IDLE 1
+#define INCLUDE_xTaskGetCurrentTaskHandle 1
+
+#ifndef NDEBUG
+#define configASSERT(condition)\
+	do {\
+		if (!(condition))\
+			__asm("BKPT #0");\
+	} while(0)
+#endif
 
 // TODO HACK
 // SAMD51 only
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 1
-#define configKERNEL_INTERRUPT_PRIORITY 1
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY (4 << (8 - __NVIC_PRIO_BITS))
+#define configKERNEL_INTERRUPT_PRIORITY (7 << (8 - __NVIC_PRIO_BITS))
 // end SAMD51 hax
 
 /* Co-routine definitions. */
