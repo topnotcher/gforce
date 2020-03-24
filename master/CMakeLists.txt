@@ -42,6 +42,32 @@ set(PROJECT_SOURCES
 	../common/serialcomm.c
 	../common/irrx.c
 	../common/settings.c
+
+	sdhc/hal_mci_sync.c
+	sdhc/hpl_sdhc.c
+	sdhc/init.c
+	sdhc/sd_mmc.c
+	sdhc/sdmmc_diskio.c
+
+	../fatfs/ff.c
+	../fatfs/ffsystem.c
+	../fatfs/ffunicode.c
+
+	mp3/bitstream.c
+	mp3/buffers.c
+	mp3/dct32.c
+	mp3/dequant.c
+	mp3/dqchan.c
+	mp3/huffman.c
+	mp3/hufftabs.c
+	mp3/imdct.c
+	mp3/mp3dec.c
+	mp3/mp3tabs.c
+	mp3/polyphase.c
+	mp3/scalfact.c
+	mp3/stproc.c
+	mp3/subband.c
+	mp3/trigtabs.c
 )
 
 include(../cmakedefs)
