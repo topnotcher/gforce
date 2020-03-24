@@ -7,6 +7,7 @@
 
 #include "conf_sd_mmc.h"
 #include "hal_mci_sync.h"
+#include "init.h"
 
 /* Card Detect (CD) pin settings */
 static sd_mmc_detect_t SDMMC_ACCESS_0_cd[CONF_SD_MMC_MEM_CNT] = {
@@ -22,10 +23,9 @@ static sd_mmc_detect_t SDMMC_ACCESS_0_wp[CONF_SD_MMC_MEM_CNT] = {
 
 static uint8_t sd_mmc_block[512];
 static void pm_set_periph_clock(const uint32_t, uint32_t, bool);
+
 static void IO_BUS_PORT_init(void);
 static void IO_BUS_init(void);
-static void sd_mmc_stack_init(void);
-
 
 struct mci_sync_desc IO_BUS;
 
@@ -81,7 +81,7 @@ void SDMMC_ACCESS_0_example(void *_params)
 	while(1);
 }
 
-static void sd_mmc_stack_init(void)
+void sd_mmc_stack_init(void)
 {
 	IO_BUS_init();
 	sd_mmc_init(&IO_BUS, SDMMC_ACCESS_0_cd, SDMMC_ACCESS_0_wp);
