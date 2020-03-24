@@ -82,6 +82,18 @@ int main(void) {
 	nvic_register_isr(PendSV_IRQn, xPortPendSVHandler);
 	nvic_register_isr(SysTick_IRQn, xPortSysTickHandler);
 
+	// Critical sections in FreeRTOS work by masking interrupt priorities. By
+	// default, all interrupts are priority 0 (highest), which is not maskable.
+	// Thus, if we enable IRQs without setting a priorioty, there will be no
+	// critical sections. Work around this by setting all IRQs to a priority
+	// that FreeRTOS will mask.
+	for (int i = -14; i < PERIPH_COUNT_IRQn; ++i) {
+		// Except for SVC, which is used to start the scheduler.
+		if (i != SVCall_IRQn)
+			NVIC_SetPriority(i, configMAX_SYSCALL_INTERRUPT_PRIORITY);
+	}
+
+
 	xTaskCreate(init_task, "init", 128, NULL, tskIDLE_PRIORITY + 1, NULL);
 	vTaskStartScheduler();
 }
