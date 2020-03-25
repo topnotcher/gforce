@@ -49,20 +49,29 @@ class _EventBroker:
 
 
 class GForceClient:
-    def __init__(self, server, ip):
+    def __init__(self, server):
         self.server = server
-        self.ip = ip
         self.loop = server.loop
         self.last_rx = 0
-
+        self.transport = None
+        self.stream = StreamUnpacker(framed_pkt)
         self._broker = _EventBroker()
 
     def send_cmd(self, cmd, data):
-        self.server.send_cmd(self.ip, cmd, data)
+        frame = framed_pkt()
+        pkt = frame.pkt
+
+        pkt.cmd = cmd
+        pkt.saddr = 4 # TODO? (yah, wtf is this crap?)
+        pkt.data = data
+
+        frame.daddr = MPC_ADDR.BACK
+        self.transport.write(bytes(frame))
 
     def pkt_received(self, pkt):
         self.last_rx = time.monotonic()
         self._broker.dispatch(pkt, self)
+        self.server.pkt_received(pkt, self.ip)
 
     def collect(self, event=None):
         return _EventCollector(self, event=event)
@@ -73,58 +82,27 @@ class GForceClient:
     def unsubscribe(self, callback, cmd=None):
         self._broker.unsubscribe(callback, cmd)
 
+    @property
+    def ip(self):
+        return self.transport.get_extra_info('peername')[0]
 
-class GForceServer:
-    ClientConn = collections.namedtuple('ClientConn', ('stream', 'client'))
-
-    def __init__(self, port, loop, bind_host='0.0.0.0'):
-        self.bind_host = bind_host
-        self.port = port
-        self.loop = loop
-
-        self._clients = {}
-        self._broker = _EventBroker()
-
-        listen = self.loop.create_datagram_endpoint(lambda: self, local_addr=(self.bind_host, self.port))
-        self._transport, _ = self.loop.run_until_complete(listen)
-
-    def connect(self, ip):
-        return self._connect(ip).client
-
-    def _connect(self, ip):
-        if ip not in self._clients:
-            self._clients[ip] = self.ClientConn(StreamUnpacker(framed_pkt), GForceClient(self, ip))
-
-        return self._clients[ip]
-
-    def send_cmd(self, ip, cmd, data):
-        frame = framed_pkt()
-        pkt = frame.pkt
-
-        pkt.cmd = cmd
-        pkt.saddr = 4 # TODO?
-        pkt.data = data
-
-        frame.daddr = MPC_ADDR.BACK
-
-        self._transport.sendto(bytes(frame), (ip, self.port))
+    @property
+    def port(self):
+        return self.transport.get_extra_info('peername')[1]
 
     def connection_made(self, transport):
-        self._transport = transport
+        self.transport = transport
+        self.server.connection_made(self)
 
-        sock = self._transport.get_extra_info('socket')
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+    def connection_lost(self, exc):
+        print('Disconnected', self.ip)
 
-    def datagram_received(self, data, addr):
-        stream, client = self._connect(addr[0])
-
+    def data_received(self, data):
         more = True
         while more:
             try:
-                for frame in stream.unpack(data):
-                    client.pkt_received(frame.pkt)
-
-                    self._broker.dispatch(frame.pkt, self, addr[0])
+                for frame in self.stream.unpack(data):
+                    self.pkt_received(frame.pkt)
 
                 # TODO:
                 # This is some shitty bullshit. If there's an exception in
@@ -140,6 +118,35 @@ class GForceServer:
                 print('Checksum mismatch:', str(e))
                 print(data)
                 data = None
+
+
+class GForceServer:
+    # ClientConn = collections.namedtuple('ClientConn', ('stream', 'client'))
+
+    def __init__(self, port, loop, bind_host='0.0.0.0'):
+        self.bind_host = bind_host
+        self.port = port
+        self.loop = loop
+
+        self._clients = {}
+        self._broker = _EventBroker()
+
+        listen = self.loop.create_server(lambda: GForceClient(self), host=self.bind_host, port=self.port)
+        self.task = self.loop.create_task(listen)
+
+    def connection_made(self, conn):
+        print('Connection from', conn.ip)
+        self._clients[conn.ip] = conn
+
+    def pkt_received(self, pkt, addr):
+        self._broker.dispatch(pkt, self, addr)
+
+    def send_cmd(self, ip, cmd, data):
+        client = self._clients.get(ip)
+        if not client:
+            raise RuntimeError('ARRRRRGGGGGG!!!!')
+
+        client.send_cmd(cmd, data)
 
     def collect(self, event=None):
         return _EventCollector(self, event=event)

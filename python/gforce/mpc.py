@@ -85,6 +85,7 @@ class mpc_pkt(Structure):
     ]
 
     def _compute_chksum(self):
+        return 0
         chksum = MPC_CRC_SHIFT
 
         hdr_fields = ['len', 'cmd', 'saddr']
