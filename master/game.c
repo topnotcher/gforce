@@ -17,7 +17,7 @@
 #include <freertos/timers.h>
 
 // Number of seconds to spend waiting for boards
-#define GFORCE_BOOT_TICKS 10
+#define GFORCE_BOOT_TICKS 5
 
 
 // ID number of this vest - vest can't shoot itself.
