@@ -259,6 +259,7 @@ static void start_game_cmd(command_t const *const cmd) {
 
 	start_countdown(settings->prestart + 1, &start_game_activate);
 	sound_play_effect(SOUND_PRE_GAME_START);
+	lights_countdown();
 }
 
 /**
