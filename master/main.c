@@ -8,6 +8,7 @@
 #include <mpc.h>
 /* #include <mpcphasor.h> */
 #include <mpctwi.h>
+#include <settings.h>
 
 #include "sounds.h"
 #include "xbee.h"
@@ -115,11 +116,12 @@ void init_task(void *_params) {
 		// if the pack is off, configure an interrupt for when it is turned on.
 		configure_pack_on_interrupt();
 	} else {
+		settings_init();
 		led_init();
 		mpc_init();
 		xbee_init();
-		game_init();
 		sound_init();
+		game_init();
 	}
 
 	//ping hack: master receives a ping reply
