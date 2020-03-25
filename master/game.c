@@ -46,7 +46,7 @@ static struct {
 
 void (* countdown_cb )(void);
 
-const uint8_t all_boards = MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_CHEST | MPC_ADDR_PHASOR;
+const uint8_t all_boards = MPC_ADDR_LS | MPC_ADDR_RS | MPC_ADDR_CHEST | MPC_ADDR_PHASOR | MPC_ADDR_MASTER;
 static uint8_t boards_booted;
 static uint8_t gforce_booted;
 
@@ -116,8 +116,6 @@ static void game_task(void *params) {
 	 */
 	countdown_timer = xTimerCreate("boot tick", configTICK_RATE_HZ, 1, NULL, gforce_boot_tick); 
 	xTimerStart(countdown_timer, portMAX_DELAY);
-
-	lights_booting(MPC_ADDR_BACK);
 
 	while (1) {
 		if (xQueueReceive(evt_queue, &evt, portMAX_DELAY)) {
